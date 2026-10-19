@@ -1,0 +1,8 @@
+{
+  "name": "SINKI Parfums",
+  "description": "SINKI Haute Parfumerie - Luxury Perfume & Eau De Parfum Experience.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

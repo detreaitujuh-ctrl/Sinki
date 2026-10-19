@@ -1,0 +1,297 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #0e1017;
+    color: #f8fafc;
+  }
+}
+
+.font-display {
+  font-family: 'Cinzel', serif;
+}
+
+.font-cinzel {
+  font-family: 'Cinzel', serif;
+}
+
+.font-playfair {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-jakarta {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+.font-cormorant {
+  font-family: 'Cormorant Garamond', Garamond, serif;
+}
+
+/* Hide scrollbars for smooth native app touch feel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Metallic Champagne Gold luxury gradient utility - Soft & Prestigious, Anti-Glare */
+.gold-gradient-text {
+  background: linear-gradient(135deg, #F3E6C8 0%, #D4AF37 50%, #9B782E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.champagne-gold-btn {
+  background: linear-gradient(135deg, #E2C27F 0%, #C5A059 60%, #9A742F 100%);
+  color: #090a0f;
+  font-weight: 800;
+}
+
+.gold-border {
+  border: 1px solid rgba(197, 160, 89, 0.22);
+}
+
+.gold-glow {
+  box-shadow: 0 4px 20px -2px rgba(197, 160, 89, 0.12);
+}
+
+/* Golden Boutique Spotlight Halo - subtle, warm & non-intrusive */
+.boutique-spotlight-glow {
+  background: radial-gradient(circle, rgba(197, 160, 89, 0.08) 0%, rgba(140, 104, 38, 0.03) 50%, transparent 75%);
+}
+
+/* Haute Horlogerie & Parisian High Perfumery: Brushed Metallic Champagne Gold */
+@keyframes parisianSpecularBeam {
+  0% {
+    background-position: -250% 0;
+  }
+  28% {
+    background-position: 250% 0;
+  }
+  100% {
+    background-position: 250% 0;
+  }
+}
+
+.haute-gold-title {
+  display: inline-block;
+  background: linear-gradient(115deg, #F0DFB6 0%, #C5A059 50%, #8C6826 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.95));
+}
+
+.haute-gold-subtitle {
+  display: inline-block;
+  color: #cbd5e1;
+  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.9));
+}
+
+.luxury-gold-subtle-focal {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(253, 230, 138, 0.85) 0%, rgba(245, 186, 73, 0.85) 50%, rgba(217, 119, 6, 0.75) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.luxury-gold-subtle-focal::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(253, 230, 138, 0.4) 30%,
+    #FFFFFF 50%,
+    rgba(253, 230, 138, 0.4) 70%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: luxuryFocalSweepN 9.5s cubic-bezier(0.25, 1, 0.4, 1) infinite;
+}
+
+/* Fallback shimmer class */
+.luxury-gold-shimmer {
+  background: linear-gradient(
+    115deg,
+    #F3CE7A 0%,
+    #E8B960 14%,
+    #FDE68A 22%,
+    #FFFFFF 28%,
+    #FFFBEB 34%,
+    #F5BA49 44%,
+    #C68A2E 56%,
+    #E8B960 70%,
+    #F3CE7A 100%
+  );
+  background-size: 280% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  filter: drop-shadow(0 2px 10px rgba(232, 185, 96, 0.35));
+}
+
+.luxury-gold-subtle {
+  background: linear-gradient(
+    115deg,
+    rgba(253, 230, 138, 0.8) 0%,
+    rgba(245, 186, 73, 0.85) 15%,
+    #FFFFFF 28%,
+    rgba(253, 230, 138, 0.9) 36%,
+    rgba(217, 119, 6, 0.75) 50%,
+    rgba(253, 230, 138, 0.8) 100%
+  );
+  background-size: 280% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+/* Reflective glassmorphism card rim */
+.glass-card-border {
+  border: 1px solid rgba(245, 186, 73, 0.32);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.65), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Micro Marquee Ticker (GPU-Accelerated) */
+@keyframes luxuryMarqueeScroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.luxury-ticker-track {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  animation: luxuryMarqueeScroll 22s linear infinite;
+  will-change: transform;
+}
+
+.luxury-ticker-container:hover .luxury-ticker-track {
+  animation-play-state: paused;
+}
+
+.ticker-mask-fade {
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+/* SINKI & EAU DE PARFUM: Diamond Glint & Modern Light Animation */
+@keyframes diamondGlintGlide {
+  0% {
+    opacity: 0;
+    transform: translate3d(0px, 0px, 0) scale(0) rotate(0deg);
+  }
+  6% {
+    opacity: 0.85;
+    transform: translate3d(6px, 0px, 0) scale(0.9) rotate(15deg);
+  }
+  18% {
+    opacity: 0.95;
+    transform: translate3d(30px, 0px, 0) scale(1) rotate(35deg);
+  }
+  32% {
+    opacity: 0.95;
+    transform: translate3d(60px, 0px, 0) scale(1) rotate(55deg);
+  }
+  44% {
+    opacity: 1;
+    transform: translate3d(88px, 0px, 0) scale(1.1) rotate(75deg);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate3d(102px, 0px, 0) scale(1.15) rotate(90deg);
+  }
+  56% {
+    opacity: 0;
+    transform: translate3d(108px, 0px, 0) scale(0.2) rotate(100deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(108px, 0px, 0) scale(0) rotate(100deg);
+  }
+}
+
+@keyframes sinkiDiamondAura {
+  0%, 100% {
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.95));
+  }
+  20%, 42% {
+    filter: drop-shadow(0 0 18px rgba(245, 216, 143, 0.45)) drop-shadow(0 4px 16px rgba(0, 0, 0, 0.95));
+  }
+}
+
+@keyframes goldEauDeParfumGlow {
+  0%, 35% {
+    filter: drop-shadow(0 1.5px 5px rgba(0, 0, 0, 0.95));
+    opacity: 0.95;
+  }
+  50%, 65% {
+    filter: drop-shadow(0 0 12px rgba(228, 195, 115, 0.85)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
+    opacity: 1;
+  }
+  85%, 100% {
+    filter: drop-shadow(0 1.5px 5px rgba(0, 0, 0, 0.95));
+    opacity: 0.95;
+  }
+}
+
+@keyframes goldMicroSparkle {
+  0%, 45% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  52% {
+    opacity: 1;
+    transform: scale(1.2) rotate(45deg);
+  }
+  60% {
+    opacity: 0;
+    transform: scale(0.3) rotate(90deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(90deg);
+  }
+}
+
+.diamond-glint-flare {
+  animation: diamondGlintGlide 6.5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.sinki-white-diamond {
+  animation: sinkiDiamondAura 6.5s ease-in-out infinite;
+}
+
+.gold-eaudeparfum-pulse {
+  animation: goldEauDeParfumGlow 6.5s ease-in-out infinite;
+}
+
+.gold-micro-sparkle {
+  animation: goldMicroSparkle 6.5s ease-in-out infinite;
+}
+
+
+
+
