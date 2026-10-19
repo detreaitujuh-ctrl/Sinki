@@ -151,25 +151,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* LAYER 1 (TERDEPAN / Z-20): TOP BAR MELAYANG ELEGAN */}
       <header className="relative z-20 flex items-center justify-between pt-0 pb-1 shrink-0">
-        {/* Top-Left: Small Emblem */}
+        {/* Top-Left: Clean Floating Brand Emblem (Pilihan A - Tanpa Kotak) */}
         <div
           onClick={handleEmblemClick}
-          className="group cursor-pointer flex items-center gap-2 select-none active:scale-95 transition-transform backdrop-blur-xs py-0.5 px-1 rounded-xl"
+          className="group cursor-pointer flex items-center gap-2 select-none active:scale-95 transition-transform py-0.5 px-0.5"
           title="SINKI Parfums"
         >
-          <div className="relative w-8 h-8 rounded-xl bg-black/60 border border-white/15 p-1 flex items-center justify-center shadow-lg group-hover:border-[#c5a059]/50 group-hover:scale-105 transition-all">
+          <div className="relative w-8 h-8 flex items-center justify-center group-hover:scale-105 transition-transform">
             {customLogo ? (
               <img
                 src={customLogo}
                 alt="Lambang Logo SINKI"
-                className="w-full h-full object-contain filter drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
+                className="w-full h-full object-contain filter drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] drop-shadow-[0_0_8px_rgba(197,160,89,0.2)]"
               />
             ) : (
               <svg
                 viewBox="0 0 100 100"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-full h-full filter drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
+                className="w-full h-full filter drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] drop-shadow-[0_0_8px_rgba(197,160,89,0.25)]"
               >
                 <defs>
                   <linearGradient id="emblemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -195,7 +195,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </svg>
             )}
           </div>
-          <span className="text-[10px] font-mono tracking-widest text-slate-200 font-bold uppercase">
+          <span className="text-[10.5px] font-mono tracking-widest text-slate-200 group-hover:text-[#F0DFB6] font-bold uppercase transition-colors drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
             SINKI
           </span>
         </div>
