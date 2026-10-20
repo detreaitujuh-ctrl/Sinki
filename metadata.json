@@ -1,6 +1,6 @@
 {
   "name": "SINKI Parfums",
-  "description": "SINKI Haute Parfumerie - Luxury Perfume & Eau De Parfum Experience.",
+  "description": "Sinki parfum | Define your presence",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

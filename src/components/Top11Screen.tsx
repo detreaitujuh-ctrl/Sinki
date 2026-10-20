@@ -3,6 +3,7 @@ import { Crown, MessageCircle, ChevronLeft, ChevronRight, LayoutGrid, Clock, Fla
 import { TOP_11_DATA, Top11Item } from '../data/top11';
 import { PerfumeBottleVisual, loadedPhotoSet } from './PerfumeBottleVisual';
 import { PricingConfig, DEFAULT_PRICING, getStoredPricing } from '../utils/pricingStorage';
+import { openWhatsAppDirect } from '../utils/whatsappHelper';
 
 interface Top11ScreenProps {
   top11Photos: Record<string, string>;
@@ -150,12 +151,8 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
       `Halo SINKI Parfums, saya ingin memesan parfum Top #${item.rank} di atas. Mohon info ketersediaan & cara pengirimannya ya. Terima kasih!`,
     ].join('\n');
 
-    const url = `https://wa.me/6289636824552?text=${encodeURIComponent(message)}`;
-    const win = window.open(url, '_blank');
-    if (!win) {
-      window.location.href = url;
-    }
-    onShowToast(`Menghubungkan ke WhatsApp: Top #${item.rank} ${item.name} (${sizeToUse}ml - Rp ${info.totalPrice.toLocaleString('id-ID')})...`);
+    onShowToast(`Menghubungkan langsung ke WhatsApp SINKI...`);
+    openWhatsAppDirect('6289636824552', message);
   };
 
   return (
@@ -424,9 +421,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                         onClick={() => setSelectedBottleSize(size)}
                         className={`relative py-1.5 rounded-xl text-center font-mono text-[11px] font-black transition-all active:scale-95 border ${
                           isSelected
-                            ? 'bg-gradient-to-r from-[#DFB76C] to-[#A07C3A] text-slate-950 border-[#F0DFB6] shadow-sm scale-[1.03]'
-                            : size === 30
-                            ? 'bg-[#DFB76C]/10 hover:bg-[#DFB76C]/20 text-[#F0DFB6] border-[#DFB76C]/40'
+                            ? 'bg-gradient-to-r from-[#DFC07B] to-[#C09B50] text-slate-950 border-[#F5E6C4]/85 shadow-sm scale-[1.02]'
                             : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
                         }`}
                       >
@@ -434,7 +429,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                         {size === 30 && (
                           <span
                             className={`block text-[7px] leading-tight font-sans tracking-tight ${
-                              isSelected ? 'text-slate-950 font-black' : 'text-[#DFB76C]'
+                              isSelected ? 'text-slate-950 font-black' : 'text-slate-400'
                             }`}
                           >
                             Favorit

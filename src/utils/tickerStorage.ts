@@ -58,8 +58,8 @@ export const TICKER_FONTS: TickerFontOption[] = [
 ];
 
 export const DEFAULT_TICKER: TickerConfig = {
-  text: 'Tahan 8 jam, dia aja yang gak tahan 😏',
-  font: 'cinzel',
+  text: 'Min. Rp150.000, gratis ongkir se-Jabodetabek! 😍',
+  font: 'cormorant',
 };
 
 const TICKER_LOCAL_KEY = 'sinki_ticker_config_v1';
@@ -74,7 +74,7 @@ export const getStoredTicker = (): TickerConfig => {
       if (parsed && typeof parsed.text === 'string' && parsed.text.trim()) {
         return {
           text: parsed.text.trim(),
-          font: parsed.font || 'cinzel',
+          font: parsed.font || 'cormorant',
           updatedAt: parsed.updatedAt,
         };
       }
@@ -95,7 +95,7 @@ export const setStoredTicker = (config: TickerConfig) => {
 
 export const fetchTickerFromServer = async (): Promise<TickerConfig> => {
   try {
-    const res = await fetch('/api/ticker', { cache: 'no-store' });
+    const res = await fetch(`/api/ticker?t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       if (data && typeof data.text === 'string' && data.text.trim()) {
@@ -138,7 +138,7 @@ export const fetchTickerFromServer = async (): Promise<TickerConfig> => {
 export const saveTickerToServer = async (config: TickerConfig): Promise<TickerConfig> => {
   const toSave: TickerConfig = {
     text: config.text.trim() || DEFAULT_TICKER.text,
-    font: config.font || 'cinzel',
+    font: config.font || 'cormorant',
     updatedAt: new Date().toISOString(),
   };
 
@@ -146,14 +146,21 @@ export const saveTickerToServer = async (config: TickerConfig): Promise<TickerCo
 
   const token = getOwnerToken();
   try {
-    await fetch('/api/owner/update-ticker', {
+    const res = await fetch('/api/owner/update-ticker', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ ticker: toSave, token, pin: '1995' }),
+      body: JSON.stringify({ ticker: toSave, token, pin: '241026' }),
     });
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.ticker) {
+        setStoredTicker(json.ticker);
+        return json.ticker;
+      }
+    }
   } catch (err) {
     console.warn('Notice saving ticker to server:', err);
   }

@@ -2,6 +2,7 @@ import { BookOpen, ChevronRight, Shield } from 'lucide-react';
 import { getStoredArticles, ArticleItem } from '../utils/articleStorage';
 import React from 'react';
 import { X, LayoutGrid, MessageCircle, ShoppingBag, ExternalLink } from 'lucide-react';
+import { openWhatsAppDirect } from '../utils/whatsappHelper';
 
 interface DrawerMenuProps {
   isOpen: boolean;
@@ -84,11 +85,16 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
             </button>
 
             {/* WhatsApp Pemesanan */}
-            <a
-              href="https://wa.me/6289636824552?text=Halo%20SINKI%20Parfums%2C%20saya%20tertarik%20dengan%20koleksi%20parfumnya"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-white/[0.06] hover:bg-emerald-500/20 border border-white/10 hover:border-emerald-400/50 text-left transition-all group shadow-sm"
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                openWhatsAppDirect(
+                  '6289636824552',
+                  'Halo SINKI Parfums, saya tertarik dengan koleksi parfumnya'
+                );
+              }}
+              className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-white/[0.06] hover:bg-emerald-500/20 border border-white/10 hover:border-emerald-400/50 text-left transition-all group shadow-sm cursor-pointer"
             >
               <div className="flex items-center gap-2.5">
                 <MessageCircle size={16} className="text-emerald-400" />
@@ -97,7 +103,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                 </span>
               </div>
               <ExternalLink size={13} className="text-slate-400 group-hover:text-emerald-400" />
-            </a>
+            </button>
 
             {/* Shopee Official */}
             <a

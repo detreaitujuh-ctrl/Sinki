@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { getStoredQris, saveQrisToServer } from '../utils/assetStorage';
 import { ImageAdjusterModal } from './ImageAdjusterModal';
+import { openWhatsAppDirect } from '../utils/whatsappHelper';
 
 interface QrisPaymentCardProps {
   amount?: number;
@@ -149,12 +150,18 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
     }
   };
 
-  // URL WhatsApp Konfirmasi Pembayaran
-  const waConfirmUrl = `https://wa.me/6289636824552?text=${encodeURIComponent(
-    `Halo Admin SINKI, saya sudah melakukan pembayaran pesanan parfum${
-      amount ? ` sebesar Rp ${amount.toLocaleString('id-ID')}` : ''
-    }. Berikut saya lampirkan bukti transfernya. Mohon segera diproses dan dikirim ya, terima kasih!`
-  )}`;
+  // Handler WhatsApp Konfirmasi Pembayaran Cepat Tanpa Loading
+  const confirmMessage = `Halo Admin SINKI, saya sudah melakukan pembayaran pesanan parfum${
+    amount ? ` sebesar Rp ${amount.toLocaleString('id-ID')}` : ''
+  }. Berikut saya lampirkan bukti transfernya. Mohon segera diproses dan dikirim ya, terima kasih!`;
+
+  const handleSendProof = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onShowToast) {
+      onShowToast('Menghubungkan langsung ke WhatsApp SINKI...');
+    }
+    openWhatsAppDirect('6289636824552', confirmMessage);
+  };
 
   return (
     <div className="space-y-2.5">
@@ -218,15 +225,14 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
           Setelah transfer, kirim bukti bayar lewat WhatsApp agar pesanan segera diproses.
         </p>
 
-        <a
-          href={waConfirmUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-sm"
+        <button
+          type="button"
+          onClick={handleSendProof}
+          className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-sm cursor-pointer"
         >
           <MessageCircle size={13} />
           <span>Kirim Bukti Bayar via WhatsApp</span>
-        </a>
+        </button>
       </div>
 
       {/* 3. MODAL RAHASIA: UNGGAH FOTO QRIS ASLI PEMILIK TOKO (DIBUKA DENGAN KETUK KOTAK 5X) */}

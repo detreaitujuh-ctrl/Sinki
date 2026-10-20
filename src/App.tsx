@@ -19,6 +19,7 @@ import {
 } from './utils/assetStorage';
 import { PricingConfig, getStoredPricing } from './utils/pricingStorage';
 import { TickerConfig, getStoredTicker, fetchTickerFromServer } from './utils/tickerStorage';
+import { recordVisit } from './utils/analyticsStorage';
 
 const TABS: TabType[] = ['home', 'collection', 'top11', 'order', 'review'];
 
@@ -74,12 +75,12 @@ export default function App() {
       }
     });
 
-    // Sync ticker config from server
+    // Sync ticker config from server immediately
     fetchTickerFromServer().then((cfg) => {
       if (cfg) setTickerConfig(cfg);
     });
 
-    // Sync with server on initial load
+    // Sync with server on initial load (includes ticker, logo, chibi, qris, pricing)
     fetchServerAssets().then((assets) => {
       if (assets.logo) setCustomLogo(assets.logo);
       if (assets.chibi) setCustomChibi(assets.chibi);
@@ -95,8 +96,41 @@ export default function App() {
         });
       }
       if (assets.pricing) setPricing(assets.pricing);
+      if (assets.ticker) setTickerConfig(assets.ticker);
     });
+
+    // Auto-refresh running text when visitor returns to tab or every 30s
+    const handleTickerRefresh = () => {
+      if (!document.hidden) {
+        fetchTickerFromServer().then((cfg) => {
+          if (cfg) setTickerConfig(cfg);
+        });
+      }
+    };
+    window.addEventListener('focus', handleTickerRefresh);
+    document.addEventListener('visibilitychange', handleTickerRefresh);
+    const tickerInterval = setInterval(handleTickerRefresh, 30000);
+
+    return () => {
+      window.removeEventListener('focus', handleTickerRefresh);
+      document.removeEventListener('visibilitychange', handleTickerRefresh);
+      clearInterval(tickerInterval);
+    };
   }, []);
+
+  // Track real visitor and page traffic
+  useEffect(() => {
+    if (!isDimensiRoute) {
+      const pageNames: Record<TabType, string> = {
+        home: 'Beranda',
+        collection: 'Katalog Koleksi',
+        top11: 'Top 11 Bestseller',
+        order: 'Order VIP',
+        review: 'Review Pembeli',
+      };
+      recordVisit(pageNames[activeTab] || 'Beranda');
+    }
+  }, [activeTab, isDimensiRoute]);
 
   const handlePinSuccess = () => {
     setIsPinModalOpen(false);
@@ -236,7 +270,7 @@ export default function App() {
               transform: `translateX(-${activeIndex * 20}%)`,
             }}
           >
-            {/* View 1: Home Screen (Tap Logo 5x to open owner PIN) */}
+            {/* View 1: Home Screen */}
             <div className="w-[20%] h-full shrink-0">
               <HomeScreen
                 onShowToast={showToast}

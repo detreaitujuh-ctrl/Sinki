@@ -22,6 +22,7 @@ import {
   getStoredPricing,
   DEFAULT_PRICING,
 } from '../utils/pricingStorage';
+import { openWhatsAppDirect } from '../utils/whatsappHelper';
 
 interface OrderScreenProps {
   onBackToHome: () => void;
@@ -77,8 +78,22 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
   // Price List Visibility Toggle (Inline so it never turns black or gets blocked by transforms)
   const [showPriceList, setShowPriceList] = useState(false);
 
-  // Show QRIS directly
+  // Show QRIS with Silk Curtain & Soft Bloom transition
   const [showQris, setShowQris] = useState(false);
+  const [isClosingQris, setIsClosingQris] = useState(false);
+
+  const handleOpenQris = () => {
+    setIsClosingQris(false);
+    setShowQris(true);
+  };
+
+  const handleCloseQris = () => {
+    setIsClosingQris(true);
+    setTimeout(() => {
+      setShowQris(false);
+      setIsClosingQris(false);
+    }, 450);
+  };
 
   // Dynamic Active Pricing Configuration (Editable by Owner via Secret Panel)
   const activePricing = pricing || getStoredPricing();
@@ -127,10 +142,8 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
       `Halo Admin SINKI Parfums, saya ingin memesan parfum di atas. Mohon info ketersediaan dan cara pengirimannya ya. Terima kasih!`,
     ].join('\n');
 
-    const encoded = encodeURIComponent(message);
-    const waUrl = `https://wa.me/${OFFICIAL_WHATSAPP_RAW}?text=${encoded}`;
-    window.open(waUrl, '_blank');
-    onShowToast(`Membuka WhatsApp SINKI (${DISPLAY_WHATSAPP})...`);
+    onShowToast(`Menghubungkan langsung ke WhatsApp SINKI...`);
+    openWhatsAppDirect(OFFICIAL_WHATSAPP_RAW, message);
   };
 
   return (
@@ -532,7 +545,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
 
           {!showQris ? (
             /* Tampilan Ringkas Saat QRIS Disembunyikan */
-            <div className="p-3.5 rounded-2xl bg-black/35 border border-white/10 text-center space-y-3">
+            <div className="p-3.5 rounded-2xl bg-black/35 border border-white/10 text-center space-y-3 transition-all duration-300">
               <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-[#DFB76C] mx-auto shadow-inner">
                 <QrCode size={24} />
               </div>
@@ -549,8 +562,8 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
               <div className="pt-0.5">
                 <button
                   type="button"
-                  onClick={() => setShowQris(true)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:scale-98 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-black/40 transition-all"
+                  onClick={handleOpenQris}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:scale-98 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-black/40 transition-all duration-300"
                 >
                   <Eye size={15} />
                   <span>Tampilkan Kode QRIS (Rp {totalAmount.toLocaleString('id-ID')})</span>
@@ -562,27 +575,36 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
               </p>
             </div>
           ) : (
-            /* Tampilan QRIS Terbuka */
-            <div className="space-y-3 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between px-1">
+            /* Tampilan QRIS Terbuka - Pure Crystal Smooth (Zero Blur - 100% Tajam & Ramah di Mata) */
+            <div
+              className={`space-y-3 relative overflow-hidden transition-all duration-400 ease-out ${
+                isClosingQris
+                  ? 'opacity-0 translate-y-2 transition-all duration-300 ease-in'
+                  : 'animate-qris-unveil'
+              }`}
+            >
+
+              <div className="relative z-10 flex items-center justify-between px-1">
                 <span className="text-[10.5px] font-bold text-zinc-200 flex items-center gap-1.5">
                   <QrCode size={13} className="text-[#DFB76C]" /> Silakan Scan Barcode di Bawah:
                 </span>
                 <button
                   type="button"
-                  onClick={() => setShowQris(false)}
-                  className="text-[10px] text-slate-300 hover:text-white bg-white/10 hover:bg-white/15 px-2.5 py-1 rounded-lg border border-white/10 font-bold flex items-center gap-1 transition-colors"
+                  onClick={handleCloseQris}
+                  className="text-[10px] text-slate-300 hover:text-white bg-white/10 hover:bg-white/15 px-2.5 py-1 rounded-lg border border-white/10 font-bold flex items-center gap-1 transition-all duration-300 active:scale-95"
                 >
                   <EyeOff size={11} />
                   <span>Sembunyikan QRIS</span>
                 </button>
               </div>
 
-              <QrisPaymentCard
-                amount={totalAmount}
-                onShowToast={onShowToast}
-                customQrisProp={customQris}
-              />
+              <div className="relative z-10">
+                <QrisPaymentCard
+                  amount={totalAmount}
+                  onShowToast={onShowToast}
+                  customQrisProp={customQris}
+                />
+              </div>
             </div>
           )}
         </div>

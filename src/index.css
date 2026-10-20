@@ -292,6 +292,19 @@
   animation: goldMicroSparkle 6.5s ease-in-out infinite;
 }
 
+/* SINKI Pure Crystal Smooth QRIS Unveil (Zero Blur - 100% Tajam & Ramah di Mata) */
+@keyframes qrisCrystalUnveil {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-
-
+.animate-qris-unveil {
+  animation: qrisCrystalUnveil 550ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}

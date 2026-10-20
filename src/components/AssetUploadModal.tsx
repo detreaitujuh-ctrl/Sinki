@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Upload, X, Check, Image as ImageIcon, RotateCcw, Loader2, CloudUpload, Crown, Tag, Truck } from 'lucide-react';
+import { Upload, X, Check, Image as ImageIcon, RotateCcw, Loader2, CloudUpload, Crown, Tag, Truck, BarChart3 } from 'lucide-react';
+import { AnalyticsView } from './AnalyticsView';
 import {
   saveAssetToServer,
   resetStoredAssets,
@@ -46,7 +47,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
   onPricingUpdated,
   onShowToast,
 }) => {
-  const [activeTab, setActiveTab] = useState<'home' | 'top11' | 'pricing'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'top11' | 'pricing' | 'analytics'>('home');
   const [logoPreview, setLogoPreview] = useState<string | null>(currentLogo);
   const [chibiPreview, setChibiPreview] = useState<string | null>(currentChibi);
   const [qrisPreview, setQrisPreview] = useState<string | null>(currentQris || getStoredQris());
@@ -209,7 +210,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-sm rounded-3xl bg-gradient-to-b from-[#1e2235] via-[#181a2b] to-[#131524] border border-amber-500/45 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.85)] flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg rounded-3xl bg-gradient-to-b from-[#1e2235] via-[#181a2b] to-[#131524] border border-amber-500/45 p-4 sm:p-5 shadow-[0_20px_60px_rgba(0,0,0,0.85)] flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/15 shrink-0">
           <div>
@@ -220,7 +221,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
               </h3>
             </div>
             <p className="text-[10px] text-slate-200 font-medium mt-0.5">
-              Kelola foto resmi beranda, botol Top 11 & daftar harga
+              Kelola foto beranda, botol, harga & grafik pengunjung real-time
             </p>
           </div>
           <button
@@ -231,11 +232,11 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
           </button>
         </div>
 
-        {/* Tab Selection: Home vs Top 11 Bottles vs Atur Harga */}
-        <div className="flex items-center bg-[#121422] p-1 rounded-xl border border-amber-500/30 my-3 shrink-0 gap-1">
+        {/* Tab Selection: Home vs Top 11 Bottles vs Atur Harga vs Statistik */}
+        <div className="flex items-center bg-[#121422] p-1 rounded-xl border border-amber-500/30 my-3 shrink-0 gap-1 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('home')}
-            className={`flex-1 py-1.5 rounded-lg text-[10.5px] font-bold transition-all ${
+            className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] sm:text-[10.5px] font-bold transition-all whitespace-nowrap text-center ${
               activeTab === 'home'
                 ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 shadow-sm font-extrabold'
                 : 'text-slate-300 hover:text-white'
@@ -245,7 +246,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('top11')}
-            className={`flex-1 py-1.5 rounded-lg text-[10.5px] font-bold transition-all flex items-center justify-center gap-1 ${
+            className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] sm:text-[10.5px] font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap ${
               activeTab === 'top11'
                 ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 shadow-sm font-extrabold'
                 : 'text-slate-300 hover:text-white'
@@ -256,14 +257,25 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('pricing')}
-            className={`flex-1 py-1.5 rounded-lg text-[10.5px] font-bold transition-all flex items-center justify-center gap-1 ${
+            className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] sm:text-[10.5px] font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap ${
               activeTab === 'pricing'
                 ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 shadow-sm font-extrabold'
                 : 'text-slate-300 hover:text-white'
             }`}
           >
             <Tag size={11} />
-            <span>Ubah Harga</span>
+            <span>Harga</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] sm:text-[10.5px] font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap ${
+              activeTab === 'analytics'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 shadow-sm font-extrabold'
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <BarChart3 size={11} />
+            <span>Statistik</span>
           </button>
         </div>
 
@@ -601,6 +613,10 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
                 </button>
               </div>
             </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <AnalyticsView onShowToast={onShowToast} isCompact={true} />
           )}
         </div>
 

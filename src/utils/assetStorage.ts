@@ -124,12 +124,13 @@ export interface ServerAssetsResponse {
   qrisImage?: string | null;
   top11?: Record<string, string>;
   pricing?: PricingConfig;
+  ticker?: any;
 }
 
 // Fetch public assets from server or cache
 export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
   try {
-    const res = await fetch('/api/public-assets');
+    const res = await fetch(`/api/public-assets?t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
       const contentType = res.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
@@ -139,6 +140,9 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
         if (data.qrisImage) localStorage.setItem(QRIS_STORAGE_KEY, data.qrisImage);
         if (data.top11) localStorage.setItem(TOP11_STORAGE_KEY, JSON.stringify(data.top11));
         if (data.pricing) localStorage.setItem('sinki_custom_pricing_config', JSON.stringify(data.pricing));
+        if (data.ticker && data.ticker.text) {
+          localStorage.setItem('sinki_ticker_config_v1', JSON.stringify(data.ticker));
+        }
 
         return {
           logo: data.logo || DEFAULT_LOGO,
@@ -149,6 +153,7 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
             ...(data.top11 || {}),
           },
           pricing: data.pricing || getStoredPricing(),
+          ticker: data.ticker,
         };
       }
     }

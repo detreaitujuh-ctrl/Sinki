@@ -34,7 +34,11 @@ import {
   CheckCircle2,
   RefreshCw,
   SlidersHorizontal,
+  BarChart3,
 } from 'lucide-react';
+
+import { AnalyticsView } from './AnalyticsView';
+import { SystemHealthSecurityView } from './SystemHealthSecurityView';
 
 import {
   saveAssetToServer,
@@ -93,6 +97,8 @@ interface DimensiSinkiScreenProps {
 
 type MenuKey =
   | 'dashboard'
+  | 'analytics'
+  | 'security'
   | 'variants'
   | 'media'
   | 'banner'
@@ -564,7 +570,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       {/* 4. Fine Atelier Corner Marks */}
       <div className="absolute top-4 left-6 flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-amber-400/20 uppercase">
         <span>+</span>
-        <span className="hidden sm:inline">HAUTE PARFUMERIE SINKI</span>
+        <span className="hidden sm:inline">SINKI PARFUM | DEFINE YOUR PRESENCE</span>
       </div>
       <div className="absolute top-4 right-6 flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-amber-400/20 uppercase">
         <span className="hidden sm:inline">ATELIER PRIVÉ</span>
@@ -597,7 +603,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
           <div>
             <span className="text-[10px] font-mono tracking-[0.25em] text-amber-400/90 uppercase font-semibold block mb-1">
-              HAUTE PARFUMERIE CONTROL
+              SINKI PARFUM | DEFINE YOUR PRESENCE
             </span>
             <h1 className="font-display text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5C2] via-[#E8B960] to-[#B3791B]">
               DIMENSI-SINKI
@@ -650,12 +656,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   // Label Menu Dinamis untuk Header Breadcrumb
   const menuLabels: Record<MenuKey, string> = {
     dashboard: 'Dashboard Ringkasan',
+    analytics: 'Statistik & Trafik Pengunjung',
+    security: 'Keamanan & Kesehatan Sistem',
     variants: `Katalog Varian (${perfumesList.length})`,
     media: 'Media, Hero & 11 Botol Bestseller',
     banner: 'Teks Berjalan & Daftar Harga',
     content: `Konten & Edukasi (${articlesList.length})`,
     reviews: `Ulasan Pembeli (${reviewsList.length})`,
-    settings: 'Pengaturan & Keamanan',
+    settings: 'Pengaturan & Brand',
   };
 
   interface NavItemDef {
@@ -668,6 +676,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   // Nav Items Definitions
   const navItems: NavItemDef[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'analytics', label: 'Grafik Pengunjung', badge: 'Live', icon: BarChart3 },
+    { id: 'security', label: 'Keamanan & Health', badge: '100%', icon: ShieldCheck },
     { id: 'variants', label: 'Katalog Varian', badge: perfumesList.length.toString(), icon: Package },
     { id: 'media', label: 'Media & Galeri', badge: '14', icon: ImageIcon },
     { id: 'banner', label: 'Teks & Harga', icon: Sliders },
@@ -942,6 +952,79 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
               </div>
 
+              {/* BANNER REAL-TIME STATISTIK PENGUNJUNG & KEAMANAN SISTEM */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div
+                  onClick={() => setActiveMenu('analytics')}
+                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#171a2b] via-[#1c2035] to-[#141624] border border-amber-500/35 hover:border-amber-400/60 cursor-pointer transition-all active:scale-98 shadow-xl flex flex-col justify-between gap-3 group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shrink-0">
+                      <BarChart3 size={24} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
+                          Grafik & Analitik Pengunjung
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9.5px] font-mono font-bold border border-emerald-500/30 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          LIVE
+                        </span>
+                      </div>
+                      <h4 className="text-sm sm:text-base font-extrabold text-white mt-0.5">
+                        Lihat Kebanyakan Pengunjung Masuk dari Mana
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Instagram, TikTok, WhatsApp, Facebook, Google, Direct
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs font-bold text-amber-300 group-hover:text-amber-200 self-end shrink-0 pt-2 border-t border-white/5 w-full justify-between">
+                    <span className="text-[11px] text-slate-400">Pantau pertumbuhan website</span>
+                    <span className="flex items-center gap-1">
+                      Buka Grafik Penuh <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setActiveMenu('security')}
+                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0f1b1a] via-[#132322] to-[#0d161a] border border-emerald-500/35 hover:border-emerald-400/60 cursor-pointer transition-all active:scale-98 shadow-xl flex flex-col justify-between gap-3 group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
+                      <ShieldCheck size={24} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold text-emerald-300 uppercase tracking-wider">
+                          Keamanan & Kesehatan Sistem
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9.5px] font-mono font-bold border border-emerald-500/30 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          OPTIMAL 100%
+                        </span>
+                      </div>
+                      <h4 className="text-sm sm:text-base font-extrabold text-white mt-0.5">
+                        Sapu Bersih Cache & Proteksi Benteng
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        1-Klik Bersihkan Sampah Web, Ganti PIN, & Cek Link Toko
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-300 group-hover:text-emerald-200 self-end shrink-0 pt-2 border-t border-white/5 w-full justify-between">
+                    <span className="text-[11px] text-slate-400">Website Cepat & Terlindungi</span>
+                    <span className="flex items-center gap-1">
+                      Buka Pusat Keamanan <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* QUICK ACTIONS (DESKTOP: 3 KOLOM) */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -1010,6 +1093,29 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
               </div>
             </>
+          )}
+
+          {/* ========================================================
+              TAB: STATISTIK & GRAFIK PENGUNJUNG (REAL-TIME DARI NOL)
+             ======================================================== */}
+          {activeMenu === 'analytics' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-xl font-bold text-amber-300 flex items-center gap-2">
+                    <BarChart3 size={20} className="text-amber-400" />
+                    <span>Statistik & Grafik Pengunjung SINKI</span>
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Pantau dari mana kebanyakan pengguna masuk ke website Sinki secara real-time.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-3xl bg-[#0e111d] border border-white/10 p-2 sm:p-4 shadow-xl">
+                <AnalyticsView onShowToast={onShowToast} pin="1995" isCompact={false} />
+              </div>
+            </div>
           )}
 
           {/* ========================================================
@@ -1980,13 +2086,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           )}
 
           {/* ========================================================
-              TAB 7: PENGATURAN & KEAMANAN
+              TAB: KEAMANAN & KESEHATAN SISTEM (SINKI GUARD)
+             ======================================================== */}
+          {activeMenu === 'security' && (
+            <SystemHealthSecurityView onShowToast={onShowToast} />
+          )}
+
+          {/* ========================================================
+              TAB 7: PENGATURAN & BRAND
              ======================================================== */}
           {activeMenu === 'settings' && (
             <div className="space-y-4">
               <div>
                 <h2 className="font-display text-xl font-bold text-amber-300">
-                  Pengaturan & Keamanan SINKI
+                  Pengaturan & Brand SINKI
                 </h2>
                 <p className="text-xs text-slate-400">
                   Status proteksi akun, hak cipta resmi, dan tautan akses.
@@ -1995,7 +2108,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-3">
-                  <span className="text-xs font-bold text-white block">Status Keamanan:</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white block">Status Keamanan:</span>
+                    <button
+                      onClick={() => setActiveMenu('security')}
+                      className="text-[11px] font-bold text-amber-300 hover:underline flex items-center gap-1"
+                    >
+                      <span>Lihat Detail Guard</span>
+                      <ChevronRight size={12} />
+                    </button>
+                  </div>
                   <div className="space-y-2 text-xs">
                     <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
                       <span className="text-slate-300">Autentikasi PIN Server:</span>
@@ -2010,12 +2132,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       <span className="text-amber-300 font-bold font-mono">Terverifikasi</span>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => setActiveMenu('security')}
+                    className="w-full mt-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600/30 via-emerald-500/20 to-amber-500/20 hover:from-emerald-600/40 hover:to-amber-500/30 border border-emerald-500/30 text-emerald-300 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-98"
+                  >
+                    <ShieldCheck size={14} />
+                    <span>Buka Pusat Keamanan & Kesehatan Lengkap →</span>
+                  </button>
                 </div>
 
                 <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-3">
                   <span className="text-xs font-bold text-white block">Hak Cipta & Brand:</span>
                   <div className="p-3 rounded-xl bg-black/40 border border-white/5 text-slate-300 text-xs font-mono leading-relaxed">
-                    © 2026 SINKI Parfums. All Rights Reserved. Haute Parfumerie Indonesia.
+                    © 2026 SINKI Parfums. All Rights Reserved. Define Your Presence.
                   </div>
                   <div className="pt-2">
                     <span className="text-[10px] text-slate-400 block mb-1">Tautan Akses Rahasia:</span>

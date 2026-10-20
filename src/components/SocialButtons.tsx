@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Share2, Check, ExternalLink } from 'lucide-react';
-import { getPublicShareUrl } from '../utils/shareUtils';
+import { getShortShareUrl } from '../utils/shareUtils';
 
 interface SocialButtonsProps {
   onShowToast: (message: string) => void;
@@ -10,10 +10,10 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({ onShowToast }) => 
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    const publicUrl = getPublicShareUrl();
+    const publicUrl = await getShortShareUrl();
     const shareData = {
-      title: 'SINKI Parfums - Haute Parfumerie',
-      text: 'Rasakan kemewahan aroma Amber Wood & Spice dan mahakarya parfum SINKI!',
+      title: 'Sinki parfum | Define your presence',
+      text: 'Sinki parfum | Define your presence',
       url: publicUrl,
     };
 
@@ -24,19 +24,32 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({ onShowToast }) => 
       } catch (err) {
         // User cancelled share or fallback to copy
         if ((err as Error).name !== 'AbortError') {
-          copyToClipboard();
+          await copyToClipboard();
         }
       }
     } else {
-      copyToClipboard();
+      await copyToClipboard();
     }
   };
 
-  const copyToClipboard = () => {
-    const publicUrl = getPublicShareUrl();
-    navigator.clipboard.writeText(publicUrl);
+  const copyToClipboard = async () => {
+    const publicUrl = await getShortShareUrl();
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(publicUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = publicUrl;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+    } catch {}
     setCopied(true);
-    onShowToast('Tautan SINKI berhasil disalin ke papan klip!');
+    onShowToast('Tautan SINKI berhasil disalin!');
     setTimeout(() => setCopied(false), 2500);
   };
 

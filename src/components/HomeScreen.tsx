@@ -2,14 +2,14 @@ import defaultHeroBottles from '../assets/images/sinki_hero_bottles_179187356239
 import React, { useState, useRef } from 'react';
 import { ExternalLink, Menu, ArrowRight, Share2, Check } from 'lucide-react';
 import { DEFAULT_CHIBI } from '../utils/assetStorage';
-import { getPublicShareUrl } from '../utils/shareUtils';
+import { getShortShareUrl } from '../utils/shareUtils';
 import { TickerConfig, TICKER_FONTS, getStoredTicker } from '../utils/tickerStorage';
 
 interface HomeScreenProps {
   onShowToast: (message: string) => void;
   onNavigateToCollection: () => void;
   onOpenDrawer: () => void;
-  onOpenOwnerPin: () => void;
+  onOpenOwnerPin?: () => void;
   customLogo: string | null;
   customChibi: string | null;
   tickerConfig?: TickerConfig;
@@ -25,11 +25,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   tickerConfig,
 }) => {
   const [copied, setCopied] = useState(false);
-  const clickCountRef = useRef(0);
-  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const copyToClipboard = async () => {
-    const publicUrl = getPublicShareUrl();
+    const publicUrl = await getShortShareUrl();
     let copiedSuccess = false;
 
     // 1. Try modern clipboard API
@@ -67,10 +65,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const handleShare = async () => {
-    const publicUrl = getPublicShareUrl();
+    const publicUrl = await getShortShareUrl();
     const shareData = {
-      title: 'SINKI Parfums - Define your presence',
-      text: 'SINKI Parfums: Aroma yang di tinggal lebih lama dari pada kesan pertama.',
+      title: 'Sinki parfum | Define your presence',
+      text: 'Sinki parfum | Define your presence',
       url: publicUrl,
     };
 
@@ -101,22 +99,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     onShowToast(`Membuka ${platform === 'instagram' ? 'Instagram' : 'TikTok'} SINKI...`);
   };
 
-  // Secret door: Tap emblem 5 times to open owner mode
-  const handleEmblemClick = () => {
-    clickCountRef.current += 1;
-    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-    clickTimerRef.current = setTimeout(() => {
-      clickCountRef.current = 0;
-    }, 1800);
-
-    if (clickCountRef.current >= 5) {
-      clickCountRef.current = 0;
-      onOpenOwnerPin();
-      return;
-    }
-
-    onShowToast("SINKI Parfums - Haute Parfumerie");
-  };
 
   const currentTicker = tickerConfig || getStoredTicker();
   const activeFont = TICKER_FONTS.find((f) => f.id === currentTicker.font) || TICKER_FONTS[0];
@@ -151,13 +133,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* LAYER 1 (TERDEPAN / Z-20): TOP BAR MELAYANG ELEGAN */}
       <header className="relative z-20 flex items-center justify-between pt-0 pb-1 shrink-0">
-        {/* Top-Left: Clean Floating Brand Emblem (Pilihan A - Tanpa Kotak) */}
+        {/* Top-Left: Clean Floating Brand Emblem (Murni Identitas Visual Elegan) */}
         <div
-          onClick={handleEmblemClick}
-          className="group cursor-pointer flex items-center gap-2 select-none active:scale-95 transition-transform py-0.5 px-0.5"
+          className="flex items-center gap-2 select-none py-0.5 px-0.5"
           title="SINKI Parfums"
         >
-          <div className="relative w-8 h-8 flex items-center justify-center group-hover:scale-105 transition-transform">
+          <div className="relative w-8 h-8 flex items-center justify-center">
             {customLogo ? (
               <img
                 src={customLogo}
@@ -195,7 +176,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </svg>
             )}
           </div>
-          <span className="text-[10.5px] font-mono tracking-widest text-slate-200 group-hover:text-[#F0DFB6] font-bold uppercase transition-colors drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+          <span className="text-[10.5px] font-mono tracking-widest text-slate-200 font-bold uppercase drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
             SINKI
           </span>
         </div>

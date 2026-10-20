@@ -1,19 +1,24 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Home, LayoutGrid, ShoppingBag, MessageSquareText } from 'lucide-react';
 
 export type TabType = 'home' | 'collection' | 'top11' | 'order' | 'review';
 
 // HAUTE PARFUMERIE: The Golden Nectar Drop (Goutte d'Or - Tetesan Esens Parfum Emas)
-const GoldenNectarDropIcon: React.FC<{ isActive: boolean }> = ({ isActive }) => (
+const GoldenNectarDropIcon: React.FC<{ isPulsing: boolean; isActive: boolean }> = ({
+  isPulsing,
+  isActive,
+}) => (
   <svg
-    width="19"
-    height="19"
+    width="18"
+    height="18"
     viewBox="0 0 24 24"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
-    className={`transition-all duration-200 ${
-      isActive
-        ? 'text-[#F0DFB6] drop-shadow-[0_2px_8px_rgba(223,183,108,0.6)]'
+    className={`transition-all duration-700 ease-out ${
+      isPulsing
+        ? 'text-[#F8EBCB]'
+        : isActive
+        ? 'text-white drop-shadow-[0_1px_4px_rgba(255,255,255,0.2)]'
         : 'text-slate-400 group-hover:text-slate-200'
     }`}
     aria-hidden="true"
@@ -22,11 +27,11 @@ const GoldenNectarDropIcon: React.FC<{ isActive: boolean }> = ({ isActive }) => 
     <path
       d="M12 2.8C11.3 3.9 5.8 12.2 5.8 15.8C5.8 19.2 8.6 22 12 22C15.4 22 18.2 19.2 18.2 15.8C18.2 12.2 12.7 3.9 12 2.8Z"
       stroke="currentColor"
-      strokeWidth={isActive ? 2.2 : 1.8}
+      strokeWidth={isPulsing || isActive ? 2.3 : 1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
-      fill={isActive ? "currentColor" : "none"}
-      fillOpacity={isActive ? "0.15" : "0"}
+      fill={isPulsing ? 'currentColor' : isActive ? 'currentColor' : 'none'}
+      fillOpacity={isPulsing ? '0.2' : isActive ? '0.12' : '0'}
     />
   </svg>
 );
@@ -42,6 +47,32 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   onTabChange,
   orderCount = 0,
 }) => {
+  // CARA 1: Efek Sentuhan/Klik Saja (Smooth Fade-Out 750ms + Gradasi Hitam-Emas)
+  const [pulsingTab, setPulsingTab] = useState<TabType | null>(null);
+  const pulseTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pulseTimerRef.current) {
+        clearTimeout(pulseTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleTabClick = (tabId: TabType) => {
+    // Picu animasi kapsul emas menyala seketika
+    setPulsingTab(tabId);
+    if (pulseTimerRef.current) {
+      clearTimeout(pulseTimerRef.current);
+    }
+    // Kapsul memudar perlahan & halus setelah 750ms
+    pulseTimerRef.current = setTimeout(() => {
+      setPulsingTab(null);
+    }, 750);
+
+    onTabChange(tabId);
+  };
+
   const navItems = [
     {
       id: 'home' as TabType,
@@ -71,89 +102,93 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   ];
 
   return (
-    <nav 
+    <nav
       aria-label="Navigasi Utama SINKI"
       className="fixed bottom-2.5 left-0 right-0 z-50 max-w-md mx-auto px-3.5 pointer-events-none select-none"
     >
-      <div className="pointer-events-auto relative rounded-[26px] bg-[#0d0f18]/92 backdrop-blur-2xl border border-white/12 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_20px_rgba(197,160,89,0.08)] px-2 py-1.5 flex items-center justify-between">
+      {/* Wadah Bilah Navigasi: Pendaran emas luar dihapus total (bebas silau, pure deep noir shadow) */}
+      <div className="pointer-events-auto relative rounded-[26px] bg-[#0d0f18]/95 backdrop-blur-2xl border border-white/12 shadow-[0_14px_45px_rgba(0,0,0,0.95)] p-1.5 flex items-center justify-between gap-1">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
+          const isPulsing = pulsingTab === item.id;
           const isCenterpiece = item.id === 'top11';
 
-          // CENTERPIECE: Top 11 (Clean & In-Line with other menu tabs, no extra light effects)
+          // CENTERPIECE: Top 11
           if (isCenterpiece) {
             return (
               <button
                 key={item.id}
-                onClick={() => onTabChange(item.id)}
-                className="relative flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all duration-200 group active:scale-95 focus:outline-none"
+                onClick={() => handleTabClick(item.id)}
+                className={`relative flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-700 ease-out group active:scale-95 focus:outline-none border ${
+                  isPulsing
+                    ? 'bg-gradient-to-r from-[#382c16] via-[#8c6b29] to-[#D4AF57] text-[#F8EBCB] border-[#D4AF57]/60 shadow-[0_2px_12px_rgba(212,175,87,0.3)] scale-[0.98]'
+                    : 'bg-transparent hover:bg-white/5 border-transparent'
+                }`}
                 aria-label="Koleksi Top 11 SINKI"
               >
-                {/* Parisian Spotlight Aura when Active */}
-                {isActive && (
-                  <span 
-                    className="absolute inset-0 bg-gradient-to-b from-[#DFB76C]/15 to-transparent rounded-2xl pointer-events-none border border-[#DFB76C]/25"
-                    aria-hidden="true"
-                  />
-                )}
-
-                {/* Icon Container with Golden Nectar Droplet (Sejajar dengan icon menu lain) */}
+                {/* Icon Container with Golden Nectar Droplet */}
                 <div className="relative">
-                  <GoldenNectarDropIcon isActive={isActive} />
+                  <GoldenNectarDropIcon isPulsing={isPulsing} isActive={isActive} />
                 </div>
 
-                {/* Unified Label: TOP 11 (Sejajar 100% dengan Home, Collection, Order, Review) */}
+                {/* Label: TOP 11 */}
                 <span
-                  className={`text-[9.5px] font-display tracking-wider uppercase mt-1 transition-colors duration-200 whitespace-nowrap ${
-                    isActive
-                      ? 'font-black text-[#F0DFB6]'
+                  className={`text-[9.5px] font-display tracking-wider uppercase mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
+                    isPulsing
+                      ? 'font-black text-[#F8EBCB]'
+                      : isActive
+                      ? 'font-extrabold text-white drop-shadow-sm'
                       : 'font-semibold text-slate-400 group-hover:text-slate-200'
                   }`}
                 >
                   {item.label}
                 </span>
 
-                {/* Active Golden Gem Indicator Dot (Sejajar dengan tab lain) */}
-                {isActive && (
-                  <span className="w-1.5 h-0.5 rounded-full bg-gradient-to-r from-[#DFB76C] to-[#F0DFB6] mt-0.5 shadow-[0_0_6px_rgba(223,183,108,0.8)]" />
+                {/* Indikator Halus Tenang Tab Aktif (Hanya titik tipis, tanpa kapsul emas tebal) */}
+                {isActive && !isPulsing && (
+                  <span className="w-1.5 h-0.5 rounded-full bg-white/70 mt-0.5" />
                 )}
               </button>
             );
           }
 
-          // STANDARD TABS (Home, Collection, Order, Review) with Parisian Spotlight Aura
+          // STANDARD TABS (Home, Collection, Order, Review)
           const Icon = item.icon;
           if (!Icon) return null;
 
           return (
             <button
               key={item.id}
-              onClick={() => onTabChange(item.id)}
-              className="relative flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all duration-200 group active:scale-95 focus:outline-none"
+              onClick={() => handleTabClick(item.id)}
+              className={`relative flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-700 ease-out group active:scale-95 focus:outline-none border ${
+                isPulsing
+                  ? 'bg-gradient-to-r from-[#382c16] via-[#8c6b29] to-[#D4AF57] text-[#F8EBCB] border-[#D4AF57]/60 shadow-[0_2px_12px_rgba(212,175,87,0.3)] scale-[0.98]'
+                  : 'bg-transparent hover:bg-white/5 border-transparent'
+              }`}
             >
-              {/* Parisian Spotlight Aura when Active */}
-              {isActive && (
-                <span 
-                  className="absolute inset-0 bg-gradient-to-b from-[#DFB76C]/15 to-transparent rounded-2xl pointer-events-none border border-[#DFB76C]/25"
-                  aria-hidden="true"
-                />
-              )}
-
               {/* Icon Container */}
               <div className="relative">
                 <Icon
-                  size={19}
-                  className={`transition-all duration-200 ${
-                    isActive
-                      ? 'text-[#F0DFB6] drop-shadow-[0_2px_8px_rgba(223,183,108,0.6)]'
+                  size={18}
+                  className={`transition-all duration-700 ease-out ${
+                    isPulsing
+                      ? 'text-[#F8EBCB]'
+                      : isActive
+                      ? 'text-white drop-shadow-[0_1px_4px_rgba(255,255,255,0.2)]'
                       : 'text-slate-400 group-hover:text-slate-200'
                   }`}
-                  strokeWidth={isActive ? 2.2 : 1.8}
+                  strokeWidth={isPulsing || isActive ? 2.3 : 1.8}
                 />
 
                 {/* Order Count Badge */}
                 {typeof item.count === 'number' && item.count > 0 && (
-                  <span className="absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-0.5 flex items-center justify-center text-[9px] font-black text-slate-950 bg-[#DFB76C] rounded-full leading-none shadow-sm">
+                  <span
+                    className={`absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-0.5 flex items-center justify-center text-[9px] font-black rounded-full leading-none shadow-sm ${
+                      isPulsing
+                        ? 'bg-[#D4AF57] text-slate-950'
+                        : 'bg-[#D4AF57] text-slate-950'
+                    }`}
+                  >
                     {item.count}
                   </span>
                 )}
@@ -161,18 +196,20 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
               {/* Label */}
               <span
-                className={`text-[9.5px] font-display tracking-wider uppercase mt-1 transition-colors duration-200 whitespace-nowrap ${
-                  isActive
-                    ? 'font-black text-[#F0DFB6]'
+                className={`text-[9.5px] font-display tracking-wider uppercase mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
+                  isPulsing
+                    ? 'font-black text-[#F8EBCB]'
+                    : isActive
+                    ? 'font-extrabold text-white drop-shadow-sm'
                     : 'font-semibold text-slate-400 group-hover:text-slate-200'
                 }`}
               >
                 {item.label}
               </span>
 
-              {/* Active Golden Gem Indicator Dot */}
-              {isActive && (
-                <span className="w-1.5 h-0.5 rounded-full bg-gradient-to-r from-[#DFB76C] to-[#F0DFB6] mt-0.5 shadow-[0_0_6px_rgba(223,183,108,0.8)]" />
+              {/* Indikator Halus Tenang Tab Aktif (Hanya titik tipis, tanpa kapsul emas tebal) */}
+              {isActive && !isPulsing && (
+                <span className="w-1.5 h-0.5 rounded-full bg-white/70 mt-0.5" />
               )}
             </button>
           );
@@ -181,3 +218,5 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     </nav>
   );
 };
+
+
