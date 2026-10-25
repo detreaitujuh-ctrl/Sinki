@@ -266,20 +266,17 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
               const theme = getCategoryColor(perfume.category);
               const isFav = favorites.includes(perfume.id);
 
-              // Alternating floating animation: kolom kiri naik, kolom kanan turun dengan jeda baris halus
-              const isLeftColumn = idx % 2 === 0;
-              const floatClass = isLeftColumn ? 'animate-sinki-float-up' : 'animate-sinki-float-down';
-              const rowIdx = Math.floor(idx / 2);
-              const animationDelay = `${(rowIdx * 0.4) % 2.4}s`;
+              // Boutique Shimmer: Jeda kilau cahaya emas beruntun agar tampil dinamis berkelas
+              const shimmerDelay = `${(idx * 0.4) % 4.8}s`;
 
               return (
                 <div
                   key={perfume.id}
-                  style={{ animationDelay }}
-                  className={`group relative flex flex-col justify-between p-3 rounded-2xl bg-gradient-to-b from-[#181a28]/95 to-[#12131e]/95 hover:from-[#1e2235] hover:to-[#161824] border border-white/10 hover:border-[#C5A059]/40 transition-all duration-300 backdrop-blur-md ${floatClass}`}
+                  style={{ '--shimmer-delay': shimmerDelay } as React.CSSProperties}
+                  className="group luxury-card-sheen relative flex flex-col justify-between p-3.5 rounded-2xl bg-gradient-to-b from-[#181a28]/95 to-[#12131e]/95 border border-white/10 hover:border-[#DFB76C]/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300"
                 >
                   {/* Top card bar: Category badge + Favorite heart */}
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-2.5">
                     <span
                       className={`text-[8.5px] font-black uppercase tracking-wider py-0.5 px-2 rounded-md ${theme.badge} shadow-sm`}
                     >
@@ -298,26 +295,26 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                     </button>
                   </div>
 
-                  {/* Bottle Label & Varian Name */}
-                  <div className="space-y-1.5 mb-2.5">
+                  {/* Bottle Label & Varian Name - Stabil, Super Rapi & Jelas */}
+                  <div className="space-y-1.5 mb-3">
                     <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest font-semibold block">
                       Eau De Parfum
                     </span>
 
-                    <h3 className="font-display text-[12.5px] sm:text-[13.5px] font-black text-white group-hover:text-[#F0DFB6] transition-colors leading-snug line-clamp-2 min-h-[34px] drop-shadow-sm">
+                    <h3 className="font-display text-[13px] sm:text-[14px] font-bold text-white group-hover:text-[#F0DFB6] transition-colors leading-snug line-clamp-2 min-h-[36px] drop-shadow-sm tracking-wide">
                       {perfume.name}
                     </h3>
 
-                    <p className="text-[10px] text-slate-300 font-medium italic line-clamp-2 leading-tight min-h-[24px]">
+                    <p className="text-[10px] text-slate-300 font-normal leading-relaxed line-clamp-2 min-h-[28px]">
                       {perfume.tagline}
                     </p>
 
                     {/* Accords tags with High Contrast Crisp Badges */}
-                    <div className="flex flex-wrap gap-1 pt-0.5">
-                      {perfume.accords.slice(0, 2).map((accord, idx) => (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {perfume.accords.slice(0, 2).map((accord, aIdx) => (
                         <span
-                          key={idx}
-                          className="text-[8.5px] py-0.5 px-1.5 rounded-md bg-white/10 text-slate-200 border border-white/15 font-semibold"
+                          key={aIdx}
+                          className="text-[8.5px] py-0.5 px-1.5 rounded-md bg-white/[0.08] text-slate-200 border border-white/10 font-medium"
                         >
                           {accord}
                         </span>
@@ -332,10 +329,10 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                         onSelectPerfumeToOrder(perfume);
                       }
                     }}
-                    className="w-full mt-auto py-1.5 px-2 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 text-[10px] font-black flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm hover:shadow-[0_2px_10px_rgba(197,160,89,0.25)] text-center"
+                    className="w-full mt-auto py-1.5 px-2 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:brightness-95 text-slate-950 text-[10.5px] font-black flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] shadow-sm hover:shadow-[0_2px_12px_rgba(223,183,108,0.3)] text-center cursor-pointer"
                     title={`Pesan parfum ${perfume.name}`}
                   >
-                    <ShoppingBag size={11} className="shrink-0" />
+                    <ShoppingBag size={12} className="shrink-0" />
                     <span>Pesan Sekarang</span>
                   </button>
                 </div>
