@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Home, LayoutGrid, ShoppingBag, MessageSquareText } from 'lucide-react';
+import { getStoredTopPerfumes, fetchTopPerfumesFromServer } from '../utils/topPerfumesStorage';
 
 export type TabType = 'home' | 'collection' | 'top11' | 'order' | 'review';
 
@@ -51,8 +52,26 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   const [pulsingTab, setPulsingTab] = useState<TabType | null>(null);
   const pulseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [topCount, setTopCount] = useState<number>(() => getStoredTopPerfumes().length);
+
   useEffect(() => {
+    // Sinkronisasi jumlah varian Top dari server / cloud
+    fetchTopPerfumesFromServer().then((items) => {
+      if (items && Array.isArray(items)) {
+        setTopCount(items.length);
+      }
+    });
+
+    const handleTopUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setTopCount(e.detail.length);
+      } else {
+        setTopCount(getStoredTopPerfumes().length);
+      }
+    };
+    window.addEventListener('sinki_top_perfumes_updated', handleTopUpdate);
     return () => {
+      window.removeEventListener('sinki_top_perfumes_updated', handleTopUpdate);
       if (pulseTimerRef.current) {
         clearTimeout(pulseTimerRef.current);
       }
@@ -86,7 +105,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     },
     {
       id: 'top11' as TabType,
-      label: 'Top 11',
+      label: `Top ${topCount}`,
     },
     {
       id: 'order' as TabType,

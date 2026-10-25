@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Crown, MessageCircle, ChevronLeft, ChevronRight, LayoutGrid, Clock, Flame, ArrowLeft, Heart } from 'lucide-react';
-import { TOP_11_DATA, Top11Item } from '../data/top11';
+import { MessageCircle, ChevronLeft, ChevronRight, LayoutGrid, Clock, Flame, ArrowLeft, Heart } from 'lucide-react';
+import { Top11Item } from '../data/top11';
+import { getStoredTopPerfumes, fetchTopPerfumesFromServer } from '../utils/topPerfumesStorage';
 import { PerfumeBottleVisual, loadedPhotoSet } from './PerfumeBottleVisual';
 import { PricingConfig, DEFAULT_PRICING, getStoredPricing } from '../utils/pricingStorage';
 import { openWhatsAppDirect } from '../utils/whatsappHelper';
@@ -20,38 +21,34 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
   isActive = false,
   pricing,
 }) => {
+  const [topItems, setTopItems] = useState<Top11Item[]>(getStoredTopPerfumes);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'spotlight' | 'grid'>('spotlight');
   const fitMode = 'cover'; // Dikunci permanen ke Mode Penuh sesuai proporsi kotak
 
-  // Swipe Gesture Ref untuk kemudahan geser botol dengan jempol
-  const bottleTouchStartX = useRef<number | null>(null);
-  const bottleTouchEndX = useRef<number | null>(null);
-
-  const handleBottleTouchStart = (e: React.TouchEvent) => {
-    bottleTouchStartX.current = e.targetTouches[0].clientX;
-    bottleTouchEndX.current = null;
-  };
-
-  const handleBottleTouchMove = (e: React.TouchEvent) => {
-    bottleTouchEndX.current = e.targetTouches[0].clientX;
-  };
-
-  const handleBottleTouchEnd = () => {
-    if (bottleTouchStartX.current === null || bottleTouchEndX.current === null) return;
-    const diff = bottleTouchStartX.current - bottleTouchEndX.current;
-    if (Math.abs(diff) > 40) {
-      if (diff > 0) {
-        handleNext();
-      } else {
-        handlePrev();
+  // Ambil data terbaru dari server / Supabase Cloud saat halaman dibuka atau aktif
+  useEffect(() => {
+    fetchTopPerfumesFromServer().then((items) => {
+      if (items && Array.isArray(items) && items.length > 0) {
+        setTopItems(items);
       }
-    }
-    bottleTouchStartX.current = null;
-    bottleTouchEndX.current = null;
-  };
+    });
+  }, [isActive]);
 
-  // Setiap kali masuk ke halaman Top 11, otomatis kembali segar ke Juara #1
+  // Sinkronisasi data parfum teratas saat ada penambahan/edit dari admin
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setTopItems(e.detail);
+      } else {
+        setTopItems(getStoredTopPerfumes());
+      }
+    };
+    window.addEventListener('sinki_top_perfumes_updated', handleUpdate);
+    return () => window.removeEventListener('sinki_top_perfumes_updated', handleUpdate);
+  }, []);
+
+  // Setiap kali masuk ke halaman Top, otomatis kembali segar ke Juara 1
   useEffect(() => {
     if (isActive) {
       setCurrentIndex(0);
@@ -71,9 +68,11 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
 
   // Preload foto botol saat ini, sebelum, dan sesudahnya secara prioritas tinggi
   useEffect(() => {
-    const nextIdx = currentIndex < TOP_11_DATA.length - 1 ? currentIndex + 1 : 0;
-    const prevIdx = currentIndex > 0 ? currentIndex - 1 : TOP_11_DATA.length - 1;
-    [TOP_11_DATA[currentIndex], TOP_11_DATA[nextIdx], TOP_11_DATA[prevIdx]].forEach((item) => {
+    if (topItems.length === 0) return;
+    const nextIdx = currentIndex < topItems.length - 1 ? currentIndex + 1 : 0;
+    const prevIdx = currentIndex > 0 ? currentIndex - 1 : topItems.length - 1;
+    [topItems[currentIndex], topItems[nextIdx], topItems[prevIdx]].forEach((item) => {
+      if (!item) return;
       const url = top11Photos[item.id];
       if (url) {
         const img = new Image();
@@ -81,7 +80,8 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
         img.src = url;
       }
     });
-  }, [currentIndex, top11Photos]);
+  }, [currentIndex, top11Photos, topItems]);
+
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('sinki_top11_favorites');
@@ -91,14 +91,14 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
     }
   });
 
-  const currentItem = TOP_11_DATA[currentIndex];
+  const currentItem = topItems[currentIndex] || topItems[0];
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev < TOP_11_DATA.length - 1 ? prev + 1 : 0));
+    setCurrentIndex((prev) => (prev < topItems.length - 1 ? prev + 1 : 0));
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : TOP_11_DATA.length - 1));
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : topItems.length - 1));
   };
 
   const toggleFavorite = (id: string, name: string) => {
@@ -121,7 +121,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
   const currentPremiumRate = activePricing.premiumRatePerMl || DEFAULT_PRICING.premiumRatePerMl;
   const currentMykonosRate = activePricing.mykonosRatePerMl || DEFAULT_PRICING.mykonosRatePerMl;
 
-  // Option B: Mykonos items (Top #1, #2) use Mykonos rate (Rp 3.000/ml), all other items (Top #3 - #11) use Premium rate (Rp 4.000/ml)
+  // Option B: Mykonos items (Top 1, 2) use Mykonos rate (Rp 3.000/ml), all other items use Premium rate (Rp 4.000/ml)
   const getItemPricingInfo = (item: Top11Item, size: number) => {
     const isMykonos = item.id === 'top-1' || item.id === 'top-2' || item.name.toLowerCase().includes('mykonos');
     const ratePerMl = isMykonos ? currentMykonosRate : currentPremiumRate;
@@ -140,15 +140,15 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
     const info = getItemPricingInfo(item, sizeToUse);
 
     const message = [
-      `*PESANAN PARFUM SINKI - TOP 11*`,
+      `*PESANAN PARFUM SINKI - BESTSELLER*`,
       `------------------------------------------`,
-      `• Varian: *Top #${item.rank} - ${item.name}*`,
+      `• Varian: *Top ${item.rank} - ${item.name}*`,
       `• Tipe: *${item.type}*`,
       `• Kategori: *${info.categoryName} (Rp ${info.ratePerMl.toLocaleString('id-ID')}/ml)*`,
       `• Ukuran Botol: *${sizeToUse}ml*`,
       `• Total Harga: *Rp ${info.totalPrice.toLocaleString('id-ID')}*`,
       `------------------------------------------`,
-      `Halo SINKI Parfums, saya ingin memesan parfum Top #${item.rank} di atas. Mohon info ketersediaan & cara pengirimannya ya. Terima kasih!`,
+      `Halo SINKI Parfums, saya ingin memesan parfum Top ${item.rank} di atas. Mohon info ketersediaan & cara pengirimannya ya. Terima kasih!`,
     ].join('\n');
 
     onShowToast(`Menghubungkan langsung ke WhatsApp SINKI...`);
@@ -177,12 +177,9 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
             >
               <ArrowLeft size={16} />
             </button>
-            <div className="flex items-center gap-1.5">
-              <Crown size={16} className="text-[#C5A059]" />
-              <h2 className="font-display text-sm font-extrabold text-white tracking-wider uppercase">
-                Top 11 Parfum
-              </h2>
-            </div>
+            <h2 className="font-display text-sm font-extrabold text-white tracking-wider uppercase">
+              Top {topItems.length} Parfum
+            </h2>
           </div>
 
           {/* Toggle View Mode: Spotlight vs Grid */}
@@ -211,9 +208,9 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
           </div>
         </div>
 
-        {/* Quick Rank Number Pills */}
+        {/* Quick Rank Number Pills (Clean numbers 1, 2, 3...) */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2.5 pb-0.5">
-          {TOP_11_DATA.map((item, idx) => {
+          {topItems.map((item, idx) => {
             const isActive = viewMode === 'spotlight' && currentIndex === idx;
 
             return (
@@ -229,7 +226,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                     : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
                 }`}
               >
-                #{item.rank}
+                {item.rank}
               </button>
             );
           })}
@@ -276,17 +273,14 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                   </button>
 
                   <span className="text-[10.5px] font-mono font-bold text-[#DFB76C] bg-white/10 px-2.5 py-0.5 rounded-md border border-white/15 shadow-sm">
-                    {currentIndex + 1} / {TOP_11_DATA.length}
+                    {currentIndex + 1} / {topItems.length}
                   </span>
                 </div>
               </div>
 
-              {/* Perfume Bottle Visual with Navigation Arrows & Touch Swipe Support */}
+              {/* Perfume Bottle Visual with Navigation Arrows */}
               <div
-                onTouchStart={handleBottleTouchStart}
-                onTouchMove={handleBottleTouchMove}
-                onTouchEnd={handleBottleTouchEnd}
-                className="relative w-full h-56 flex items-center justify-center my-1 select-none cursor-grab active:cursor-grabbing"
+                className="relative w-full h-56 flex items-center justify-center my-1 select-none"
               >
                 {/* Prev Arrow */}
                 <button
@@ -317,9 +311,9 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                 </button>
               </div>
 
-              {/* 11 Dots Pagination Carousel */}
+              {/* Dots Pagination Carousel */}
               <div className="flex items-center justify-center gap-1.5 py-1 mb-1.5 select-none">
-                {TOP_11_DATA.map((item, idx) => {
+                {topItems.map((item, idx) => {
                   const isActiveDot = currentIndex === idx;
                   return (
                     <button
@@ -331,7 +325,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                           ? 'w-5 bg-gradient-to-r from-[#DFB76C] to-[#C5A059] shadow-[0_0_8px_rgba(223,183,108,0.6)]'
                           : 'w-1.5 bg-white/25 hover:bg-white/45'
                       }`}
-                      title={`Peringkat #${idx + 1} - ${item.name}`}
+                      title={`Peringkat ${idx + 1} - ${item.name}`}
                       aria-label={`Peringkat ${idx + 1}`}
                     />
                   );
@@ -475,7 +469,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                     >
                       <MessageCircle size={15} />
                       <span>
-                        Pesan Top #{currentItem.rank} ({selectedBottleSize}ml • Rp {pricingInfo.totalPrice.toLocaleString('id-ID')})
+                        Pesan Top {currentItem.rank} ({selectedBottleSize}ml • Rp {pricingInfo.totalPrice.toLocaleString('id-ID')})
                       </span>
                     </button>
                   </div>
@@ -493,23 +487,23 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
           }`}
         >
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-            {TOP_11_DATA.map((item) => {
+            {topItems.map((item) => {
               const isFav = favorites.includes(item.id);
 
               return (
                 <div
                   key={item.id}
                   onClick={() => {
-                    const idx = TOP_11_DATA.findIndex((d) => d.id === item.id);
+                    const idx = topItems.findIndex((d) => d.id === item.id);
                     if (idx !== -1) setCurrentIndex(idx);
                     setViewMode('spotlight');
                   }}
                   className="relative flex flex-col justify-between p-3 rounded-2xl bg-gradient-to-b from-[#1c1f32] to-[#141626] hover:from-[#22263d] hover:to-[#171a2c] border border-white/10 hover:border-[#C5A059]/50 shadow-[0_8px_25px_rgba(0,0,0,0.55)] transition-all cursor-pointer active:scale-[0.99]"
                 >
-                  {/* Top Row: Rank Tag + Heart */}
+                  {/* Top Row: Rank Tag + Heart (Clean Number 1, 2, 3...) */}
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded-md bg-white/10 text-zinc-200 border border-white/15 shadow-sm">
-                      #{item.rank}
+                      {item.rank}
                     </span>
                     <button
                       onClick={(e) => {

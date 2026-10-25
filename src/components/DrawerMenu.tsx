@@ -3,12 +3,19 @@ import { getStoredArticles, ArticleItem } from '../utils/articleStorage';
 import React from 'react';
 import { X, LayoutGrid, MessageCircle, ShoppingBag, ExternalLink } from 'lucide-react';
 import { openWhatsAppDirect } from '../utils/whatsappHelper';
+import {
+  SocialLinks,
+  getStoredSocialLinks,
+  extractTikTokHandle,
+  extractInstagramHandle,
+} from '../utils/socialStorage';
 
 interface DrawerMenuProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigateToCollection: () => void;
   onOpenDimensiSinki?: () => void;
+  socialLinks?: SocialLinks;
 }
 
 export const DrawerMenu: React.FC<DrawerMenuProps> = ({
@@ -16,7 +23,9 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
   onClose,
   onNavigateToCollection,
   onOpenDimensiSinki,
+  socialLinks: propSocialLinks,
 }) => {
+  const currentSocial = propSocialLinks || getStoredSocialLinks();
   const [isJournalOpen, setIsJournalOpen] = React.useState(false);
   const [selectedArticle, setSelectedArticle] = React.useState<ArticleItem | null>(null);
   const articles = getStoredArticles();
@@ -129,22 +138,22 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
             </span>
 
             <a
-              href="https://www.instagram.com/sinki_official/"
+              href={currentSocial.instagram}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.05] hover:bg-pink-500/15 border border-white/10 text-xs text-white hover:text-pink-300 transition-colors font-medium"
             >
-              <span>Instagram @Sinki_official</span>
+              <span>Instagram {extractInstagramHandle(currentSocial.instagram)}</span>
               <ExternalLink size={12} />
             </a>
 
             <a
-              href="https://www.tiktok.com/@sinki_official"
+              href={currentSocial.tiktok}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.02] hover:bg-cyan-500/10 border border-white/5 text-xs text-slate-300 hover:text-cyan-300 transition-colors"
             >
-              <span>TikTok @Sinki_official</span>
+              <span>TikTok {extractTikTokHandle(currentSocial.tiktok)}</span>
               <ExternalLink size={12} />
             </a>
           </div>

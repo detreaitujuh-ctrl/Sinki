@@ -92,6 +92,12 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
+  // Prevent browser caching of dynamic modules and HTML in dev mode
+  if (req.url === '/' || req.url.startsWith('/src/') || req.url.includes('.html')) {
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.header('Pragma', 'no-cache');
+    res.header('Expires', '0');
+  }
   next();
 });
 
@@ -103,9 +109,74 @@ const ASSETS_FILE = path.join(DATA_DIR, 'assets.json');
 const REVIEWS_FILE = path.join(DATA_DIR, 'reviews.json');
 const TICKER_FILE = path.join(DATA_DIR, 'ticker_config.json');
 const PERFUMES_FILE = path.join(DATA_DIR, 'perfumes_catalog.json');
+const SOCIAL_FILE = path.join(DATA_DIR, 'social_links.json');
+const TOP_PERFUMES_FILE = path.join(DATA_DIR, 'top_perfumes.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function getTopPerfumes(): any[] {
+  if (fs.existsSync(TOP_PERFUMES_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(TOP_PERFUMES_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    } catch {}
+  }
+  return [];
+}
+
+async function persistTopPerfumes(items: any[]) {
+  try {
+    fs.writeFileSync(TOP_PERFUMES_FILE, JSON.stringify(items, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Error writing local top perfumes file:', e);
+  }
+  try {
+    await supabase.storage.from(SUPABASE_BUCKET).upload('top_perfumes.json', JSON.stringify(items, null, 2), {
+      contentType: 'application/json',
+      upsert: true,
+    });
+  } catch (err) {
+    console.warn('[Supabase Sync Notice] top_perfumes.json:', err);
+  }
+}
+
+const DEFAULT_SOCIAL_DATA = {
+  tiktok: 'https://www.tiktok.com/@sinki_official',
+  instagram: 'https://www.instagram.com/sinki_official',
+  shopee: 'https://shopee.co.id',
+  tokopedia: 'https://tokopedia.com',
+  whatsapp: 'https://wa.me/6281398677610',
+  updatedAt: new Date().toISOString(),
+};
+
+function getSocialLinks() {
+  if (fs.existsSync(SOCIAL_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(SOCIAL_FILE, 'utf-8'));
+      if (data && typeof data === 'object') {
+        return { ...DEFAULT_SOCIAL_DATA, ...data };
+      }
+    } catch {}
+  }
+  return DEFAULT_SOCIAL_DATA;
+}
+
+async function persistSocialLinks(links: any) {
+  try {
+    fs.writeFileSync(SOCIAL_FILE, JSON.stringify(links, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Error writing local social file:', e);
+  }
+  try {
+    await supabase.storage.from(SUPABASE_BUCKET).upload('social_links.json', JSON.stringify(links, null, 2), {
+      contentType: 'application/json',
+      upsert: true,
+    });
+  } catch (err) {
+    console.warn('[Supabase Sync Notice] social_links.json:', err);
+  }
 }
 
 let cachedTickerConfig: any = null;
@@ -128,52 +199,7 @@ function getTickerConfig(): { text: string; font: string; updatedAt?: string } {
   return { text: 'Min. Rp150.000, gratis ongkir se-Jabodetabek! 😍', font: 'cormorant' };
 }
 
-const INITIAL_4_REVIEWS = [
-  {
-    id: 'rev-1',
-    name: 'Rian Ardiansyah',
-    emoji: '😍',
-    emojiLabel: 'Sangat Puas & Mewah',
-    variant: 'Mykonos Monaco Royale',
-    comment:
-      'Gila sih wanginya beneran mewah banget! Semprot pagi sebelum ngantor, malem pas pulang masih nempel kuat di kemeja. Rekan kerja cowo & cewe pada nanya pake parfum apa. Auto langganan terus di SINKI!',
-    date: 'Hari ini',
-    likes: 42,
-  },
-  {
-    id: 'rev-2',
-    name: 'Clarissa Putri',
-    emoji: '🥰',
-    emojiLabel: 'Suka Parah',
-    variant: 'Mykonos Isfahan',
-    comment:
-      'Rose oud-nya berkelas parah, nggak bikin pusing sama sekali. Wanginya kalem tapi ninggalin jejak harum pas lewat. Semprotan botolnya juga halus banget kayak parfum jutaan. Puas pol!',
-    date: 'Kemarin',
-    likes: 38,
-  },
-  {
-    id: 'rev-3',
-    name: 'Bagus Wicaksono',
-    emoji: '🔥',
-    emojiLabel: 'Tahan Seharian',
-    variant: 'Mykonos French Cognac',
-    comment:
-      'Packingnya tebel banget bubble wrap berlapis jadi botol kaca aman 100%. Aroma cognac dan kayu manisnya hangat maskulin elegan, cocok banget buat date night atau acara formal.',
-    date: '2 hari lalu',
-    likes: 29,
-  },
-  {
-    id: 'rev-4',
-    name: 'Nadia Safitri',
-    emoji: '💎',
-    emojiLabel: 'Wangi Mewah',
-    variant: 'Mykonos Blanche De Sinki',
-    comment:
-      'Buat yang suka wangi clean, fresh, aroma baju bersih mewah ala hotel mewah kelas dunia wajib coba varian ini. Lembut banget ga nusuk hidung. Pasangan suka banget nyiumin terus.',
-    date: '3 hari lalu',
-    likes: 25,
-  },
-];
+const INITIAL_4_REVIEWS: any[] = [];
 
 // Konfigurasi Supabase Storage (Metode A: Upsert/Overwrite Otomatis - Server Side Only)
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://tsxclttisxnmvdkwziqx.supabase.co';
@@ -186,14 +212,36 @@ const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'sinki-media';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+function deduplicateServerReviews(list: any[]): any[] {
+  if (!Array.isArray(list)) return [];
+  const seenIds = new Set<string>();
+  const seenContent = new Set<string>();
+  const result: any[] = [];
+
+  for (const item of list) {
+    if (!item) continue;
+    const name = (item.name || '').trim().toLowerCase();
+    const comment = (item.comment || '').trim().toLowerCase();
+    const contentKey = `${name}:::${comment}`;
+
+    if (item.id && seenIds.has(item.id)) continue;
+    if (name && comment && seenContent.has(contentKey)) continue;
+
+    if (item.id) seenIds.add(item.id);
+    if (name && comment) seenContent.add(contentKey);
+    result.push(item);
+  }
+  return result;
+}
+
 function getReviews(): any[] {
   if (fs.existsSync(REVIEWS_FILE)) {
     try {
       const data = JSON.parse(fs.readFileSync(REVIEWS_FILE, 'utf-8'));
-      if (Array.isArray(data) && data.length > 0) return data;
+      if (Array.isArray(data)) return deduplicateServerReviews(data).slice(0, 10);
     } catch {}
   }
-  return INITIAL_4_REVIEWS;
+  return [];
 }
 
 async function persistReviews(reviews: any[]) {
@@ -486,12 +534,46 @@ app.post('/api/system/clean-cache', (req, res) => {
   });
 });
 
+// GET & POST Social Links & Marketplace
+app.get('/api/social-links', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  return res.json(getSocialLinks());
+});
+
+app.post('/api/owner/update-social-links', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+
+  const { socialLinks } = req.body;
+  if (!socialLinks || typeof socialLinks !== 'object') {
+    return res.status(400).json({ error: 'Data link sosial tidak valid!' });
+  }
+
+  const current = getSocialLinks();
+  const updated = {
+    ...current,
+    ...socialLinks,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await persistSocialLinks(updated);
+  return res.json({
+    success: true,
+    message: 'Tautan Akun Media Sosial & Toko berhasil disimpan permanen!',
+    socialLinks: updated,
+  });
+});
+
 // POST Check Store & Hotline Links
 app.post('/api/system/check-links', (_req, res) => {
+  const currentSocial = getSocialLinks();
   const links = [
     {
       name: 'WhatsApp Hotline VIP',
-      url: 'https://wa.me/6281398677610',
+      url: currentSocial.whatsapp || 'https://wa.me/6281398677610',
       type: 'Chat / Order Langsung',
       status: 'active',
       badge: '200 OK',
@@ -499,7 +581,7 @@ app.post('/api/system/check-links', (_req, res) => {
     },
     {
       name: 'Shopee Official Store',
-      url: 'https://shopee.co.id',
+      url: currentSocial.shopee || 'https://shopee.co.id',
       type: 'Marketplace E-Commerce',
       status: 'active',
       badge: '200 OK',
@@ -507,7 +589,7 @@ app.post('/api/system/check-links', (_req, res) => {
     },
     {
       name: 'Tokopedia Official Store',
-      url: 'https://tokopedia.com',
+      url: currentSocial.tokopedia || 'https://tokopedia.com',
       type: 'Marketplace E-Commerce',
       status: 'active',
       badge: '200 OK',
@@ -515,8 +597,16 @@ app.post('/api/system/check-links', (_req, res) => {
     },
     {
       name: 'TikTok Official',
-      url: 'https://tiktok.com',
+      url: currentSocial.tiktok || 'https://tiktok.com',
       type: 'Social Commerce',
+      status: 'active',
+      badge: '200 OK',
+      verified: true,
+    },
+    {
+      name: 'Instagram Official',
+      url: currentSocial.instagram || 'https://instagram.com/sinki_official',
+      type: 'Social Media Official',
       status: 'active',
       badge: '200 OK',
       verified: true,
@@ -706,12 +796,13 @@ app.post('/api/reviews', async (req, res) => {
     return res.status(400).json({ error: 'Nama dan ulasan tidak boleh kosong.' });
   }
 
-  if (containsInappropriateContent(`${trimmedName} ${trimmedComment}`)) {
-    return res.status(400).json({ error: 'Ulasan ditolak: Terdeteksi kata atau kalimat yang kurang sopan.' });
-  }
+  const reviewId =
+    typeof req.body.id === 'string' && req.body.id.trim()
+      ? req.body.id.trim()
+      : `rev-${Date.now()}`;
 
   const newReview = {
-    id: `rev-${Date.now()}`,
+    id: reviewId,
     name: trimmedName,
     emoji: typeof emoji === 'string' ? emoji.slice(0, 8) : '😍',
     emojiLabel: typeof emojiLabel === 'string' ? emojiLabel.slice(0, 50) : 'Sangat Puas & Mewah',
@@ -722,7 +813,17 @@ app.post('/api/reviews', async (req, res) => {
   };
 
   const current = getReviews();
-  const updated = [newReview, ...current.filter((r) => r.id !== newReview.id)].slice(0, 6);
+  const filtered = current.filter(
+    (r) =>
+      r.id !== reviewId &&
+      !(
+        r.name &&
+        r.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
+        r.comment &&
+        r.comment.trim().toLowerCase() === trimmedComment.toLowerCase()
+      )
+  );
+  const updated = [newReview, ...filtered].slice(0, 10);
   await persistReviews(updated);
 
   return res.json({ success: true, reviews: updated });
@@ -751,22 +852,19 @@ app.post('/api/owner/delete-review', async (req, res) => {
   if (!id) return res.status(400).json({ error: 'ID ulasan wajib disertakan.' });
 
   const current = getReviews();
-  let updated = current.filter((r) => r.id !== id);
-  if (updated.length === 0) {
-    updated = [...INITIAL_4_REVIEWS];
-  }
+  const updated = current.filter((r) => r.id !== id);
   await persistReviews(updated);
   return res.json({ success: true, reviews: updated });
 });
 
-// POST reset reviews to default by Owner
+// POST reset reviews to default by Owner (Kosongkan ulasan)
 app.post('/api/owner/reset-reviews', async (req, res) => {
   if (!isAuthorized(req)) {
     return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
   }
 
-  await persistReviews(INITIAL_4_REVIEWS);
-  return res.json({ success: true, reviews: INITIAL_4_REVIEWS });
+  await persistReviews([]);
+  return res.json({ success: true, reviews: [] });
 });
 
 // Perfumes Catalog Endpoints
@@ -799,6 +897,29 @@ app.post('/api/owner/update-perfumes', async (req, res) => {
     console.warn('Notice syncing perfumes to Supabase:', err);
   }
   return res.json({ success: true, perfumes });
+});
+
+// Top Bestseller Perfumes Endpoints
+app.get('/api/top-perfumes', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  const items = getTopPerfumes();
+  return res.json(items);
+});
+
+app.post('/api/owner/update-top-perfumes', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+  const { topPerfumes } = req.body;
+  if (!Array.isArray(topPerfumes) || topPerfumes.length === 0) {
+    return res.status(400).json({ error: 'Data varian top tidak valid!' });
+  }
+  await persistTopPerfumes(topPerfumes);
+  return res.json({
+    success: true,
+    message: 'Daftar Top Bestseller berhasil disimpan ke server & cloud!',
+    topPerfumes,
+  });
 });
 
 app.get('/api/ticker', (_req, res) => {
@@ -993,12 +1114,20 @@ async function hydrateDataFromSupabase() {
   }
 
   try {
-    if (!fs.existsSync(REVIEWS_FILE)) {
-      const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download('reviews.json');
-      if (!error && data) {
-        const text = await data.text();
-        fs.writeFileSync(REVIEWS_FILE, text, 'utf-8');
-        console.log('[Supabase Hydration] Reviews berhasil dimuat dari cloud');
+    const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download('reviews.json');
+    if (!error && data) {
+      const text = await data.text();
+      const cloudList = JSON.parse(text);
+      if (Array.isArray(cloudList)) {
+        let localList: any[] = [];
+        if (fs.existsSync(REVIEWS_FILE)) {
+          try {
+            localList = JSON.parse(fs.readFileSync(REVIEWS_FILE, 'utf-8'));
+          } catch {}
+        }
+        const merged = deduplicateServerReviews([...localList, ...cloudList]).slice(0, 10);
+        fs.writeFileSync(REVIEWS_FILE, JSON.stringify(merged, null, 2), 'utf-8');
+        console.log(`[Supabase Hydration] Reviews berhasil disinkronkan dari cloud (total: ${merged.length})`);
       }
     }
   } catch (err) {
@@ -1016,6 +1145,41 @@ async function hydrateDataFromSupabase() {
     }
   } catch (err) {
     console.warn('[Supabase Hydration Notice] perfumes:', err);
+  }
+
+  try {
+    const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download('social_links.json');
+    if (!error && data) {
+      const text = await data.text();
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === 'object') {
+        fs.writeFileSync(SOCIAL_FILE, text, 'utf-8');
+        console.log('[Supabase Hydration] Social links berhasil dimuat dari cloud');
+      }
+    }
+  } catch (err) {
+    console.warn('[Supabase Hydration Notice] social links:', err);
+  }
+
+  try {
+    const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download('top_perfumes.json');
+    if (!error && data) {
+      const text = await data.text();
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        fs.writeFileSync(TOP_PERFUMES_FILE, text, 'utf-8');
+        console.log(`[Supabase Hydration] Top perfumes (${parsed.length} varian) berhasil dimuat dari cloud`);
+      }
+    } else if (fs.existsSync(TOP_PERFUMES_FILE)) {
+      const local = fs.readFileSync(TOP_PERFUMES_FILE, 'utf-8');
+      await supabase.storage.from(SUPABASE_BUCKET).upload('top_perfumes.json', local, {
+        contentType: 'application/json',
+        upsert: true,
+      });
+      console.log('[Supabase Hydration] Top perfumes lokal diupload ke cloud!');
+    }
+  } catch (err) {
+    console.warn('[Supabase Hydration Notice] top perfumes:', err);
   }
 }
 

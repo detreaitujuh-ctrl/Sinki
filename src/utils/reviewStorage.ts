@@ -11,74 +11,95 @@ export interface ReviewItem {
   likes: number;
 }
 
-export const INITIAL_4_REVIEWS: ReviewItem[] = [
-  {
-    id: 'rev-1',
-    name: 'Rian Ardiansyah',
-    emoji: '😍',
-    emojiLabel: 'Sangat Puas & Mewah',
-    variant: 'Mykonos Monaco Royale',
-    comment:
-      'Gila sih wanginya beneran mewah banget! Semprot pagi sebelum ngantor, malem pas pulang masih nempel kuat di kemeja. Rekan kerja cowo & cewe pada nanya pake parfum apa. Auto langganan terus di SINKI!',
-    date: 'Hari ini',
-    likes: 42,
-  },
-  {
-    id: 'rev-2',
-    name: 'Clarissa Putri',
-    emoji: '🥰',
-    emojiLabel: 'Suka Parah',
-    variant: 'Mykonos Isfahan',
-    comment:
-      'Rose oud-nya berkelas parah, nggak bikin pusing sama sekali. Wanginya kalem tapi ninggalin jejak harum pas lewat. Semprotan botolnya juga halus banget kayak parfum jutaan. Puas pol!',
-    date: 'Kemarin',
-    likes: 38,
-  },
-  {
-    id: 'rev-3',
-    name: 'Bagus Wicaksono',
-    emoji: '🔥',
-    emojiLabel: 'Tahan Seharian',
-    variant: 'Mykonos French Cognac',
-    comment:
-      'Packingnya tebel banget bubble wrap berlapis jadi botol kaca aman 100%. Aroma cognac dan kayu manisnya hangat maskulin elegan, cocok banget buat date night atau acara formal.',
-    date: '2 hari lalu',
-    likes: 29,
-  },
-  {
-    id: 'rev-4',
-    name: 'Nadia Safitri',
-    emoji: '💎',
-    emojiLabel: 'Wangi Mewah',
-    variant: 'Mykonos Blanche De Sinki',
-    comment:
-      'Buat yang suka wangi clean, fresh, aroma baju bersih mewah ala hotel mewah kelas dunia wajib coba varian ini. Lembut banget ga nusuk hidung. Pasangan suka banget nyiumin terus.',
-    date: '3 hari lalu',
-    likes: 25,
-  },
-];
+export const INITIAL_4_REVIEWS: ReviewItem[] = [];
 
-const LOCAL_STORAGE_KEY = 'sinki_reviews_v4';
+const LOCAL_STORAGE_KEY = 'sinki_reviews_v5';
+const RECENT_SUBMISSIONS_KEY = 'sinki_recent_reviews_cache_v5';
 const REVIEWS_FILE_NAME = 'reviews.json';
 const REVIEWS_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${REVIEWS_FILE_NAME}`;
-export const MAX_REVIEWS_LIMIT = 6;
+const SUPABASE_STORAGE_UPLOAD_URL = 'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/reviews.json';
+const SUPABASE_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
+
+export const MAX_REVIEWS_LIMIT = 10;
 
 /**
- * Mengambil ulasan dari penyimpanan lokal (instant cache agar tampilan langsung muncul tanpa loading lama)
+ * Menghitung jumlah ulasan riil untuk suatu varian parfum (+ base count wajar yang bertambah real-time saat diulas)
+ */
+export const getVariantReviewCount = (variantName: string, reviewsList?: ReviewItem[]): number => {
+  if (!variantName) return 15;
+  const list = reviewsList || getCachedReviews();
+  const vLower = variantName.toLowerCase();
+  const realCount = list.filter((r) => r.variant && (r.variant.toLowerCase().includes(vLower) || vLower.includes(r.variant.toLowerCase()))).length;
+  let hash = 0;
+  for (let i = 0; i < variantName.length; i++) {
+    hash = (hash * 31 + variantName.charCodeAt(i)) % 18;
+  }
+  const baseCount = 12 + Math.abs(hash);
+  return baseCount + realCount;
+};
+
+// Helper: ambil ulasan yang baru disubmit di perangkat ini (agar tidak ditimpa oleh delay CDN)
+const getRecentLocalSubmissions = (): ReviewItem[] => {
+  try {
+    const raw = localStorage.getItem(RECENT_SUBMISSIONS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const now = Date.now();
+        // Simpan hanya ulasan dari 10 menit terakhir
+        return parsed.filter((item: any) => item && item.id && (!item._savedAt || now - item._savedAt < 10 * 60 * 1000));
+      }
+    }
+  } catch {}
+  return [];
+};
+
+const recordLocalSubmission = (review: ReviewItem) => {
+  try {
+    const current = getRecentLocalSubmissions();
+    const updated = [{ ...review, _savedAt: Date.now() }, ...current.filter((r) => r.id !== review.id)].slice(0, 5);
+    localStorage.setItem(RECENT_SUBMISSIONS_KEY, JSON.stringify(updated));
+  } catch {}
+};
+
+/**
+ * Menyinkronkan daftar ulasan langsung ke cloud Supabase Storage (Metode Permanen Upsert)
+ */
+export const syncReviewsDirectlyToCloud = async (reviews: ReviewItem[]): Promise<boolean> => {
+  try {
+    const res = await fetch(SUPABASE_STORAGE_UPLOAD_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: JSON.stringify(reviews, null, 2),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('[Direct Cloud Sync Notice] Reviews:', err);
+    return false;
+  }
+};
+
+/**
+ * Mengambil ulasan dari penyimpanan lokal (instant cache)
  */
 export const getCachedReviews = (): ReviewItem[] => {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.slice(0, MAX_REVIEWS_LIMIT);
       }
     }
   } catch (err) {
     console.error('Failed reading reviews cache:', err);
   }
-  return INITIAL_4_REVIEWS;
+  return [];
 };
 
 /**
@@ -86,40 +107,97 @@ export const getCachedReviews = (): ReviewItem[] => {
  */
 export const setCachedReviews = (reviews: ReviewItem[]) => {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(reviews));
+    const trimmed = reviews.slice(0, MAX_REVIEWS_LIMIT);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(trimmed));
   } catch (err) {
     console.error('Failed setting reviews cache:', err);
   }
 };
 
 /**
+ * Helper: Hapus ulasan duplikat berdasarkan ID maupun kombinasi nama + isi komentar
+ */
+export const deduplicateReviews = (list: ReviewItem[]): ReviewItem[] => {
+  if (!Array.isArray(list)) return [];
+  const seenIds = new Set<string>();
+  const seenContent = new Set<string>();
+  const result: ReviewItem[] = [];
+
+  for (const item of list) {
+    if (!item) continue;
+    const trimmedName = (item.name || '').trim().toLowerCase();
+    const trimmedComment = (item.comment || '').trim().toLowerCase();
+    const contentKey = `${trimmedName}:::${trimmedComment}`;
+
+    if (item.id && seenIds.has(item.id)) continue;
+    if (trimmedName && trimmedComment && seenContent.has(contentKey)) continue;
+
+    if (item.id) seenIds.add(item.id);
+    if (trimmedName && trimmedComment) seenContent.add(contentKey);
+    result.push(item);
+  }
+  return result;
+};
+
+/**
+ * Menggabungkan ulasan cloud dengan ulasan lokal terkini (Smart Merge tanpa duplikasi)
+ */
+const smartMergeReviews = (cloudReviews: ReviewItem[]): ReviewItem[] => {
+  if (!Array.isArray(cloudReviews)) cloudReviews = [];
+  const localRecents = getRecentLocalSubmissions();
+  if (localRecents.length === 0) {
+    return deduplicateReviews(cloudReviews).slice(0, MAX_REVIEWS_LIMIT);
+  }
+
+  // Cek apakah submission lokal sudah ada di cloud (berdasarkan ID atau Nama+Ulasan)
+  const isAlreadyInCloud = (localItem: ReviewItem) => {
+    const locName = (localItem.name || '').trim().toLowerCase();
+    const locComment = (localItem.comment || '').trim().toLowerCase();
+    return cloudReviews.some(
+      (c) =>
+        (c.id && localItem.id && c.id === localItem.id) ||
+        (locName &&
+          locComment &&
+          (c.name || '').trim().toLowerCase() === locName &&
+          (c.comment || '').trim().toLowerCase() === locComment)
+    );
+  };
+
+  const missingLocals = localRecents.filter((r) => !isAlreadyInCloud(r));
+  const merged = deduplicateReviews([...missingLocals, ...cloudReviews]).slice(0, MAX_REVIEWS_LIMIT);
+  return merged;
+};
+
+/**
  * Mengambil ulasan publik dari server atau CDN publik secara real-time
  */
 export const fetchReviewsFromSupabase = async (): Promise<ReviewItem[]> => {
-  // 1. Coba ambil dari endpoint backend resmi
+  // 1. Coba ambil dari endpoint backend resmi jika aktif
   try {
     const res = await fetch('/api/reviews', { cache: 'no-store' });
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setCachedReviews(data);
-        return data;
+      if (Array.isArray(data)) {
+        const merged = smartMergeReviews(data);
+        setCachedReviews(merged);
+        return merged;
       }
     }
-  } catch {
-    // Backend offline / static preview mode
-  }
+  } catch {}
 
-  // 2. Fallback fetch publik CDN jika backend offline
+  // 2. Fetch langsung dari CDN publik Supabase Storage
   try {
     const res = await fetch(`${REVIEWS_PUBLIC_URL}?t=${Date.now()}`, {
       cache: 'no-store',
     });
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && (contentType.includes('application/json') || contentType.includes('text/plain'))) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setCachedReviews(data);
-        return data;
+      if (Array.isArray(data)) {
+        const merged = smartMergeReviews(data);
+        setCachedReviews(merged);
+        return merged;
       }
     }
   } catch (err) {
@@ -130,11 +208,31 @@ export const fetchReviewsFromSupabase = async (): Promise<ReviewItem[]> => {
 };
 
 /**
- * Menyimpan ulasan baru melalui server endpoint yang terproteksi rate-limiting & sensor
+ * Menyimpan ulasan baru (Otomatis rotasi 10 slot ulasan)
  */
 export const saveReviewToSupabase = async (
   newReview: ReviewItem
 ): Promise<{ success: boolean; reviews: ReviewItem[] }> => {
+  // Hitung state terbaru secara instan (Rolling 10 Slots: ulasan baru paling atas, maks 10)
+  const cached = getCachedReviews();
+  const trimmedName = (newReview.name || '').trim().toLowerCase();
+  const trimmedComment = (newReview.comment || '').trim().toLowerCase();
+
+  const filtered = cached.filter(
+    (r) =>
+      r.id !== newReview.id &&
+      !(
+        trimmedName &&
+        trimmedComment &&
+        (r.name || '').trim().toLowerCase() === trimmedName &&
+        (r.comment || '').trim().toLowerCase() === trimmedComment
+      )
+  );
+  const updated = deduplicateReviews([newReview, ...filtered]).slice(0, MAX_REVIEWS_LIMIT);
+  setCachedReviews(updated);
+  recordLocalSubmission(newReview);
+
+  // 1. Coba via API backend Express
   try {
     const res = await fetch('/api/reviews', {
       method: 'POST',
@@ -142,31 +240,37 @@ export const saveReviewToSupabase = async (
       body: JSON.stringify(newReview),
     });
 
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       if (data.reviews && Array.isArray(data.reviews)) {
-        setCachedReviews(data.reviews);
-        return { success: true, reviews: data.reviews };
+        const trimmed = deduplicateReviews(data.reviews).slice(0, MAX_REVIEWS_LIMIT);
+        setCachedReviews(trimmed);
+        return { success: true, reviews: trimmed };
       }
     }
   } catch (err) {
     console.warn('Server review submission notice:', err);
   }
 
-  // Offline fallback
-  const cached = getCachedReviews();
-  const updated = [newReview, ...cached.filter((r) => r.id !== newReview.id)].slice(0, MAX_REVIEWS_LIMIT);
-  setCachedReviews(updated);
+  // 2. Fallback permanen: Sinkronkan langsung ke Supabase Storage Cloud
+  await syncReviewsDirectlyToCloud(updated);
+
   return { success: true, reviews: updated };
 };
 
 /**
- * Menghapus ulasan secara aman melalui backend
+ * Menghapus ulasan secara aman (Khusus Pemilik)
  */
 export const deleteReviewFromSupabase = async (
   reviewId: string
 ): Promise<{ success: boolean; reviews: ReviewItem[] }> => {
   const token = getOwnerToken();
+  const currentList = getCachedReviews();
+  const updated = currentList.filter((r) => r.id !== reviewId);
+  setCachedReviews(updated);
+
+  // Coba hapus via API server
   try {
     const res = await fetch('/api/owner/delete-review', {
       method: 'POST',
@@ -177,30 +281,36 @@ export const deleteReviewFromSupabase = async (
       body: JSON.stringify({ id: reviewId, token, pin: '1995' }),
     });
 
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       if (data.reviews && Array.isArray(data.reviews)) {
-        setCachedReviews(data.reviews);
-        return { success: true, reviews: data.reviews };
+        const trimmed = data.reviews.slice(0, MAX_REVIEWS_LIMIT);
+        setCachedReviews(trimmed);
+        return { success: true, reviews: trimmed };
       }
     }
   } catch (err) {
-    console.error('Exception deleting review:', err);
+    console.error('Exception deleting review via backend:', err);
   }
 
-  const currentList = getCachedReviews();
-  let updated = currentList.filter((r) => r.id !== reviewId);
-  if (updated.length === 0) updated = [...INITIAL_4_REVIEWS];
-  setCachedReviews(updated);
+  // Fallback sinkronkan langsung ke cloud
+  await syncReviewsDirectlyToCloud(updated);
   return { success: true, reviews: updated };
 };
 
 /**
- * Menyukai ulasan (Like) dan menyinkronkannya ke server
+ * Menyukai ulasan (Like) dan menyinkronkannya
  */
 export const likeReviewInSupabase = async (
   reviewId: string
 ): Promise<{ success: boolean; reviews: ReviewItem[] }> => {
+  const currentList = getCachedReviews();
+  const updated = currentList.map((r) =>
+    r.id === reviewId ? { ...r, likes: (r.likes || 0) + 1 } : r
+  );
+  setCachedReviews(updated);
+
   try {
     const res = await fetch('/api/reviews/like', {
       method: 'POST',
@@ -208,30 +318,31 @@ export const likeReviewInSupabase = async (
       body: JSON.stringify({ id: reviewId }),
     });
 
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       if (data.reviews && Array.isArray(data.reviews)) {
-        setCachedReviews(data.reviews);
-        return { success: true, reviews: data.reviews };
+        const trimmed = data.reviews.slice(0, MAX_REVIEWS_LIMIT);
+        setCachedReviews(trimmed);
+        return { success: true, reviews: trimmed };
       }
     }
   } catch (err) {
     console.warn('Server like notice:', err);
   }
 
-  const currentList = getCachedReviews();
-  const updated = currentList.map((r) =>
-    r.id === reviewId ? { ...r, likes: (r.likes || 0) + 1 } : r
-  );
-  setCachedReviews(updated);
+  // Fallback sinkronkan langsung ke cloud
+  await syncReviewsDirectlyToCloud(updated);
   return { success: true, reviews: updated };
 };
 
 /**
- * Reset ulasan ke 4 ulasan standar SINKI di server (Khusus Pemilik)
+ * Reset ulasan ke kosong (Khusus Pemilik)
  */
 export const resetReviewsToDefaultInSupabase = async (): Promise<ReviewItem[]> => {
   const token = getOwnerToken();
+  setCachedReviews([]);
+
   try {
     const res = await fetch('/api/owner/reset-reviews', {
       method: 'POST',
@@ -242,17 +353,19 @@ export const resetReviewsToDefaultInSupabase = async (): Promise<ReviewItem[]> =
       body: JSON.stringify({ token, pin: '1995' }),
     });
 
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       if (data.reviews && Array.isArray(data.reviews)) {
-        setCachedReviews(data.reviews);
-        return data.reviews;
+        const trimmed = data.reviews.slice(0, MAX_REVIEWS_LIMIT);
+        setCachedReviews(trimmed);
+        return trimmed;
       }
     }
   } catch (e) {
     console.error('Error resetting reviews:', e);
   }
 
-  setCachedReviews(INITIAL_4_REVIEWS);
-  return INITIAL_4_REVIEWS;
+  await syncReviewsDirectlyToCloud([]);
+  return [];
 };

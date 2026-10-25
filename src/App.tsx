@@ -1,5 +1,5 @@
-import { DimensiSinkiScreen } from './components/DimensiSinkiScreen';
 import React, { useState, useRef, useEffect } from 'react';
+import { DimensiSinkiScreen } from './components/DimensiSinkiScreen';
 import { BottomNavBar, TabType } from './components/BottomNavBar';
 import { HomeScreen } from './components/HomeScreen';
 import { CollectionScreen } from './components/CollectionScreen';
@@ -20,6 +20,12 @@ import {
 import { PricingConfig, getStoredPricing } from './utils/pricingStorage';
 import { TickerConfig, getStoredTicker, fetchTickerFromServer } from './utils/tickerStorage';
 import { recordVisit } from './utils/analyticsStorage';
+import {
+  SocialLinks,
+  getStoredSocialLinks,
+  fetchSocialLinksFromServer,
+} from './utils/socialStorage';
+import { fetchTopPerfumesFromServer } from './utils/topPerfumesStorage';
 
 const TABS: TabType[] = ['home', 'collection', 'top11', 'order', 'review'];
 
@@ -57,6 +63,7 @@ export default function App() {
   const [top11Photos, setTop11Photos] = useState<Record<string, string>>(getStoredTop11());
   const [pricing, setPricing] = useState<PricingConfig>(() => getStoredPricing());
   const [tickerConfig, setTickerConfig] = useState<TickerConfig>(() => getStoredTicker());
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>(() => getStoredSocialLinks());
 
   // Modals & Drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -65,6 +72,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [collectionScrollTrigger, setCollectionScrollTrigger] = useState(0);
   const [selectedPerfumeForOrder, setSelectedPerfumeForOrder] = useState<{ name: string; category?: string } | null>(null);
+  const [reviewTargetVariant, setReviewTargetVariant] = useState<string | null>(null);
 
   useEffect(() => {
     // Preload initial stored Top 11 photos immediately into browser cache
@@ -79,6 +87,14 @@ export default function App() {
     fetchTickerFromServer().then((cfg) => {
       if (cfg) setTickerConfig(cfg);
     });
+
+    // Sync social links from server immediately
+    fetchSocialLinksFromServer().then((links) => {
+      if (links) setSocialLinks(links);
+    });
+
+    // Sync top bestseller perfumes from server/cloud immediately
+    fetchTopPerfumesFromServer().catch(() => {});
 
     // Sync with server on initial load (includes ticker, logo, chibi, qris, pricing)
     fetchServerAssets().then((assets) => {
@@ -104,6 +120,9 @@ export default function App() {
       if (!document.hidden) {
         fetchTickerFromServer().then((cfg) => {
           if (cfg) setTickerConfig(cfg);
+        });
+        fetchSocialLinksFromServer().then((links) => {
+          if (links) setSocialLinks(links);
         });
       }
     };
@@ -138,62 +157,6 @@ export default function App() {
     setIsDimensiRoute(true);
   };
 
-  // Touch Swipe Gesture State (Kalibrasi Cerdas: Jarak 85px & Kunci Sumbu Vertikal)
-  const touchStartX = useRef<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
-  const touchEndY = useRef<number | null>(null);
-  const minSwipeDistance = 85; // Ambang batas 85px: mantap & disengaja
-
-  const activeIndex = TABS.indexOf(activeTab);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-    touchStartY.current = e.targetTouches[0].clientY;
-    touchEndX.current = null;
-    touchEndY.current = null;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-    touchEndY.current = e.targetTouches[0].clientY;
-  };
-
-  const handleTouchEnd = () => {
-    if (
-      touchStartX.current === null ||
-      touchEndX.current === null ||
-      touchStartY.current === null ||
-      touchEndY.current === null
-    ) {
-      return;
-    }
-
-    const distanceX = touchStartX.current - touchEndX.current;
-    const distanceY = touchStartY.current - touchEndY.current;
-    const absX = Math.abs(distanceX);
-    const absY = Math.abs(distanceY);
-
-    // KUNCI SUMBU VERTIKAL (ANTI-SALAH DETEKSI):
-    // Swipe HANYA diproses jika:
-    // 1. Jarak horizontal minimal 85px (benar-benar niat geser).
-    // 2. Gerakan horizontal minimal 1.5x lebih dominan dibanding vertikal (tidak sedang scroll atas/bawah).
-    if (absX >= minSwipeDistance && absX > absY * 1.5) {
-      if (distanceX > 0 && activeIndex < TABS.length - 1) {
-        // Geser ke kiri -> Halaman berikutnya
-        setActiveTab(TABS[activeIndex + 1]);
-      } else if (distanceX < 0 && activeIndex > 0) {
-        // Geser ke kanan -> Halaman sebelumnya
-        setActiveTab(TABS[activeIndex - 1]);
-      }
-    }
-
-    // Reset koordinat
-    touchStartX.current = null;
-    touchStartY.current = null;
-    touchEndX.current = null;
-    touchEndY.current = null;
-  };
 
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
   const showToast = (message: string) => {
@@ -222,6 +185,7 @@ export default function App() {
           top11Photos={top11Photos}
           pricing={pricing}
           tickerConfig={tickerConfig}
+          socialLinks={socialLinks}
           onAssetsUpdated={(newLogo, newChibi) => {
             setCustomLogo(newLogo);
             setCustomChibi(newChibi);
@@ -238,6 +202,9 @@ export default function App() {
           onTickerUpdated={(newTicker) => {
             setTickerConfig(newTicker);
           }}
+          onSocialLinksUpdated={(newLinks) => {
+            setSocialLinks(newLinks);
+          }}
         />
         {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
       </div>
@@ -252,9 +219,6 @@ export default function App() {
 
       {/* Mobile App Container with Deep Charcoal Graphite Canvas (Cool Neutral Dark) */}
       <main
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         className="relative w-full max-w-md h-full md:h-[92dvh] md:max-h-[880px] bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] md:rounded-[36px] md:border md:border-amber-500/25 md:shadow-[0_20px_70px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden"
       >
         {/* Subtle Top Notch Line for App Realism on Desktop */}
@@ -262,71 +226,67 @@ export default function App() {
           <div className="w-20 h-1 rounded-full bg-white/15" />
         </div>
 
-        {/* Horizontal Sliding Views Container */}
-        <div className="relative flex-1 w-full overflow-hidden">
-          <div
-            className="flex h-full w-[500%] transition-transform duration-300 ease-out"
-            style={{
-              transform: `translateX(-${activeIndex * 20}%)`,
-            }}
-          >
-            {/* View 1: Home Screen */}
-            <div className="w-[20%] h-full shrink-0">
-              <HomeScreen
-                onShowToast={showToast}
-                onNavigateToCollection={() => setActiveTab('collection')}
-                onOpenDrawer={() => setIsDrawerOpen(true)}
-                onOpenOwnerPin={() => setIsPinModalOpen(true)}
-                customLogo={customLogo}
-                customChibi={customChibi}
-                tickerConfig={tickerConfig}
-              />
-            </div>
+        {/* Stable Tab Views Container (Bebas Efek Geser/Swipe Horizontal) */}
+        <div className="relative flex-1 w-full h-full overflow-hidden">
+          {/* View 1: Home Screen */}
+          <div className={`w-full h-full ${activeTab === 'home' ? 'block' : 'hidden'}`}>
+            <HomeScreen
+              onShowToast={showToast}
+              onNavigateToCollection={() => setActiveTab('collection')}
+              onOpenDrawer={() => setIsDrawerOpen(true)}
+              onOpenOwnerPin={() => setIsPinModalOpen(true)}
+              customLogo={customLogo}
+              customChibi={customChibi}
+              tickerConfig={tickerConfig}
+              socialLinks={socialLinks}
+            />
+          </div>
 
-            {/* View 2: Collection (Grid 2x2 with all 68 variants) */}
-            <div className="w-[20%] h-full shrink-0">
-              <CollectionScreen
-                onBackToHome={() => setActiveTab('home')}
-                onShowToast={showToast}
-                scrollToTopTrigger={collectionScrollTrigger}
-                onSelectPerfumeToOrder={(perfume) => {
-                  setSelectedPerfumeForOrder({ name: perfume.name, category: perfume.category });
-                  setActiveTab('order');
-                  showToast(`Varian "${perfume.name}" dipilih! Silakan tentukan ukuran botol`);
-                }}
-              />
-            </div>
+          {/* View 2: Collection (Grid 2x2 with all 68 variants) */}
+          <div className={`w-full h-full ${activeTab === 'collection' ? 'block' : 'hidden'}`}>
+            <CollectionScreen
+              onBackToHome={() => setActiveTab('home')}
+              onShowToast={showToast}
+              scrollToTopTrigger={collectionScrollTrigger}
+              onSelectPerfumeToOrder={(perfume) => {
+                setSelectedPerfumeForOrder({ name: perfume.name, category: perfume.category });
+                setActiveTab('order');
+                showToast(`Varian "${perfume.name}" dipilih! Silakan tentukan ukuran botol`);
+              }}
+            />
+          </div>
 
-            {/* View 3: Top 11 (Clean showcase with NO owner mode badge or camera icons) */}
-            <div className="w-[20%] h-full shrink-0">
-              <Top11Screen
-                isActive={activeTab === 'top11'}
-                top11Photos={top11Photos}
-                onBackToHome={() => setActiveTab('home')}
-                onShowToast={showToast}
-                pricing={pricing}
-              />
-            </div>
+          {/* View 3: Top 11 (Clean showcase with NO owner mode badge or camera icons) */}
+          <div className={`w-full h-full ${activeTab === 'top11' ? 'block' : 'hidden'}`}>
+            <Top11Screen
+              isActive={activeTab === 'top11'}
+              top11Photos={top11Photos}
+              onBackToHome={() => setActiveTab('home')}
+              onShowToast={showToast}
+              pricing={pricing}
+            />
+          </div>
 
-            {/* View 4: Order (Complete Checkout & WhatsApp Consultation) */}
-            <div className="w-[20%] h-full shrink-0">
-              <OrderScreen
-                onBackToHome={() => setActiveTab('home')}
-                onShowToast={showToast}
-                pricing={pricing}
-                customQris={customQris}
-                selectedPerfumeFromCollection={selectedPerfumeForOrder}
-              />
-            </div>
+          {/* View 4: Order (Complete Checkout & WhatsApp Consultation) */}
+          <div className={`w-full h-full ${activeTab === 'order' ? 'block' : 'hidden'}`}>
+            <OrderScreen
+              onBackToHome={() => setActiveTab('home')}
+              onShowToast={showToast}
+              pricing={pricing}
+              customQris={customQris}
+              selectedPerfumeFromCollection={selectedPerfumeForOrder}
+            />
+          </div>
 
-            {/* View 5: Review (Authentic Ratings & Interactive User Reviews) */}
-            <div className="w-[20%] h-full shrink-0">
-              <ReviewScreen
-                onBackToHome={() => setActiveTab('home')}
-                onNavigateToOrder={() => setActiveTab('order')}
-                onShowToast={showToast}
-              />
-            </div>
+          {/* View 5: Review (Authentic Ratings & Interactive User Reviews) */}
+          <div className={`w-full h-full ${activeTab === 'review' ? 'block' : 'hidden'}`}>
+            <ReviewScreen
+              onBackToHome={() => setActiveTab('home')}
+              onNavigateToOrder={() => setActiveTab('order')}
+              onShowToast={showToast}
+              initialVariant={reviewTargetVariant}
+              onClearTargetVariant={() => setReviewTargetVariant(null)}
+            />
           </div>
         </div>
 
@@ -335,6 +295,7 @@ export default function App() {
           isOpen={isDrawerOpen}
           onClose={() => setIsDrawerOpen(false)}
           onNavigateToCollection={() => setActiveTab('collection')}
+          socialLinks={socialLinks}
           onOpenDimensiSinki={() => {
             window.history.pushState({}, '', '/dimensi-sinki');
             setIsDimensiRoute(true);

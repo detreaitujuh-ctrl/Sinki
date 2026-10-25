@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Share2, Check, ExternalLink } from 'lucide-react';
 import { getShortShareUrl } from '../utils/shareUtils';
+import {
+  getStoredSocialLinks,
+  extractTikTokHandle,
+  extractInstagramHandle,
+} from '../utils/socialStorage';
 
 interface SocialButtonsProps {
   onShowToast: (message: string) => void;
@@ -8,6 +13,7 @@ interface SocialButtonsProps {
 
 export const SocialButtons: React.FC<SocialButtonsProps> = ({ onShowToast }) => {
   const [copied, setCopied] = useState(false);
+  const socialLinks = getStoredSocialLinks();
 
   const handleShare = async () => {
     const publicUrl = await getShortShareUrl();
@@ -59,7 +65,7 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({ onShowToast }) => 
       <div className="grid grid-cols-2 gap-2.5">
         {/* Instagram Button */}
         <a
-          href="https://www.instagram.com/Sinki_official"
+          href={socialLinks.instagram}
           target="_blank"
           rel="noopener noreferrer"
           className="group relative flex items-center justify-between p-3 rounded-2xl bg-gradient-to-br from-[#1c1f26] to-[#14161c] border border-pink-500/25 hover:border-pink-500/50 hover:shadow-[0_0_20px_rgba(236,72,153,0.2)] transition-all duration-300 active:scale-98"
@@ -73,7 +79,9 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({ onShowToast }) => 
             </div>
             <div className="text-left">
               <span className="block text-[10px] text-pink-300/80 font-medium uppercase tracking-wider">Instagram</span>
-              <span className="block text-xs font-bold text-white tracking-wide">@Sinki_official</span>
+              <span className="block text-xs font-bold text-white tracking-wide">
+                {extractInstagramHandle(socialLinks.instagram)}
+              </span>
             </div>
           </div>
           <ExternalLink size={14} className="text-slate-400 group-hover:text-pink-300 transition-colors" />
@@ -81,7 +89,7 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({ onShowToast }) => 
 
         {/* TikTok Button */}
         <a
-          href="https://www.tiktok.com/@Sinki_official"
+          href={socialLinks.tiktok}
           target="_blank"
           rel="noopener noreferrer"
           className="group relative flex items-center justify-between p-3 rounded-2xl bg-gradient-to-br from-[#1c1f26] to-[#14161c] border border-cyan-500/25 hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all duration-300 active:scale-98"
@@ -96,7 +104,9 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({ onShowToast }) => 
             </div>
             <div className="text-left">
               <span className="block text-[10px] text-cyan-300/80 font-medium uppercase tracking-wider">TikTok</span>
-              <span className="block text-xs font-bold text-white tracking-wide">@Sinki_official</span>
+              <span className="block text-xs font-bold text-white tracking-wide">
+                {extractTikTokHandle(socialLinks.tiktok)}
+              </span>
             </div>
           </div>
           <ExternalLink size={14} className="text-slate-400 group-hover:text-cyan-300 transition-colors" />

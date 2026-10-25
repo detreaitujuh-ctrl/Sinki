@@ -1,0 +1,227 @@
+{
+  "totalVisits": 34,
+  "uniqueVisitors": 1,
+  "startedAt": "2026-10-22T07:28:13.621Z",
+  "sources": {
+    "instagram": 0,
+    "tiktok": 0,
+    "whatsapp": 0,
+    "facebook": 0,
+    "google": 12,
+    "shopee": 0,
+    "tokopedia": 0,
+    "direct": 0,
+    "other": 0
+  },
+  "devices": {
+    "mobile": 12,
+    "desktop": 0,
+    "tablet": 0
+  },
+  "os": {
+    "android": 12,
+    "ios": 0,
+    "windows": 0,
+    "mac": 0,
+    "other": 0
+  },
+  "pages": {
+    "Beranda": 6,
+    "Top 11 Bestseller": 2,
+    "Katalog Koleksi": 1,
+    "Review Pembeli": 1,
+    "Order VIP": 2
+  },
+  "dailyTrends": {
+    "2026-10-22": 20,
+    "2026-10-23": 12
+  },
+  "hourlyTrends": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    9,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "recentVisitors": [
+    {
+      "id": "evt_1792739933804_lu25",
+      "timestamp": "2026-10-23T07:18:53.804Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Beranda",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792739901498_xkat",
+      "timestamp": "2026-10-23T07:18:21.498Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Top 11 Bestseller",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792739879971_1xkv",
+      "timestamp": "2026-10-23T07:17:59.971Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Order VIP",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792655889631_uqsx",
+      "timestamp": "2026-10-22T07:58:09.631Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Review Pembeli",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792655845310_yfjd",
+      "timestamp": "2026-10-22T07:57:25.310Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Order VIP",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792655749528_psdr",
+      "timestamp": "2026-10-22T07:55:49.528Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Top 11 Bestseller",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792655600588_ihvd",
+      "timestamp": "2026-10-22T07:53:20.587Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Katalog Koleksi",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792654760771_k0g4",
+      "timestamp": "2026-10-22T07:39:20.771Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Review Pembeli",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792654647333_mh80",
+      "timestamp": "2026-10-22T07:37:27.333Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Top 11 Bestseller",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792654628792_bewq",
+      "timestamp": "2026-10-22T07:37:08.792Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Review Pembeli",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792654606412_hr9m",
+      "timestamp": "2026-10-22T07:36:46.411Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Katalog Koleksi",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792654604731_ow8s",
+      "timestamp": "2026-10-22T07:36:44.731Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Beranda",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792654592500_6spx",
+      "timestamp": "2026-10-22T07:36:32.500Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Review Pembeli",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792654583511_s3zf",
+      "timestamp": "2026-10-22T07:36:23.510Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Katalog Koleksi",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792654527141_lzxw",
+      "timestamp": "2026-10-22T07:35:27.140Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Beranda",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1792654110238_8qbu",
+      "timestamp": "2026-10-22T07:28:30.238Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Beranda",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/?__aistudio_auth_token=pMmKc-RhpONOTpTRapfb4IEi6RTDh1poUpUhyOWSMMk%3D"
+    }
+  ]
+}

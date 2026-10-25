@@ -3,7 +3,7 @@ import { PERFUMES_DATA, PerfumeItem, PerfumeCategory } from '../data/perfumes';
 
 export type { PerfumeItem, PerfumeCategory };
 
-const PERFUMES_LOCAL_KEY = 'sinki_perfumes_catalog_v1';
+const PERFUMES_LOCAL_KEY = 'sinki_perfumes_catalog_v2';
 const PERFUMES_FILE_NAME = 'perfumes_catalog.json';
 const PERFUMES_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${PERFUMES_FILE_NAME}`;
 

@@ -4,6 +4,12 @@ import { ExternalLink, Menu, ArrowRight, Share2, Check } from 'lucide-react';
 import { DEFAULT_CHIBI } from '../utils/assetStorage';
 import { getShortShareUrl } from '../utils/shareUtils';
 import { TickerConfig, TICKER_FONTS, getStoredTicker } from '../utils/tickerStorage';
+import {
+  SocialLinks,
+  getStoredSocialLinks,
+  extractTikTokHandle,
+  extractInstagramHandle,
+} from '../utils/socialStorage';
 
 interface HomeScreenProps {
   onShowToast: (message: string) => void;
@@ -13,6 +19,7 @@ interface HomeScreenProps {
   customLogo: string | null;
   customChibi: string | null;
   tickerConfig?: TickerConfig;
+  socialLinks?: SocialLinks;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -23,7 +30,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   customLogo,
   customChibi,
   tickerConfig,
+  socialLinks: propSocialLinks,
 }) => {
+  const currentSocial = propSocialLinks || getStoredSocialLinks();
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = async () => {
@@ -295,11 +304,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <div className="grid grid-cols-2 gap-2">
             {/* Instagram Box */}
             <a
-              href="https://www.instagram.com/sinki_official/"
+              href={currentSocial.instagram}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleSocialClick('instagram')}
-              className="group flex items-center justify-between py-2 px-2.5 rounded-2xl bg-gradient-to-b from-[#1e2235]/95 to-[#141626]/95 hover:from-[#24283f] hover:to-[#171a2c] border border-pink-500/30 hover:border-pink-400/60 transition-all active:scale-98 shadow-[0_4px_15px_rgba(0,0,0,0.45)] backdrop-blur-md"
+              className="group flex items-center justify-between py-2 px-2.5 rounded-2xl bg-gradient-to-b from-[#1e2235]/95 to-[#141626]/95 hover:from-[#24283f] hover:to-[#171a2c] border border-pink-500/35 hover:border-pink-400/60 transition-all active:scale-98 shadow-[0_4px_15px_rgba(0,0,0,0.45)] backdrop-blur-md"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center p-1.5 shrink-0 shadow-md">
@@ -309,7 +318,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
                 <div className="min-w-0">
                   <span className="block text-[8.5px] text-pink-300 font-bold uppercase leading-none">Instagram</span>
-                  <span className="block text-[10.5px] font-bold text-white truncate">@Sinki_official</span>
+                  <span className="block text-[10.5px] font-bold text-white truncate">
+                    {extractInstagramHandle(currentSocial.instagram)}
+                  </span>
                 </div>
               </div>
               <ExternalLink size={11} className="text-slate-300 group-hover:text-pink-300 shrink-0 ml-1" />
@@ -317,7 +328,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
             {/* TikTok Box */}
             <a
-              href="https://www.tiktok.com/@sinki_official"
+              href={currentSocial.tiktok}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleSocialClick('tiktok')}
@@ -333,7 +344,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
                 <div className="min-w-0">
                   <span className="block text-[8.5px] text-cyan-300 font-bold uppercase leading-none">TikTok</span>
-                  <span className="block text-[10.5px] font-bold text-white truncate">@Sinki_official</span>
+                  <span className="block text-[10.5px] font-bold text-white truncate">
+                    {extractTikTokHandle(currentSocial.tiktok)}
+                  </span>
                 </div>
               </div>
               <ExternalLink size={11} className="text-slate-300 group-hover:text-cyan-300 shrink-0 ml-1" />

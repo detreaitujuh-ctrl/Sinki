@@ -15,6 +15,7 @@ export interface Top11Item {
   bottleThemeColor: string;
   accentBadge: string;
   accentBorder: string;
+  photo?: string;
 }
 
 export const TOP_11_DATA: Top11Item[] = [
@@ -22,7 +23,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-1',
     rank: 1,
     name: 'Mykonos Monaco Royale',
-    badge: '#01 ALL-TIME BESTSELLER',
+    badge: '01 ALL-TIME BESTSELLER',
     type: 'Extrait De Parfum',
     subtitle: 'Rich Amber, French Cognac & Royal Vanilla',
     description:
@@ -41,7 +42,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-2',
     rank: 2,
     name: 'Mykonos Isfahan',
-    badge: '#02 ORIENTAL ICON',
+    badge: '02 ORIENTAL ICON',
     type: 'Extrait De Parfum',
     subtitle: 'Damask Rose, Smoky Oud & Velvet Frankincense',
     description:
@@ -60,7 +61,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-3',
     rank: 3,
     name: 'Scandalous (Premium)',
-    badge: '#03 FEMME FATALE',
+    badge: '03 FEMME FATALE',
     type: 'Eau De Parfum',
     subtitle: 'Juicy Raspberry, Black Peony & Sweet Praline',
     description:
@@ -79,7 +80,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-4',
     rank: 4,
     name: 'Chanel Coco (Premium)',
-    badge: '#04 HIGH CLASS VOGUE',
+    badge: '04 HIGH CLASS VOGUE',
     type: 'Eau De Parfum',
     subtitle: 'Warm Spices, Orange Blossom & Bourbon Amber',
     description:
@@ -98,7 +99,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-5',
     rank: 5,
     name: 'Kirke (Premium)',
-    badge: '#05 ENCHANTED NECTAR',
+    badge: '05 ENCHANTED NECTAR',
     type: 'Extrait De Parfum',
     subtitle: 'Lush Passion Fruit, Peach & Velvet Musk',
     description:
@@ -117,7 +118,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-6',
     rank: 6,
     name: 'Pink Chiffon',
-    badge: '#06 SWEET PRINCESS',
+    badge: '06 SWEET PRINCESS',
     type: 'Eau De Parfum',
     subtitle: 'Sparkling Pear, Pink Petals & Whipped Vanilla',
     description:
@@ -136,7 +137,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-7',
     rank: 7,
     name: 'VS Bombshell',
-    badge: '#07 ICONIC GLAMOUR',
+    badge: '07 ICONIC GLAMOUR',
     type: 'Eau De Parfum',
     subtitle: 'Purple Passion Fruit & Shangri-la Peony',
     description:
@@ -155,7 +156,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-8',
     rank: 8,
     name: 'Bvlgari Aqva',
-    badge: '#08 DEEP OCEAN VIBE',
+    badge: '08 DEEP OCEAN VIBE',
     type: 'Eau De Toilette Intense',
     subtitle: 'Mediterranean Seaweed, Mandarin & Mineral Amber',
     description:
@@ -174,7 +175,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-9',
     rank: 9,
     name: 'Baccarat Rouge 540',
-    badge: '#09 LEGENDARY LUXURY',
+    badge: '09 LEGENDARY LUXURY',
     type: 'Extrait De Parfum',
     subtitle: 'Golden Saffron, Jasmine & Crystal Ambergris',
     description:
@@ -193,7 +194,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-10',
     rank: 10,
     name: 'YSL Libre',
-    badge: '#10 BOLD FREEDOM',
+    badge: '10 BOLD FREEDOM',
     type: 'Eau De Parfum',
     subtitle: 'French Lavender & Moroccan Orange Blossom',
     description:
@@ -212,7 +213,7 @@ export const TOP_11_DATA: Top11Item[] = [
     id: 'top-11',
     rank: 11,
     name: 'Gucci Flora',
-    badge: '#11 RADIANT BLOOM',
+    badge: '11 RADIANT BLOOM',
     type: 'Eau De Parfum',
     subtitle: 'White Gardenia, Solar Pear & Red Berries',
     description:
@@ -226,5 +227,23 @@ export const TOP_11_DATA: Top11Item[] = [
     bottleThemeColor: '#10B981',
     accentBadge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     accentBorder: 'border-emerald-500/40',
+  },
+  {
+    id: 'top-1792842000704',
+    rank: 12,
+    name: 'Mykonos penthouse',
+    badge: 'TOP 12',
+    type: 'Eau De Parfum',
+    subtitle: 'Warm, Floral, Woody',
+    description: 'Terkesan hangat dan lembut, cocok untuk menemani aktivitas seharian.',
+    topNotes: 'Pear',
+    middleNotes: 'Jasmine',
+    baseNotes: 'Vanilla',
+    longevity: '10 - 14 Jam',
+    sillage: 'Kuat & Semerbak',
+    colorGradient: 'from-amber-500 via-amber-600 to-yellow-700',
+    bottleThemeColor: '#DFB76C',
+    accentBadge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    accentBorder: 'border-amber-500/40',
   },
 ];

@@ -35,6 +35,9 @@ import {
   RefreshCw,
   SlidersHorizontal,
   BarChart3,
+  Share2,
+  MessageCircle,
+  ShoppingBag,
 } from 'lucide-react';
 
 import { AnalyticsView } from './AnalyticsView';
@@ -53,8 +56,17 @@ import {
   saveArticlesToStorage,
   INITIAL_ARTICLES,
 } from '../utils/articleStorage';
-import { PricingConfig, DEFAULT_PRICING, savePricingToServer } from '../utils/pricingStorage';
-import { TOP_11_DATA } from '../data/top11';
+import {
+  Top11Item,
+  getStoredTopPerfumes,
+  saveTopPerfumesToStorage,
+  fetchTopPerfumesFromServer,
+  saveTopPerfumesToServer,
+  addTopPerfume,
+  updateTopPerfume,
+  deleteTopPerfume,
+  resetTopPerfumesToDefault,
+} from '../utils/topPerfumesStorage';
 import {
   ReviewItem,
   getCachedReviews,
@@ -76,6 +88,23 @@ import {
   savePerfumesToServer,
   resetPerfumesToDefault,
 } from '../utils/perfumeStorage';
+import {
+  PricingConfig,
+  DEFAULT_PRICING,
+  savePricingToServer,
+} from '../utils/pricingStorage';
+import {
+  SocialLinks,
+  getStoredSocialLinks,
+  fetchSocialLinksFromServer,
+  saveSocialLinksToServer,
+  resetSocialLinksToDefault,
+  formatTikTokUrl,
+  extractTikTokHandle,
+  formatInstagramUrl,
+  extractInstagramHandle,
+  formatWhatsAppUrl,
+} from '../utils/socialStorage';
 
 interface DimensiSinkiScreenProps {
   onExitToPublic: () => void;
@@ -87,12 +116,14 @@ interface DimensiSinkiScreenProps {
   pricing?: PricingConfig;
   tickerConfig?: TickerConfig;
   perfumes?: PerfumeItem[];
+  socialLinks?: SocialLinks;
   onAssetsUpdated: (newLogo: string | null, newChibi: string | null) => void;
   onQrisUpdated: (newQris: string | null) => void;
   onTop11PhotoUpdated: (variantId: string, newPhoto: string) => void;
   onPricingUpdated: (newPricing: PricingConfig) => void;
   onTickerUpdated?: (newTicker: TickerConfig) => void;
   onPerfumesUpdated?: (newList: PerfumeItem[]) => void;
+  onSocialLinksUpdated?: (newLinks: SocialLinks) => void;
 }
 
 type MenuKey =
@@ -116,12 +147,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   pricing,
   tickerConfig,
   perfumes,
+  socialLinks: propSocialLinks,
   onAssetsUpdated,
   onQrisUpdated,
   onTop11PhotoUpdated,
   onPricingUpdated,
   onTickerUpdated,
   onPerfumesUpdated,
+  onSocialLinksUpdated,
 }) => {
   // Authentication Barrier state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -190,6 +223,53 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         console.error(err);
       } finally {
         setIsSavingTicker(false);
+      }
+    }
+  };
+
+  // Social Links (TikTok, Instagram, WhatsApp, Marketplace) State & Handlers
+  const [socialForm, setSocialForm] = useState<SocialLinks>(() => propSocialLinks || getStoredSocialLinks());
+  const [isSavingSocial, setIsSavingSocial] = useState(false);
+
+  useEffect(() => {
+    if (propSocialLinks) {
+      setSocialForm(propSocialLinks);
+    } else {
+      fetchSocialLinksFromServer().then((links) => {
+        if (links) setSocialForm(links);
+      });
+    }
+  }, [propSocialLinks]);
+
+  const handleSaveSocial = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    try {
+      setIsSavingSocial(true);
+      onShowToast('Menyimpan perubahan tautan akun ke server & cloud...');
+      const saved = await saveSocialLinksToServer(socialForm);
+      setSocialForm(saved);
+      onSocialLinksUpdated?.(saved);
+      onShowToast('Tautan akun TikTok & media sosial berhasil diperbarui! ✅');
+    } catch (err) {
+      console.error(err);
+      onShowToast('Gagal menyimpan tautan akun media sosial.');
+    } finally {
+      setIsSavingSocial(false);
+    }
+  };
+
+  const handleResetSocial = async () => {
+    if (confirm('Kembalikan semua tautan media sosial ke akun default resmi SINKI?')) {
+      try {
+        setIsSavingSocial(true);
+        const def = await resetSocialLinksToDefault();
+        setSocialForm(def);
+        onSocialLinksUpdated?.(def);
+        onShowToast('Tautan media sosial dikembalikan ke default!');
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSavingSocial(false);
       }
     }
   };
@@ -317,6 +397,118 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     }
   };
 
+  // Top Bestseller Management State & Handlers
+  const [topPerfumesList, setTopPerfumesList] = useState<Top11Item[]>(getStoredTopPerfumes);
+  const [isTopModalOpen, setIsTopModalOpen] = useState(false);
+  const [editingTopItem, setEditingTopItem] = useState<Top11Item | null>(null);
+  const [topFormName, setTopFormName] = useState('');
+  const [topFormType, setTopFormType] = useState('Eau De Parfum');
+  const [topFormSubtitle, setTopFormSubtitle] = useState('');
+  const [topFormDescription, setTopFormDescription] = useState('');
+  const [topFormTopNotes, setTopFormTopNotes] = useState('');
+  const [topFormMiddleNotes, setTopFormMiddleNotes] = useState('');
+  const [topFormBaseNotes, setTopFormBaseNotes] = useState('');
+
+  // Sinkronisasi data Top Bestseller dari server & cloud saat dibuka
+  useEffect(() => {
+    fetchTopPerfumesFromServer().then((items) => {
+      if (items && Array.isArray(items) && items.length > 0) {
+        setTopPerfumesList(items);
+      }
+    });
+
+    const handleUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setTopPerfumesList(e.detail);
+      }
+    };
+    window.addEventListener('sinki_top_perfumes_updated', handleUpdate);
+    return () => window.removeEventListener('sinki_top_perfumes_updated', handleUpdate);
+  }, []);
+
+  const handleOpenAddTopItem = () => {
+    setEditingTopItem(null);
+    setTopFormName('');
+    setTopFormType('Eau De Parfum');
+    setTopFormSubtitle('');
+    setTopFormDescription('');
+    setTopFormTopNotes('');
+    setTopFormMiddleNotes('');
+    setTopFormBaseNotes('');
+    setIsTopModalOpen(true);
+  };
+
+  const handleOpenEditTopItem = (item: Top11Item) => {
+    setEditingTopItem(item);
+    setTopFormName(item.name);
+    setTopFormType(item.type || 'Eau De Parfum');
+    setTopFormSubtitle(item.subtitle || '');
+    setTopFormDescription(item.description || '');
+    setTopFormTopNotes(item.topNotes || '');
+    setTopFormMiddleNotes(item.middleNotes || '');
+    setTopFormBaseNotes(item.baseNotes || '');
+    setIsTopModalOpen(true);
+  };
+
+  const handleSaveTopItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!topFormName.trim()) {
+      onShowToast('Nama varian tidak boleh kosong');
+      return;
+    }
+
+    if (editingTopItem) {
+      const updated = updateTopPerfume(editingTopItem.id, {
+        name: topFormName.trim(),
+        type: topFormType.trim(),
+        subtitle: topFormSubtitle.trim(),
+        description: topFormDescription.trim(),
+        topNotes: topFormTopNotes.trim(),
+        middleNotes: topFormMiddleNotes.trim(),
+        baseNotes: topFormBaseNotes.trim(),
+      });
+      setTopPerfumesList(updated);
+      onShowToast(`Varian Top ${editingTopItem.rank} (${topFormName}) berhasil diperbarui & disimpan ke cloud! ✨`);
+      await saveTopPerfumesToServer(updated);
+    } else {
+      const updated = addTopPerfume({
+        name: topFormName.trim(),
+        type: topFormType.trim(),
+        subtitle: topFormSubtitle.trim(),
+        description: topFormDescription.trim(),
+        topNotes: topFormTopNotes.trim(),
+        middleNotes: topFormMiddleNotes.trim(),
+        baseNotes: topFormBaseNotes.trim(),
+      });
+      setTopPerfumesList(updated);
+      onShowToast(`Varian Top baru (${topFormName}) berhasil ditambahkan & tersimpan ke publik! 🌟`);
+      await saveTopPerfumesToServer(updated);
+    }
+    setIsTopModalOpen(false);
+  };
+
+  const handleDeleteTopItem = async (id: string, name: string, rank: number) => {
+    if (topPerfumesList.length <= 1) {
+      onShowToast('Minimal harus ada 1 varian terdaftar di Top Bestseller');
+      return;
+    }
+    if (confirm(`Hapus varian Top ${rank} (${name}) dari daftar Bestseller?`)) {
+      const updated = deleteTopPerfume(id);
+      setTopPerfumesList(updated);
+      onShowToast(`Varian ${name} telah dihapus & sinkron ke publik`);
+      await saveTopPerfumesToServer(updated);
+    }
+  };
+
+  const handleResetTopPerfumes = async () => {
+    if (confirm('Kembalikan daftar Top Bestseller ke 11 varian bawaan standar?')) {
+      const reset = resetTopPerfumesToDefault();
+      setTopPerfumesList(reset);
+      onShowToast('Daftar Top Bestseller berhasil di-reset ke 11 varian awal!');
+      await saveTopPerfumesToServer(reset);
+    }
+  };
+
   // Real-time Pricing State
   const [pricingForm, setPricingForm] = useState<PricingConfig>(pricing || DEFAULT_PRICING);
   const [isSavingPricing, setIsSavingPricing] = useState(false);
@@ -430,11 +622,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     reader.onload = (event) => {
       const rawBase64 = event.target?.result as string;
       const targetType = (target === 'hero' ? 'hero' : target === 'logo' ? 'logo' : target === 'qris' ? 'qris' : 'bottle') as 'logo' | 'hero' | 'qris' | 'bottle';
+      const cleanBottleNumber = target.replace('top-', '');
       setAdjusterState({
         isOpen: true,
         imageSrc: rawBase64,
         target,
-        title: titles[target] || `Pas-kan Foto Botol #${target}`,
+        title: titles[target] || `Pas-kan Foto Botol ${cleanBottleNumber}`,
         targetType,
       });
     };
@@ -462,10 +655,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         onQrisUpdated(adjustedBase64);
         onShowToast('Barcode QRIS berhasil disimpan permanen! ✅');
       } else if (target) {
-        onShowToast(`Menyimpan foto botol #${target} ke server...`);
+        const cleanNumber = target.replace('top-', '');
+        onShowToast(`Menyimpan foto botol ${cleanNumber} ke server...`);
         await saveTop11PhotoToServer(target, adjustedBase64, '1995');
         onTop11PhotoUpdated(target, adjustedBase64);
-        onShowToast(`Foto botol #${target} berhasil disimpan permanen! ✅`);
+        onShowToast(`Foto botol ${cleanNumber} berhasil disimpan permanen! ✅`);
       }
     } catch (err) {
       console.error('Error saving asset:', err);
@@ -492,10 +686,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   };
 
   const handleResetReviews = async () => {
-    if (confirm('Kembalikan semua ulasan ke 4 ulasan bawaan asli?')) {
+    if (confirm('Kosongkan semua ulasan pembeli di server?')) {
       const res = await resetReviewsToDefaultInSupabase();
       setReviewsList(res);
-      onShowToast('Ulasan berhasil direset ke setelan awal.');
+      onShowToast('Semua ulasan berhasil dikosongkan.');
     }
   };
 
@@ -1595,32 +1789,65 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
               </div>
 
-              {/* BARIS 2: 11 BOTOL BESTSELLER (DESKTOP: 4 KOLOM) */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-display font-bold text-base text-white">
-                    Foto 11 Botol Bestseller
-                  </h3>
-                  <span className="text-[11px] text-slate-400 font-mono">11 Varian Unggulan</span>
+              {/* BARIS 2: MANAJEMEN VARIAN TOP BESTSELLER (DINAMIS DENGAN TAMBAH & EDIT) */}
+              <div className="space-y-4 pt-2 border-t border-white/10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-display font-bold text-base text-white">
+                        Varian Botol Bestseller ({topPerfumesList.length} Varian)
+                      </h3>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                        Top {topPerfumesList.length}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Kelola nama, deskripsi aroma, foto botol, dan tambahkan varian baru kapan saja.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleOpenAddTopItem}
+                      className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#DFB76C] to-[#C5A059] hover:brightness-105 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-md"
+                    >
+                      <Plus size={14} />
+                      <span>Tambah Varian Baru</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetTopPerfumes}
+                      className="py-1.5 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold flex items-center gap-1 transition-all"
+                      title="Kembalikan ke 11 varian awal"
+                    >
+                      <RotateCcw size={13} />
+                      <span>Reset</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {TOP_11_DATA.map((p, index) => {
+                  {topPerfumesList.map((p, index) => {
                     const variantId = `top-${p.id}`;
-                    const photo = top11Photos[variantId];
+                    const photo = top11Photos[variantId] || top11Photos[p.id] || p.photo;
 
                     return (
                       <div
                         key={p.id}
                         className="p-3.5 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/30 transition-all flex flex-col justify-between space-y-2.5"
                       >
+                        {/* Header: Clean Number 1, 2, 3 (No #) & Type */}
                         <div className="flex items-center justify-between text-[10px] font-mono">
                           <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold">
-                            #{index + 1}
+                            {p.rank || index + 1}
                           </span>
-                          <span className="text-slate-400 truncate max-w-[110px]">{p.type || 'Extrait De Parfum'}</span>
+                          <span className="text-slate-400 truncate max-w-[110px]">
+                            {p.type || 'Eau De Parfum'}
+                          </span>
                         </div>
 
+                        {/* Photo Box */}
                         <div className="relative h-40 rounded-xl bg-black/60 border border-white/5 p-2 flex items-center justify-center overflow-hidden">
                           {photo ? (
                             <img
@@ -1629,31 +1856,59 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               className="w-full h-full object-contain filter drop-shadow-sm"
                             />
                           ) : (
-                            <span className="text-[10px] text-slate-500 font-mono text-center">
-                              Botol #{p.id}
-                            </span>
+                            <div className="text-center p-2">
+                              <span className="text-[11px] text-amber-300/80 font-mono block font-bold">
+                                Botol {p.rank || index + 1}
+                              </span>
+                              <span className="text-[9px] text-slate-500 block mt-0.5">
+                                Belum ada foto
+                              </span>
+                            </div>
                           )}
                         </div>
 
+                        {/* Title & Subtitle */}
                         <div>
-                          <h4 className="font-display font-bold text-xs text-white truncate">
+                          <h4 className="font-display font-bold text-xs text-white truncate" title={p.name}>
                             {p.name}
                           </h4>
-                          <span className="text-[10px] text-slate-400 block truncate">
-                            {p.subtitle}
+                          <span className="text-[10px] text-slate-400 block truncate" title={p.subtitle}>
+                            {p.subtitle || 'Aroma khas SINKI'}
                           </span>
                         </div>
 
-                        <label className="w-full py-1.5 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/30 text-amber-300 font-bold text-[10.5px] flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all">
-                          <Upload size={12} />
-                          <span>Ganti Foto</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handleFileUpload(e, variantId)}
-                          />
-                        </label>
+                        {/* Action Buttons: Ganti Foto, Edit Info, Hapus */}
+                        <div className="space-y-1.5 pt-1 border-t border-white/5">
+                          <label className="w-full py-1.5 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/30 text-amber-300 font-bold text-[10px] flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all">
+                            <Upload size={11} />
+                            <span>Ganti Foto</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handleFileUpload(e, variantId)}
+                            />
+                          </label>
+
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditTopItem(p)}
+                              className="py-1 px-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 text-[10px] font-semibold flex items-center justify-center gap-1 transition-all"
+                            >
+                              <Edit size={11} />
+                              <span>Edit Info</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTopItem(p.id, p.name, p.rank || index + 1)}
+                              className="py-1 px-1.5 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-400 hover:text-red-300 border border-red-500/20 text-[10px] font-semibold flex items-center justify-center gap-1 transition-all"
+                            >
+                              <Trash2 size={11} />
+                              <span>Hapus</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -2023,10 +2278,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h2 className="font-display text-xl font-bold text-amber-300">
-                    Moderasi Ulasan Pembeli ({reviewsList.length})
+                    Moderasi Ulasan Pembeli ({reviewsList.length}/10 Slot)
                   </h2>
                   <p className="text-xs text-slate-400">
-                    Pantau dan moderasi ulasan pengalaman pembeli secara transparan.
+                    Pantau dan moderasi ulasan pengalaman pembeli secara transparan. Sistem menampung hingga 10 ulasan terbaru secara bergantian.
                   </p>
                 </div>
 
@@ -2035,53 +2290,61 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   className="py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs border border-white/10 flex items-center gap-1.5 self-start sm:self-auto"
                 >
                   <RotateCcw size={13} />
-                  <span>Reset ke 4 Ulasan Bawaan</span>
+                  <span>Kosongkan Semua Ulasan</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {reviewsList.map((rev) => (
-                  <div
-                    key={rev.id}
-                    className="p-4 sm:p-5 rounded-2xl bg-[#0e111d] border border-white/10 space-y-3 flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{rev.emoji}</span>
-                          <div>
-                            <span className="font-display font-bold text-xs text-white block">
-                              {rev.name}
-                            </span>
-                            <span className="text-[10px] text-amber-300">{rev.emojiLabel}</span>
+              {reviewsList.length === 0 ? (
+                <div className="p-8 rounded-2xl bg-[#0e111d] border border-white/10 text-center space-y-2">
+                  <p className="text-xs text-slate-400">
+                    Belum ada ulasan yang masuk. Kotak ulasan saat ini kosong dan siap menampung ulasan baru dari pengunjung hingga 10 slot.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {reviewsList.map((rev) => (
+                    <div
+                      key={rev.id}
+                      className="p-4 sm:p-5 rounded-2xl bg-[#0e111d] border border-white/10 space-y-3 flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{rev.emoji}</span>
+                            <div>
+                              <span className="font-display font-bold text-xs text-white block">
+                                {rev.name}
+                              </span>
+                              <span className="text-[10px] text-amber-300">{rev.emojiLabel}</span>
+                            </div>
                           </div>
+
+                          <button
+                            onClick={() => handleDeleteReview(rev.id, rev.name)}
+                            className="py-1 px-2.5 rounded-lg bg-red-600/30 hover:bg-red-600/50 border border-red-500/40 text-red-300 text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all"
+                          >
+                            <Trash2 size={12} />
+                            <span>Hapus</span>
+                          </button>
                         </div>
 
-                        <button
-                          onClick={() => handleDeleteReview(rev.id, rev.name)}
-                          className="py-1 px-2.5 rounded-lg bg-red-600/30 hover:bg-red-600/50 border border-red-500/40 text-red-300 text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all"
-                        >
-                          <Trash2 size={12} />
-                          <span>Hapus</span>
-                        </button>
+                        <div className="text-[9.5px] font-mono text-slate-400 bg-white/5 px-2 py-0.5 rounded-md inline-block">
+                          Varian: {rev.variant}
+                        </div>
+
+                        <p className="text-xs text-slate-200 leading-relaxed italic">
+                          "{rev.comment}"
+                        </p>
                       </div>
 
-                      <div className="text-[9.5px] font-mono text-slate-400 bg-white/5 px-2 py-0.5 rounded-md inline-block">
-                        Varian: {rev.variant}
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-white/5">
+                        <span>{rev.date}</span>
+                        <span>❤️ {rev.likes} Apresiasi</span>
                       </div>
-
-                      <p className="text-xs text-slate-200 leading-relaxed italic">
-                        "{rev.comment}"
-                      </p>
                     </div>
-
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-white/5">
-                      <span>{rev.date}</span>
-                      <span>❤️ {rev.likes} Apresiasi</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -2104,6 +2367,206 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 <p className="text-xs text-slate-400">
                   Status proteksi akun, hak cipta resmi, dan tautan akses.
                 </p>
+              </div>
+
+              {/* KARTU KELOLA AKUN MEDIA SOSIAL & MARKETPLACE RESMI */}
+              <div className="p-5 sm:p-6 rounded-3xl bg-[#0e111d] border border-amber-500/30 shadow-2xl relative overflow-hidden space-y-5">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/[0.05] rounded-full blur-3xl pointer-events-none" />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-pink-500/20 to-amber-500/20 border border-white/15 flex items-center justify-center shadow-inner">
+                      <Share2 size={20} className="text-amber-300" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
+                        <span>Kelola Akun Media Sosial & Toko Resmi</span>
+                        <span className="text-[9.5px] font-mono text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded-full border border-cyan-500/30 font-bold">
+                          Live Sync
+                        </span>
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Ganti akun TikTok, Instagram, WhatsApp, atau marketplace Anda kapan saja. Tautan otomatis berubah di Beranda, Menu Drawer, dan Tombol Media Sosial.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleResetSocial}
+                      disabled={isSavingSocial}
+                      className="py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-all"
+                      title="Kembalikan tautan ke akun default"
+                    >
+                      <RotateCcw size={12} />
+                      <span>Reset Default</span>
+                    </button>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveSocial} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* 1. AKUN TIKTOK (FOKUS UTAMA OWNER) */}
+                    <div className="p-4 rounded-2xl bg-black/40 border border-cyan-500/30 space-y-2.5 shadow-md hover:border-cyan-400/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+                          <svg viewBox="0 0 24 24" className="w-4 h-4">
+                            <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#00f2fe"/>
+                            <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#fe2c55" opacity="0.7"/>
+                            <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#ffffff" opacity="0.85"/>
+                          </svg>
+                          <span>Akun / Link Profil TikTok *</span>
+                        </label>
+                        <span className="text-[10px] font-mono text-cyan-300 font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                          {extractTikTokHandle(socialForm.tiktok)}
+                        </span>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={socialForm.tiktok}
+                        onChange={(e) => setSocialForm({ ...socialForm, tiktok: e.target.value })}
+                        placeholder="Contoh: @sinkiofficial atau https://www.tiktok.com/@sinkiofficial"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-cyan-500/40 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                      />
+
+                      <div className="flex items-center justify-between text-[10.5px]">
+                        <span className="text-slate-400 leading-snug">
+                          💡 Bisa ketik <code className="text-cyan-300 bg-white/5 px-1 py-0.5 rounded">@nama_baru</code> atau link lengkap.
+                        </span>
+                        <a
+                          href={formatTikTokUrl(socialForm.tiktok)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-cyan-300 hover:text-white font-bold flex items-center gap-1 hover:underline ml-2 shrink-0"
+                          title="Buka akun TikTok untuk tes apakah link benar"
+                        >
+                          <span>Tes Buka Profil</span>
+                          <ExternalLink size={11} />
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* 2. AKUN INSTAGRAM */}
+                    <div className="p-4 rounded-2xl bg-black/40 border border-pink-500/30 space-y-2.5 shadow-md hover:border-pink-400/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-pink-300 flex items-center gap-2">
+                          <div className="w-4 h-4 rounded bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center p-0.5">
+                            <svg viewBox="0 0 24 24" fill="white" className="w-full h-full">
+                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                            </svg>
+                          </div>
+                          <span>Akun / Link Profil Instagram</span>
+                        </label>
+                        <span className="text-[10px] font-mono text-pink-300 font-bold bg-pink-500/10 px-2 py-0.5 rounded border border-pink-500/20">
+                          {extractInstagramHandle(socialForm.instagram)}
+                        </span>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={socialForm.instagram}
+                        onChange={(e) => setSocialForm({ ...socialForm, instagram: e.target.value })}
+                        placeholder="Contoh: @sinki_official atau https://www.instagram.com/sinki_official"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-pink-500/40 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/50"
+                      />
+
+                      <div className="flex items-center justify-between text-[10.5px]">
+                        <span className="text-slate-400 leading-snug">
+                          Tautan ke feed & katalog resmi SINKI di Instagram.
+                        </span>
+                        <a
+                          href={formatInstagramUrl(socialForm.instagram)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-pink-300 hover:text-white font-bold flex items-center gap-1 hover:underline ml-2 shrink-0"
+                        >
+                          <span>Tes Buka Profil</span>
+                          <ExternalLink size={11} />
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* 3. WHATSAPP HOTLINE VIP */}
+                    <div className="p-4 rounded-2xl bg-black/40 border border-emerald-500/30 space-y-2.5 shadow-md hover:border-emerald-400/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-2">
+                          <MessageCircle size={15} className="text-emerald-400" />
+                          <span>WhatsApp Hotline VIP & Order</span>
+                        </label>
+                        <span className="text-[10px] font-mono text-emerald-300 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                          Aktif
+                        </span>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={socialForm.whatsapp}
+                        onChange={(e) => setSocialForm({ ...socialForm, whatsapp: e.target.value })}
+                        placeholder="Contoh: 081398677610 atau https://wa.me/6281398677610"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-emerald-500/40 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/50"
+                      />
+
+                      <div className="flex items-center justify-between text-[10.5px]">
+                        <span className="text-slate-400 leading-snug">
+                          Nomor chat pemesanan langsung & konsultasi parfum.
+                        </span>
+                        <a
+                          href={formatWhatsAppUrl(socialForm.whatsapp)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-emerald-300 hover:text-white font-bold flex items-center gap-1 hover:underline ml-2 shrink-0"
+                        >
+                          <span>Tes Chat WA</span>
+                          <ExternalLink size={11} />
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* 4. SHOPEE & TOKOPEDIA */}
+                    <div className="p-4 rounded-2xl bg-black/40 border border-amber-500/30 space-y-2.5 shadow-md hover:border-amber-400/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
+                          <ShoppingBag size={15} className="text-amber-400" />
+                          <span>Shopee & Tokopedia Official</span>
+                        </label>
+                      </div>
+
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={socialForm.shopee}
+                          onChange={(e) => setSocialForm({ ...socialForm, shopee: e.target.value })}
+                          placeholder="Link Toko Shopee (https://shopee.co.id/...)"
+                          className="w-full px-3 py-2 rounded-xl bg-[#141624] border border-white/10 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        />
+                        <input
+                          type="text"
+                          value={socialForm.tokopedia}
+                          onChange={(e) => setSocialForm({ ...socialForm, tokopedia: e.target.value })}
+                          placeholder="Link Toko Tokopedia (https://tokopedia.com/...)"
+                          className="w-full px-3 py-2 rounded-xl bg-[#141624] border border-white/10 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tombol Simpan Perubahan Media Sosial */}
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <p className="text-[11px] text-slate-400">
+                      ✨ Tekan tombol simpan di sebelah kanan agar akun baru langsung aktif dan disinkronkan ke cloud.
+                    </p>
+                    <button
+                      type="submit"
+                      disabled={isSavingSocial}
+                      className="w-full sm:w-auto py-2.5 px-6 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-110 disabled:opacity-50 text-slate-950 font-black text-xs uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-black/40 flex items-center justify-center gap-2 shrink-0 border border-[#DFB76C]/40"
+                    >
+                      <Save size={15} className="stroke-[2.5]" />
+                      <span>{isSavingSocial ? 'Menyimpan ke Cloud...' : 'Simpan Perubahan Tautan'}</span>
+                    </button>
+                  </div>
+                </form>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2180,6 +2643,148 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             );
           })}
         </nav>
+
+        {/* MODAL TAMBAH & EDIT VARIAN TOP BESTSELLER */}
+        {isTopModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+            <div className="w-full max-w-md rounded-3xl bg-[#121524] border border-amber-500/30 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold font-mono text-sm">
+                    {editingTopItem ? editingTopItem.rank : topPerfumesList.length + 1}
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-sm text-white">
+                      {editingTopItem ? `Edit Varian Top ${editingTopItem.rank}` : 'Tambah Varian Top Baru'}
+                    </h3>
+                    <span className="text-[10px] text-slate-400">
+                      {editingTopItem ? 'Perbarui nama & karakter aroma' : 'Masukkan parfum baru ke daftar Bestseller'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsTopModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveTopItem} className="space-y-3">
+                <div>
+                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block mb-1">
+                    Nama Parfum *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={topFormName}
+                    onChange={(e) => setTopFormName(e.target.value)}
+                    placeholder="Contoh: Mykonos Vanilla Clouds"
+                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block mb-1">
+                    Tipe Konsentrasi
+                  </label>
+                  <select
+                    value={topFormType}
+                    onChange={(e) => setTopFormType(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0f111d] border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="Extrait De Parfum">Extrait De Parfum</option>
+                    <option value="Eau De Parfum">Eau De Parfum</option>
+                    <option value="Eau De Toilette Intense">Eau De Toilette Intense</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block mb-1">
+                    Tagline / Karakter Singkat
+                  </label>
+                  <input
+                    type="text"
+                    value={topFormSubtitle}
+                    onChange={(e) => setTopFormSubtitle(e.target.value)}
+                    placeholder="Contoh: Rich Amber, French Cognac & Royal Vanilla"
+                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block mb-1">
+                    Deskripsi Lengkap Aroma
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={topFormDescription}
+                    onChange={(e) => setTopFormDescription(e.target.value)}
+                    placeholder="Penjelasan detail aroma, kesan pertama, dan ketahanan wangi..."
+                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
+                      Top Notes
+                    </label>
+                    <input
+                      type="text"
+                      value={topFormTopNotes}
+                      onChange={(e) => setTopFormTopNotes(e.target.value)}
+                      placeholder="e.g. Cognac, Bergamot"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-[11px] text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
+                      Middle Notes
+                    </label>
+                    <input
+                      type="text"
+                      value={topFormMiddleNotes}
+                      onChange={(e) => setTopFormMiddleNotes(e.target.value)}
+                      placeholder="e.g. Amber, Tonka"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-[11px] text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
+                      Base Notes
+                    </label>
+                    <input
+                      type="text"
+                      value={topFormBaseNotes}
+                      onChange={(e) => setTopFormBaseNotes(e.target.value)}
+                      placeholder="e.g. Vanilla, Cedar"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-[11px] text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setIsTopModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 font-black text-xs shadow-md hover:brightness-105 active:scale-95 transition-all"
+                  >
+                    {editingTopItem ? 'Simpan Perubahan' : 'Tambahkan Varian'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* MODAL FITTING & ADJUST FOTO DENGAN ZOOM / PAN */}
         {adjusterState.isOpen && (
