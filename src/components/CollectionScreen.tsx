@@ -262,14 +262,21 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-            {filteredPerfumes.map((perfume) => {
+            {filteredPerfumes.map((perfume, idx) => {
               const theme = getCategoryColor(perfume.category);
               const isFav = favorites.includes(perfume.id);
+
+              // Alternating floating animation: kolom kiri naik, kolom kanan turun dengan jeda baris halus
+              const isLeftColumn = idx % 2 === 0;
+              const floatClass = isLeftColumn ? 'animate-sinki-float-up' : 'animate-sinki-float-down';
+              const rowIdx = Math.floor(idx / 2);
+              const animationDelay = `${(rowIdx * 0.4) % 2.4}s`;
 
               return (
                 <div
                   key={perfume.id}
-                  className="group relative flex flex-col justify-between p-3 rounded-2xl bg-gradient-to-b from-[#181a28]/95 to-[#12131e]/95 hover:from-[#1e2235] hover:to-[#161824] border border-white/10 hover:border-[#C5A059]/40 shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-all duration-200 backdrop-blur-md"
+                  style={{ animationDelay }}
+                  className={`group relative flex flex-col justify-between p-3 rounded-2xl bg-gradient-to-b from-[#181a28]/95 to-[#12131e]/95 hover:from-[#1e2235] hover:to-[#161824] border border-white/10 hover:border-[#C5A059]/40 transition-all duration-300 backdrop-blur-md ${floatClass}`}
                 >
                   {/* Top card bar: Category badge + Favorite heart */}
                   <div className="flex items-center justify-between mb-2">
