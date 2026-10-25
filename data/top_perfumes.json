@@ -196,5 +196,23 @@
     "bottleThemeColor": "#10B981",
     "accentBadge": "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
     "accentBorder": "border-emerald-500/40"
+  },
+  {
+    "id": "top-1792842000704",
+    "name": "Mykonos penthouse",
+    "type": "Eau De Parfum",
+    "subtitle": "Warm, Floral, Woody",
+    "description": "Terkesan hangat dan lembut, cocok untuk menemani aktivitas seharian",
+    "topNotes": "Pear",
+    "middleNotes": "Jasmine",
+    "baseNotes": "Vanilla",
+    "longevity": "10 - 14 Jam",
+    "sillage": "Kuat & Semerbak",
+    "rank": 12,
+    "badge": "TOP 12",
+    "colorGradient": "from-amber-500 via-amber-600 to-yellow-700",
+    "bottleThemeColor": "#DFB76C",
+    "accentBadge": "bg-amber-500/20 text-amber-300 border-amber-500/40",
+    "accentBorder": "border-amber-500/40"
   }
 ]

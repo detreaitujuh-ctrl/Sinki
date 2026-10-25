@@ -9,6 +9,16 @@
     "not_found_handling": "single-page-application",
     "directory": "dist"
   },
+  "routes": [
+    {
+      "pattern": "sinkiparfum.my.id",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.sinkiparfum.my.id",
+      "custom_domain": true
+    }
+  ],
   "compatibility_flags": [
     "nodejs_compat"
   ]

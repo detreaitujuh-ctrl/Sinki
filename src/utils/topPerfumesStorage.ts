@@ -6,6 +6,32 @@ export type { Top11Item } from '../data/top11';
 const STORAGE_KEY = 'sinki_top_perfumes_v2';
 const TOP_PERFUMES_FILE_NAME = 'top_perfumes.json';
 const TOP_PERFUMES_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${TOP_PERFUMES_FILE_NAME}`;
+const SUPABASE_STORAGE_UPLOAD_URL =
+  'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/top_perfumes.json';
+const SUPABASE_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
+
+/**
+ * Menyinkronkan daftar Top Bestseller langsung ke Supabase Storage Cloud (Metode Upsert Permanen).
+ * Memastikan bahwa perubahan varian langsung tersimpan ke cloud bahkan saat aplikasi dibuka di Cloudflare / static hosting tanpa backend Node.js aktif.
+ */
+export const syncTopPerfumesDirectlyToCloud = async (items: Top11Item[]): Promise<boolean> => {
+  try {
+    const res = await fetch(SUPABASE_STORAGE_UPLOAD_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: JSON.stringify(items, null, 2),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('[Direct Cloud Sync Notice] Top Perfumes:', err);
+    return false;
+  }
+};
 
 /**
  * Normalisasi varian Top Bestseller:
@@ -106,6 +132,7 @@ export const saveTopPerfumesToServer = async (items: Top11Item[]): Promise<Top11
   const cleaned = cleanTopPerfumes(items);
   setStoredTopPerfumes(cleaned);
 
+  // 1. Coba simpan via API server Express jika backend Node aktif
   const token = getOwnerToken();
   try {
     const res = await fetch('/api/owner/update-top-perfumes', {
@@ -123,6 +150,9 @@ export const saveTopPerfumesToServer = async (items: Top11Item[]): Promise<Top11
   } catch (err) {
     console.warn('Notice saving top perfumes to server:', err);
   }
+
+  // 2. Selalu sinkronkan langsung ke Supabase Cloud Storage (bekerja 100% di Cloudflare & static hosting)
+  await syncTopPerfumesDirectlyToCloud(cleaned);
 
   return cleaned;
 };
