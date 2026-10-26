@@ -1,5 +1,21 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Upload, X, Check, Image as ImageIcon, RotateCcw, Loader2, CloudUpload, Crown, Tag, Truck, BarChart3 } from 'lucide-react';
+import {
+  Upload,
+  X,
+  Check,
+  Image as ImageIcon,
+  RotateCcw,
+  Loader2,
+  CloudUpload,
+  Crown,
+  Tag,
+  Truck,
+  BarChart3,
+  Sparkles,
+  ArrowUpCircle,
+  RotateCw,
+  MoveHorizontal,
+} from 'lucide-react';
 import { AnalyticsView } from './AnalyticsView';
 import {
   saveAssetToServer,
@@ -7,6 +23,14 @@ import {
   saveTop11PhotoToServer,
   saveQrisToServer,
   getStoredQris,
+  HeroStageEffect,
+  STAGE_EFFECTS,
+  DEFAULT_HERO_BOTTLES,
+  getStoredHeroBottles,
+  getStoredHeroStageEffect,
+  saveHeroBottleItemToServer,
+  saveHeroStageEffectToServer,
+  compressImage,
 } from '../utils/assetStorage';
 import { TOP_11_DATA } from '../data/top11';
 import { ImageAdjusterModal } from './ImageAdjusterModal';
@@ -25,10 +49,14 @@ interface AssetUploadModalProps {
   currentChibi: string | null;
   currentQris?: string | null;
   top11Photos: Record<string, string>;
+  heroBottles?: string[];
+  heroStageEffect?: HeroStageEffect;
   pricing?: PricingConfig;
   onAssetsUpdated: (newLogo: string | null, newChibi: string | null) => void;
   onTop11PhotoUpdated: (variantId: string, newPhoto: string | null) => void;
   onQrisUpdated?: (newQris: string | null) => void;
+  onHeroBottlesUpdated?: (bottles: string[]) => void;
+  onHeroStageEffectUpdated?: (effect: HeroStageEffect) => void;
   onPricingUpdated?: (newPricing: PricingConfig) => void;
   onShowToast: (msg: string) => void;
 }
@@ -40,10 +68,14 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
   currentChibi,
   currentQris,
   top11Photos,
+  heroBottles,
+  heroStageEffect,
   pricing,
   onAssetsUpdated,
   onTop11PhotoUpdated,
   onQrisUpdated,
+  onHeroBottlesUpdated,
+  onHeroStageEffectUpdated,
   onPricingUpdated,
   onShowToast,
 }) => {
@@ -51,8 +83,23 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
   const [logoPreview, setLogoPreview] = useState<string | null>(currentLogo);
   const [chibiPreview, setChibiPreview] = useState<string | null>(currentChibi);
   const [qrisPreview, setQrisPreview] = useState<string | null>(currentQris || getStoredQris());
+  const [heroBottlesList, setHeroBottlesList] = useState<string[]>(() => heroBottles || getStoredHeroBottles());
+  const [activeEffect, setActiveEffect] = useState<HeroStageEffect>(() => heroStageEffect || getStoredHeroStageEffect());
+  const [selectedHeroBottleIdx, setSelectedHeroBottleIdx] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (heroBottles && heroBottles.length === 4) {
+      setHeroBottlesList(heroBottles);
+    }
+  }, [heroBottles]);
+
+  useEffect(() => {
+    if (heroStageEffect) {
+      setActiveEffect(heroStageEffect);
+    }
+  }, [heroStageEffect]);
 
   // Pricing Form State
   const [pricingForm, setPricingForm] = useState<PricingConfig>(() => pricing || getStoredPricing());
@@ -74,6 +121,47 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
   const chibiInputRef = useRef<HTMLInputElement>(null);
   const qrisInputRef = useRef<HTMLInputElement>(null);
   const bottleInputRef = useRef<HTMLInputElement>(null);
+  const heroBottleInputRef = useRef<HTMLInputElement>(null);
+
+  const handleHeroBottleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (selectedHeroBottleIdx === null) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsProcessing(true);
+      onShowToast(`Memproses Botol 3D #${selectedHeroBottleIdx + 1}...`);
+      const base64Data = await compressImage(file, 1000, 1000, 0.9);
+      onShowToast(`Menyimpan Botol 3D #${selectedHeroBottleIdx + 1} ke server...`);
+      const updated = await saveHeroBottleItemToServer(selectedHeroBottleIdx, base64Data, '1995');
+      setHeroBottlesList(updated);
+      if (onHeroBottlesUpdated) {
+        onHeroBottlesUpdated(updated);
+      }
+      onShowToast(`Botol 3D #${selectedHeroBottleIdx + 1} berhasil disimpan permanen! ✅`);
+    } catch (err) {
+      console.error(err);
+      onShowToast('Gagal menyimpan foto botol. Silakan coba lagi.');
+    } finally {
+      setIsProcessing(false);
+      setSelectedHeroBottleIdx(null);
+      e.target.value = '';
+    }
+  };
+
+  const handleSelectStageEffect = async (effectId: HeroStageEffect) => {
+    try {
+      setActiveEffect(effectId);
+      if (onHeroStageEffectUpdated) {
+        onHeroStageEffectUpdated(effectId);
+      }
+      await saveHeroStageEffectToServer(effectId, '1995');
+      const effectName = STAGE_EFFECTS.find((e) => e.id === effectId)?.name || effectId;
+      onShowToast(`Efek panggung diubah ke "${effectName}"! ✨`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -287,11 +375,18 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
           className="hidden"
           onChange={handleBottleFileChange}
         />
+        <input
+          type="file"
+          ref={heroBottleInputRef}
+          accept="image/png,image/*"
+          className="hidden"
+          onChange={handleHeroBottleFileChange}
+        />
 
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto no-scrollbar space-y-3.5 pr-0.5">
           {activeTab === 'home' ? (
-            /* TAB 1: HOME PHOTOS (Logo & Chibi) */
+            /* TAB 1: HOME PHOTOS & 3D STAGE */
             <>
               {/* Slot 1: Logo Sinki Asli (Sinki3.png) */}
               <div className="p-3 rounded-2xl bg-[#0e1015] border border-white/5 space-y-2">
@@ -341,11 +436,11 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
                 </div>
               </div>
 
-              {/* Slot 2: Foto Chibi Asli (Sinki2.png) */}
+              {/* Slot 2: Latar Belakang Panggung (Backdrop Hero) */}
               <div className="p-3 rounded-2xl bg-[#0e1015] border border-white/5 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-200">
-                    2. Foto Chibi Asli (Sinki2.png)
+                    2. Latar Belakang Panggung (Backdrop)
                   </span>
                   {chibiPreview && (
                     <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
@@ -354,7 +449,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
                   )}
                 </div>
                 <p className="text-[10px] text-slate-400">
-                  Tampil di tengah-tengah beranda utama
+                  Latar belakang tetap di balik botol parfum (tidak bergerak & menjaga judul SINKI tetap tajam)
                 </p>
 
                 <div className="flex items-center gap-3 pt-1">
@@ -362,7 +457,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
                     {chibiPreview ? (
                       <img
                         src={chibiPreview}
-                        alt="Chibi Asli"
+                        alt="Latar Belakang Panggung"
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -384,16 +479,132 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-200 text-xs font-medium transition-all disabled:opacity-50"
                   >
                     {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                    <span>{chibiPreview ? 'Ganti File Chibi' : 'Pilih File Chibi'}</span>
+                    <span>{chibiPreview ? 'Ganti Latar Belakang' : 'Pilih Latar Belakang'}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Slot 3: Foto Barcode QRIS Resmi Toko */}
+              {/* Slot 3: Pilihan Efek Panggung 3D (4 Pilihan Animasi) */}
+              <div className="p-3 rounded-2xl bg-[#0e1015] border border-amber-500/30 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <Sparkles size={13} />
+                    <span>3. Pilihan Efek Panggung 3D (4 Pilihan)</span>
+                  </span>
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
+                    Aktif
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  Pilih gaya pergerakan dan transisi botol parfum saat tampil bergantian otomatis:
+                </p>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {STAGE_EFFECTS.map((effect) => {
+                    const isSelected = activeEffect === effect.id;
+                    return (
+                      <button
+                        key={effect.id}
+                        type="button"
+                        onClick={() => handleSelectStageEffect(effect.id)}
+                        className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                          isSelected
+                            ? 'bg-gradient-to-br from-amber-500/25 to-amber-700/15 border-amber-400 text-white shadow-[0_0_12px_rgba(223,183,108,0.25)]'
+                            : 'bg-black/50 border-white/10 hover:border-amber-500/30 text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[11px] font-bold block truncate text-amber-200">
+                            {effect.name}
+                          </span>
+                          {isSelected && (
+                            <span className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shrink-0">
+                              <Check size={10} className="stroke-[3]" />
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[9px] text-slate-300 block font-medium leading-tight">
+                          {effect.tagline}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Slot 4: 4 Botol Parfum 3D (PNG Transparan) */}
+              <div className="p-3 rounded-2xl bg-[#0e1015] border border-amber-500/30 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <Crown size={13} />
+                    <span>4. Botol Parfum 3D (4 Slot PNG Transparan)</span>
+                  </span>
+                  <span className="text-[9px] text-amber-200/90 font-mono">
+                    Slide Otomatis
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  Unggah 4 foto botol parfum transparan (format PNG tanpa background) untuk panggung 3D:
+                </p>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {[0, 1, 2, 3].map((idx) => {
+                    const rawBottle = heroBottlesList[idx];
+                    const bottleUrl = rawBottle && !rawBottle.includes('top11/top-') ? rawBottle : null;
+                    const isCustom = Boolean(bottleUrl);
+
+                    return (
+                      <div
+                        key={idx}
+                        className="p-2.5 rounded-xl bg-black/60 border border-white/10 flex flex-col justify-between space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-amber-300 font-mono">
+                            Botol #{idx + 1}
+                          </span>
+                          {isCustom && (
+                            <span className="text-[8.5px] text-emerald-400 flex items-center gap-0.5">
+                              <Check size={9} /> Kustom
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Thumbnail with checkerboard dark background */}
+                        <div className="relative h-24 rounded-lg bg-gradient-to-b from-[#181a24] to-[#0f1118] border border-white/10 flex items-center justify-center overflow-hidden p-1">
+                          {bottleUrl ? (
+                            <img
+                              src={bottleUrl}
+                              alt={`Botol 3D #${idx + 1}`}
+                              className="max-h-full max-w-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]"
+                            />
+                          ) : (
+                            <ImageIcon size={18} className="text-slate-500" />
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={isProcessing}
+                          onClick={() => {
+                            setSelectedHeroBottleIdx(idx);
+                            heroBottleInputRef.current?.click();
+                          }}
+                          className="w-full py-1.5 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/35 text-amber-300 text-[10px] font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                        >
+                          <Upload size={11} />
+                          <span>Ganti PNG #{idx + 1}</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Slot 5: Foto Barcode QRIS Resmi Toko */}
               <div className="p-3 rounded-2xl bg-[#0e1015] border border-white/5 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-200">
-                    3. Foto Barcode QRIS Resmi Toko
+                    5. Foto Barcode QRIS Resmi Toko
                   </span>
                   {qrisPreview && (
                     <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">

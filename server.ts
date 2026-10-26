@@ -327,6 +327,8 @@ interface AssetsData {
   chibi: string | null;
   qrisImage?: string | null;
   top11?: Record<string, string>;
+  heroBottles?: string[];
+  heroStageEffect?: string;
   pricing?: any;
   ticker?: any;
   updatedAt?: string;
@@ -342,15 +344,17 @@ const getAssets = (): AssetsData => {
         chibi: parsed.chibi || null,
         qrisImage: parsed.qrisImage || null,
         top11: parsed.top11 && typeof parsed.top11 === 'object' ? parsed.top11 : {},
+        heroBottles: Array.isArray(parsed.heroBottles) ? parsed.heroBottles : [],
+        heroStageEffect: parsed.heroStageEffect || 'royal-elevation',
         pricing: parsed.pricing,
         ticker: currentTicker,
         updatedAt: parsed.updatedAt || currentTicker?.updatedAt,
       };
     } catch {
-      return { logo: null, chibi: null, qrisImage: null, top11: {}, ticker: currentTicker };
+      return { logo: null, chibi: null, qrisImage: null, top11: {}, heroBottles: [], heroStageEffect: 'royal-elevation', ticker: currentTicker };
     }
   }
-  return { logo: null, chibi: null, qrisImage: null, top11: {}, ticker: currentTicker };
+  return { logo: null, chibi: null, qrisImage: null, top11: {}, heroBottles: [], heroStageEffect: 'royal-elevation', ticker: currentTicker };
 };
 
 // Short URL endpoint for concise sharing links
@@ -634,12 +638,14 @@ app.post('/api/owner/update-assets', async (req, res) => {
     return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
   }
 
-  const { logo, chibi, qrisImage, top11 } = req.body;
+  const { logo, chibi, qrisImage, top11, heroBottles, heroStageEffect } = req.body;
   const existing = getAssets();
   let newLogo = existing.logo;
   let newChibi = existing.chibi;
   let newQris = existing.qrisImage || null;
   const newTop11 = { ...(existing.top11 || {}) };
+  let newHeroBottles = Array.isArray(existing.heroBottles) ? [...existing.heroBottles] : [];
+  let newHeroStageEffect = existing.heroStageEffect || 'royal-elevation';
 
   if (logo !== undefined) {
     if (logo) {
@@ -679,11 +685,21 @@ app.post('/api/owner/update-assets', async (req, res) => {
     }
   }
 
+  if (heroBottles !== undefined && Array.isArray(heroBottles)) {
+    newHeroBottles = heroBottles;
+  }
+
+  if (heroStageEffect !== undefined && typeof heroStageEffect === 'string') {
+    newHeroStageEffect = heroStageEffect;
+  }
+
   const updatedData: AssetsData = {
     logo: newLogo,
     chibi: newChibi,
     qrisImage: newQris,
     top11: newTop11,
+    heroBottles: newHeroBottles,
+    heroStageEffect: newHeroStageEffect,
     pricing: existing.pricing,
     updatedAt: new Date().toISOString(),
   };
@@ -691,8 +707,52 @@ app.post('/api/owner/update-assets', async (req, res) => {
   fs.writeFileSync(ASSETS_FILE, JSON.stringify(updatedData), 'utf-8');
   return res.json({
     success: true,
-    message: 'Foto SINKI berhasil disimpan & diunggah ke Supabase!',
+    message: 'Foto SINKI & Pengaturan Panggung berhasil disimpan!',
     data: updatedData,
+  });
+});
+
+// POST update a specific 3D Hero Bottle (1-4) by Owner
+app.post('/api/owner/update-hero-bottles', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+
+  const { index, bottleData } = req.body;
+  const idx = Number(index);
+  if (isNaN(idx) || idx < 0 || idx > 3 || !bottleData) {
+    return res.status(400).json({ error: 'Data botol atau indeks (0-3) tidak valid!' });
+  }
+
+  const existing = getAssets();
+  const currentBottles = Array.isArray(existing.heroBottles) && existing.heroBottles.length > 0
+    ? [...existing.heroBottles]
+    : ['', '', '', ''];
+
+  let finalBottleUrl = bottleData;
+  if (typeof bottleData === 'string' && bottleData.startsWith('data:')) {
+    const isPng = bottleData.includes('image/png');
+    const ext = isPng ? 'png' : 'jpg';
+    const up = await uploadToSupabaseWithOverwrite(`hero_bottles/bottle_${idx + 1}.${ext}`, bottleData);
+    if (up.success && up.url) {
+      finalBottleUrl = up.url;
+    }
+  }
+
+  currentBottles[idx] = finalBottleUrl;
+
+  const updatedData: AssetsData = {
+    ...existing,
+    heroBottles: currentBottles,
+    updatedAt: new Date().toISOString(),
+  };
+
+  fs.writeFileSync(ASSETS_FILE, JSON.stringify(updatedData), 'utf-8');
+  return res.json({
+    success: true,
+    message: `Foto Botol 3D #${idx + 1} berhasil disimpan & disinkronkan!`,
+    heroBottles: currentBottles,
+    photoUrl: finalBottleUrl,
   });
 });
 
@@ -707,18 +767,25 @@ app.post('/api/owner/update-top11', async (req, res) => {
     return res.status(400).json({ error: 'Data varian atau foto tidak lengkap!' });
   }
 
+  const cleanVariantId = variantId.replace(/^top-top-/, 'top-');
+  const baseId = cleanVariantId.replace(/^top-/, '');
+
   const existing = getAssets();
   const top11 = existing.top11 || {};
 
   let finalPhoto = photoData;
   if (typeof photoData === 'string' && photoData.startsWith('data:')) {
-    const up = await uploadToSupabaseWithOverwrite(`top11/${variantId}.jpg`, photoData);
+    const up = await uploadToSupabaseWithOverwrite(`top11/${cleanVariantId}.jpg`, photoData);
     if (up.success && up.url) {
       finalPhoto = up.url;
     }
   }
 
+  // Simpan di semua kemungkinan key agar cocok di semua layar
   top11[variantId] = finalPhoto;
+  top11[cleanVariantId] = finalPhoto;
+  top11[`top-${baseId}`] = finalPhoto;
+  top11[baseId] = finalPhoto;
 
   const updatedData: AssetsData = {
     ...existing,
@@ -727,9 +794,37 @@ app.post('/api/owner/update-top11', async (req, res) => {
   };
 
   fs.writeFileSync(ASSETS_FILE, JSON.stringify(updatedData), 'utf-8');
+
+  // Sync assets.json ke Supabase Storage
+  try {
+    await supabase.storage.from(SUPABASE_BUCKET).upload('assets.json', JSON.stringify(updatedData, null, 2), {
+      contentType: 'application/json',
+      upsert: true,
+    });
+  } catch (syncErr) {
+    console.warn('[Supabase Sync Notice] assets.json:', syncErr);
+  }
+
+  // Sinkronkan juga langsung ke data/top_perfumes.json
+  try {
+    const topList = getTopPerfumes();
+    let updatedPerfumes = false;
+    for (const item of topList) {
+      if (item.id === cleanVariantId || item.id === variantId || item.id === baseId || `top-${item.rank}` === cleanVariantId) {
+        item.photo = finalPhoto;
+        updatedPerfumes = true;
+      }
+    }
+    if (updatedPerfumes) {
+      await persistTopPerfumes(topList);
+    }
+  } catch (pErr) {
+    console.warn('[Sync Top Perfumes Photo Error]:', pErr);
+  }
+
   return res.json({
     success: true,
-    message: `Foto botol Top 11 (${variantId}) berhasil disimpan!`,
+    message: `Foto botol Top 11 (${cleanVariantId}) berhasil disimpan!`,
     photoUrl: finalPhoto,
   });
 });
@@ -1180,6 +1275,27 @@ async function hydrateDataFromSupabase() {
     }
   } catch (err) {
     console.warn('[Supabase Hydration Notice] top perfumes:', err);
+  }
+
+  try {
+    const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download('assets.json');
+    if (!error && data) {
+      const text = await data.text();
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === 'object') {
+        fs.writeFileSync(ASSETS_FILE, text, 'utf-8');
+        console.log('[Supabase Hydration] Assets data berhasil dimuat dari cloud');
+      }
+    } else if (fs.existsSync(ASSETS_FILE)) {
+      const local = fs.readFileSync(ASSETS_FILE, 'utf-8');
+      await supabase.storage.from(SUPABASE_BUCKET).upload('assets.json', local, {
+        contentType: 'application/json',
+        upsert: true,
+      });
+      console.log('[Supabase Hydration] Assets data lokal diupload ke cloud!');
+    }
+  } catch (err) {
+    console.warn('[Supabase Hydration Notice] assets:', err);
   }
 }
 

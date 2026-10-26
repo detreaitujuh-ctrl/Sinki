@@ -1,5 +1,5 @@
 {
-  "totalVisits": 34,
+  "totalVisits": 36,
   "uniqueVisitors": 1,
   "startedAt": "2026-10-22T07:28:13.621Z",
   "sources": {
@@ -7,34 +7,35 @@
     "tiktok": 0,
     "whatsapp": 0,
     "facebook": 0,
-    "google": 12,
+    "google": 15,
     "shopee": 0,
     "tokopedia": 0,
     "direct": 0,
     "other": 0
   },
   "devices": {
-    "mobile": 12,
+    "mobile": 15,
     "desktop": 0,
     "tablet": 0
   },
   "os": {
-    "android": 12,
+    "android": 15,
     "ios": 0,
     "windows": 0,
     "mac": 0,
     "other": 0
   },
   "pages": {
-    "Beranda": 6,
+    "Beranda": 8,
     "Top 11 Bestseller": 2,
-    "Katalog Koleksi": 1,
-    "Review Pembeli": 1,
-    "Order VIP": 2
+    "Katalog Koleksi": 5,
+    "Review Pembeli": 0,
+    "Order VIP": 0
   },
   "dailyTrends": {
     "2026-10-22": 20,
-    "2026-10-23": 12
+    "2026-10-23": 12,
+    "2026-10-26": 15
   },
   "hourlyTrends": [
     0,
@@ -48,21 +49,41 @@
     0,
     0,
     0,
-    1,
-    1,
-    1,
-    9,
     0,
     0,
     0,
     0,
     0,
+    2,
+    10,
     0,
+    0,
+    3,
     0,
     0,
     0
   ],
   "recentVisitors": [
+    {
+      "id": "evt_1793022927537_wm2y",
+      "timestamp": "2026-10-26T13:55:27.537Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Beranda",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/?__aistudio_auth_token=Ea57CDdNmSdGVlZ7JYZ0vP_iQCCu-xV2T7axJA0yNFE%3D"
+    },
+    {
+      "id": "evt_1793022866518_a9fo",
+      "timestamp": "2026-10-26T13:54:26.518Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Katalog Koleksi",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/?__aistudio_auth_token=Ea57CDdNmSdGVlZ7JYZ0vP_iQCCu-xV2T7axJA0yNFE%3D"
+    },
     {
       "id": "evt_1792739933804_lu25",
       "timestamp": "2026-10-23T07:18:53.804Z",

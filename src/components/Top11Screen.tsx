@@ -66,6 +66,19 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
     });
   }, [top11Photos]);
 
+  const getBottlePhoto = (item?: Top11Item | null): string => {
+    if (!item) return '';
+    return (
+      top11Photos[item.id] ||
+      top11Photos[`top-${item.id}`] ||
+      top11Photos[item.id.replace(/^top-/, '')] ||
+      top11Photos[`top-${item.rank}`] ||
+      top11Photos[String(item.rank)] ||
+      item.photo ||
+      ''
+    );
+  };
+
   // Preload foto botol saat ini, sebelum, dan sesudahnya secara prioritas tinggi
   useEffect(() => {
     if (topItems.length === 0) return;
@@ -73,7 +86,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
     const prevIdx = currentIndex > 0 ? currentIndex - 1 : topItems.length - 1;
     [topItems[currentIndex], topItems[nextIdx], topItems[prevIdx]].forEach((item) => {
       if (!item) return;
-      const url = top11Photos[item.id];
+      const url = getBottlePhoto(item);
       if (url) {
         const img = new Image();
         img.onload = () => loadedPhotoSet.add(url);
@@ -295,7 +308,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                 <div className="w-52 h-full">
                   <PerfumeBottleVisual
                     item={currentItem}
-                    customPhoto={top11Photos[currentItem.id]}
+                    customPhoto={getBottlePhoto(currentItem)}
                     size="lg"
                     fitMode="cover"
                   />
@@ -524,7 +537,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                   <div className="w-full h-32 my-1">
                     <PerfumeBottleVisual
                       item={item}
-                      customPhoto={top11Photos[item.id]}
+                      customPhoto={getBottlePhoto(item)}
                       size="sm"
                       fitMode={fitMode}
                     />

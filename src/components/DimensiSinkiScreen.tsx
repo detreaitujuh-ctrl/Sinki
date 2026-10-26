@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard,
   FileText,
@@ -48,6 +48,16 @@ import {
   saveQrisToServer,
   saveTop11PhotoToServer,
   verifyOwnerPinOnServer,
+  HeroStageEffect,
+  STAGE_EFFECTS,
+  DEFAULT_HERO_BOTTLES,
+  getStoredHeroBottles,
+  getStoredHeroStageEffect,
+  getStoredHeroStageEnabled,
+  saveHeroBottleItemToServer,
+  saveHeroStageEffectToServer,
+  saveHeroStageEnabledToServer,
+  compressImage,
 } from '../utils/assetStorage';
 import { CardFittingModal } from './CardFittingModal';
 import {
@@ -113,6 +123,8 @@ interface DimensiSinkiScreenProps {
   currentChibi: string | null;
   currentQris: string | null;
   top11Photos: Record<string, string>;
+  heroBottles?: string[];
+  heroStageEffect?: HeroStageEffect;
   pricing?: PricingConfig;
   tickerConfig?: TickerConfig;
   perfumes?: PerfumeItem[];
@@ -120,6 +132,8 @@ interface DimensiSinkiScreenProps {
   onAssetsUpdated: (newLogo: string | null, newChibi: string | null) => void;
   onQrisUpdated: (newQris: string | null) => void;
   onTop11PhotoUpdated: (variantId: string, newPhoto: string) => void;
+  onHeroBottlesUpdated?: (bottles: string[]) => void;
+  onHeroStageEffectUpdated?: (effect: HeroStageEffect) => void;
   onPricingUpdated: (newPricing: PricingConfig) => void;
   onTickerUpdated?: (newTicker: TickerConfig) => void;
   onPerfumesUpdated?: (newList: PerfumeItem[]) => void;
@@ -144,6 +158,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   currentChibi,
   currentQris,
   top11Photos,
+  heroBottles: propHeroBottles,
+  heroStageEffect: propHeroStageEffect,
   pricing,
   tickerConfig,
   perfumes,
@@ -151,11 +167,77 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   onAssetsUpdated,
   onQrisUpdated,
   onTop11PhotoUpdated,
+  onHeroBottlesUpdated,
+  onHeroStageEffectUpdated,
   onPricingUpdated,
   onTickerUpdated,
   onPerfumesUpdated,
   onSocialLinksUpdated,
 }) => {
+  // 3D Stage Bottles & Effect State
+  const [heroBottlesList, setHeroBottlesList] = useState<string[]>(() => propHeroBottles || getStoredHeroBottles());
+  const [activeStageEffect, setActiveStageEffect] = useState<HeroStageEffect>(() => propHeroStageEffect || getStoredHeroStageEffect());
+  const [isHeroStageEnabled, setIsHeroStageEnabled] = useState<boolean>(() => getStoredHeroStageEnabled());
+  const [selectedHeroBottleIdx, setSelectedHeroBottleIdx] = useState<number | null>(null);
+  const heroBottleInputRef = useRef<HTMLInputElement>(null);
+
+  const handleToggleStageEnabled = async () => {
+    const next = !isHeroStageEnabled;
+    setIsHeroStageEnabled(next);
+    await saveHeroStageEnabledToServer(next, '1995');
+    onShowToast(
+      next
+        ? 'Panggung 3D Beranda diaktifkan! ✨ (Akan tampil saat botol diunggah)'
+        : 'Panggung 3D dinonaktifkan (tampilan beranda bersih).'
+    );
+  };
+
+  useEffect(() => {
+    if (propHeroBottles && propHeroBottles.length === 4) {
+      setHeroBottlesList(propHeroBottles);
+    }
+  }, [propHeroBottles]);
+
+  useEffect(() => {
+    if (propHeroStageEffect) {
+      setActiveStageEffect(propHeroStageEffect);
+    }
+  }, [propHeroStageEffect]);
+
+  const handleHeroBottleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (selectedHeroBottleIdx === null) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      onShowToast(`Memproses Botol 3D #${selectedHeroBottleIdx + 1}...`);
+      const base64Data = await compressImage(file, 1000, 1000, 0.9);
+      onShowToast(`Menyimpan Botol 3D #${selectedHeroBottleIdx + 1} ke server...`);
+      const updated = await saveHeroBottleItemToServer(selectedHeroBottleIdx, base64Data, '1995');
+      setHeroBottlesList(updated);
+      onHeroBottlesUpdated?.(updated);
+      onShowToast(`Botol 3D #${selectedHeroBottleIdx + 1} berhasil disimpan permanen! ✅`);
+    } catch (err) {
+      console.error(err);
+      onShowToast('Gagal menyimpan foto botol.');
+    } finally {
+      setSelectedHeroBottleIdx(null);
+      e.target.value = '';
+    }
+  };
+
+  const handleSelectStageEffect = async (effectId: HeroStageEffect) => {
+    try {
+      setActiveStageEffect(effectId);
+      onHeroStageEffectUpdated?.(effectId);
+      await saveHeroStageEffectToServer(effectId, '1995');
+      const effectName = STAGE_EFFECTS.find((e) => e.id === effectId)?.name || effectId;
+      onShowToast(`Efek panggung diubah ke "${effectName}"! ✨`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // Authentication Barrier state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [enteredPin, setEnteredPin] = useState('');
@@ -1789,6 +1871,177 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
               </div>
 
+              {/* BARIS KHUSUS: PANGGUNG 3D BERANDA & 4 BOTOL PARFUM PNG TRANSPARAN */}
+              <input
+                type="file"
+                ref={heroBottleInputRef}
+                accept="image/png,image/*"
+                className="hidden"
+                onChange={handleHeroBottleUpload}
+              />
+
+              {/* MASTER TOGGLE PANGGUNG 3D */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#141724] to-[#0e1017] border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+                    isHeroStageEnabled
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_12px_rgba(223,183,108,0.3)]'
+                      : 'bg-white/5 text-slate-400 border border-white/10'
+                  }`}>
+                    <Sparkles size={22} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                        Sakelar Master Panggung 3D Beranda
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${
+                        isHeroStageEnabled
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
+                      }`}>
+                        {isHeroStageEnabled ? 'AKTIF' : 'NONAKTIF'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      {isHeroStageEnabled
+                        ? 'Panggung 3D aktif dan akan menampilkan botol PNG transparan yang diunggah di bawah.'
+                        : 'Panggung 3D dinonaktifkan. Beranda tetap bersih dan menampilkan gambar latar belakang asli Anda.'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleToggleStageEnabled}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shrink-0 ${
+                    isHeroStageEnabled
+                      ? 'bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40'
+                      : 'bg-gradient-to-r from-[#DFB76C] to-[#c29849] hover:brightness-110 text-slate-950 shadow-md font-extrabold'
+                  }`}
+                >
+                  {isHeroStageEnabled ? 'Matikan Panggung 3D' : 'Nyalakan Panggung 3D'}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* 1. Pemilihan Efek Panggung 3D */}
+                <div className="p-5 rounded-3xl bg-[#0e111d] border border-amber-500/30 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-display font-bold text-sm text-amber-300 flex items-center gap-1.5">
+                        <Sparkles size={15} />
+                        <span>Efek Panggung 3D Beranda (4 Pilihan)</span>
+                      </h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Pilih efek gerakan botol parfum saat bertransisi otomatis
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
+                      Aktif
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {STAGE_EFFECTS.map((eff) => {
+                      const isSelected = activeStageEffect === eff.id;
+                      return (
+                        <button
+                          key={eff.id}
+                          type="button"
+                          onClick={() => handleSelectStageEffect(eff.id)}
+                          className={`p-3 rounded-2xl border text-left transition-all ${
+                            isSelected
+                              ? 'bg-gradient-to-br from-amber-500/25 to-amber-700/15 border-amber-400 text-white shadow-[0_0_15px_rgba(223,183,108,0.25)]'
+                              : 'bg-black/50 border-white/10 hover:border-amber-500/30 text-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-bold text-amber-200">{eff.name}</span>
+                            {isSelected && (
+                              <span className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center">
+                                <Check size={10} className="stroke-[3]" />
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-300 block font-medium leading-tight">
+                            {eff.tagline}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Upload 4 Botol PNG 3D */}
+                <div className="p-5 rounded-3xl bg-[#0e111d] border border-amber-500/30 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-display font-bold text-sm text-amber-300 flex items-center gap-1.5">
+                        <Crown size={15} />
+                        <span>4 Slot Botol Parfum 3D (PNG Transparan)</span>
+                      </h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Slide bergantian setiap 4 detik di panggung tengah beranda
+                      </p>
+                    </div>
+                    <span className="text-[9px] text-amber-200/90 font-mono">
+                      4 Botol
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {[0, 1, 2, 3].map((idx) => {
+                      const rawBottle = heroBottlesList[idx];
+                      const bottleUrl = rawBottle && !rawBottle.includes('top11/top-') ? rawBottle : null;
+                      const isCustom = Boolean(bottleUrl);
+
+                      return (
+                        <div
+                          key={idx}
+                          className="p-2.5 rounded-xl bg-black/60 border border-white/10 flex flex-col justify-between space-y-2 text-center"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9.5px] font-mono font-bold text-amber-300">
+                              #{idx + 1}
+                            </span>
+                            {isCustom && (
+                              <span className="text-[8px] text-emerald-400 flex items-center gap-0.5">
+                                <Check size={8} /> Kustom
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="h-20 rounded-lg bg-gradient-to-b from-[#181a24] to-[#0f1118] border border-white/10 flex items-center justify-center overflow-hidden p-1">
+                            {bottleUrl ? (
+                              <img
+                                src={bottleUrl}
+                                alt={`Botol #${idx + 1}`}
+                                className="max-h-full max-w-full object-contain filter drop-shadow-md"
+                              />
+                            ) : (
+                              <ImageIcon size={16} className="text-slate-500" />
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedHeroBottleIdx(idx);
+                              heroBottleInputRef.current?.click();
+                            }}
+                            className="w-full py-1 px-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/30 text-amber-300 text-[9px] font-bold transition-all flex items-center justify-center gap-1"
+                          >
+                            <Upload size={10} />
+                            <span>Ganti PNG</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
               {/* BARIS 2: MANAJEMEN VARIAN TOP BESTSELLER (DINAMIS DENGAN TAMBAH & EDIT) */}
               <div className="space-y-4 pt-2 border-t border-white/10">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1829,8 +2082,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {topPerfumesList.map((p, index) => {
-                    const variantId = `top-${p.id}`;
-                    const photo = top11Photos[variantId] || top11Photos[p.id] || p.photo;
+                    const variantId = p.id.startsWith('top-') ? p.id : `top-${p.id}`;
+                    const photo =
+                      top11Photos[variantId] ||
+                      top11Photos[p.id] ||
+                      top11Photos[`top-${variantId}`] ||
+                      top11Photos[`top-${p.rank}`] ||
+                      top11Photos[String(p.rank)] ||
+                      p.photo;
 
                     return (
                       <div

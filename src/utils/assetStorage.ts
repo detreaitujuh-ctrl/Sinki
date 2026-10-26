@@ -5,6 +5,9 @@ const LOGO_STORAGE_KEY = 'sinki_custom_logo_data';
 const CHIBI_STORAGE_KEY = 'sinki_custom_chibi_data';
 const QRIS_STORAGE_KEY = 'sinki_custom_qris_data';
 const TOP11_STORAGE_KEY = 'sinki_custom_top11_data';
+const HERO_BOTTLES_STORAGE_KEY = 'sinki_hero_bottles_v1';
+const HERO_STAGE_EFFECT_STORAGE_KEY = 'sinki_hero_stage_effect_v1';
+const HERO_STAGE_ENABLED_STORAGE_KEY = 'sinki_hero_stage_enabled_v1';
 const SESSION_TOKEN_KEY = 'sinki_owner_auth_token';
 
 // Public CDN Base URL for reading public images (safe for frontend)
@@ -13,6 +16,50 @@ export const SUPABASE_STORAGE_BASE = 'https://tsxclttisxnmvdkwziqx.supabase.co/s
 export const DEFAULT_LOGO = `${SUPABASE_STORAGE_BASE}sinki_logo.png`;
 export const DEFAULT_CHIBI = `${SUPABASE_STORAGE_BASE}sinki_chibi.png`;
 export const DEFAULT_QRIS = `${SUPABASE_STORAGE_BASE}sinki_qris.jpg`;
+
+export type HeroStageEffect = 'royal-elevation' | 'parisian-turntable' | 'golden-aura' | 'horizon-slide';
+
+export interface StageEffectOption {
+  id: HeroStageEffect;
+  name: string;
+  tagline: string;
+  description: string;
+  iconName: string;
+}
+
+export const STAGE_EFFECTS: StageEffectOption[] = [
+  {
+    id: 'royal-elevation',
+    name: 'Royal Elevation',
+    tagline: 'Naik Anggun Dari Bawah',
+    description: 'Botol meluncur naik dari lantai panggung kristal dengan pendaran kilau cahaya emas',
+    iconName: 'ArrowUpCircle',
+  },
+  {
+    id: 'parisian-turntable',
+    name: 'Parisian Turntable',
+    tagline: 'Rotasi Panggung 3D',
+    description: 'Botol berputar 3D halus dengan sudut perspektif mewah seperti di butik Paris',
+    iconName: 'RotateCw',
+  },
+  {
+    id: 'golden-aura',
+    name: 'Golden Aura Bloom',
+    tagline: 'Pendar Cahaya Lensa',
+    description: 'Botol memudar masuk dengan pendaran specular flare dan zoom halus',
+    iconName: 'Sparkles',
+  },
+  {
+    id: 'horizon-slide',
+    name: 'Horizon Slide',
+    tagline: 'Geser 3D Elegan',
+    description: 'Botol meluncur horizontal dengan pelacakan bayangan lantai dan kedalaman 3D',
+    iconName: 'MoveHorizontal',
+  },
+];
+
+// Default initial bottles: empty array. Panggung 3D hanya aktif saat Owner mengunggah PNG transparan.
+export const DEFAULT_HERO_BOTTLES: string[] = [];
 
 export const getDefaultTop11Map = (): Record<string, string> => {
   const map: Record<string, string> = {};
@@ -73,12 +120,13 @@ export const verifyOwnerPinOnServer = async (
 // Compress image to ensure it never exceeds browser storage quotas
 export const compressImage = (
   file: File,
-  maxWidth = 800,
-  maxHeight = 800,
-  quality = 0.85
+  maxWidth = 1000,
+  maxHeight = 1000,
+  quality = 0.88
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    const isPng = file.type === 'image/png';
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
@@ -106,8 +154,16 @@ export const compressImage = (
           return;
         }
 
+        // For PNG, keep transparent background; for others, draw as usual
+        if (!isPng) {
+          ctx.fillStyle = '#0e1017';
+        }
         ctx.drawImage(img, 0, 0, width, height);
-        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+
+        // Keep PNG transparency if original is PNG!
+        const compressedBase64 = isPng
+          ? canvas.toDataURL('image/png')
+          : canvas.toDataURL('image/jpeg', quality);
         resolve(compressedBase64);
       };
       img.onerror = (e) => reject(e);
@@ -123,6 +179,8 @@ export interface ServerAssetsResponse {
   chibi: string | null;
   qrisImage?: string | null;
   top11?: Record<string, string>;
+  heroBottles?: string[];
+  heroStageEffect?: HeroStageEffect;
   pricing?: PricingConfig;
   ticker?: any;
 }
@@ -139,6 +197,12 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
         if (data.chibi) localStorage.setItem(CHIBI_STORAGE_KEY, data.chibi);
         if (data.qrisImage) localStorage.setItem(QRIS_STORAGE_KEY, data.qrisImage);
         if (data.top11) localStorage.setItem(TOP11_STORAGE_KEY, JSON.stringify(data.top11));
+        if (Array.isArray(data.heroBottles) && data.heroBottles.length > 0) {
+          localStorage.setItem(HERO_BOTTLES_STORAGE_KEY, JSON.stringify(data.heroBottles));
+        }
+        if (data.heroStageEffect) {
+          localStorage.setItem(HERO_STAGE_EFFECT_STORAGE_KEY, data.heroStageEffect);
+        }
         if (data.pricing) localStorage.setItem('sinki_custom_pricing_config', JSON.stringify(data.pricing));
         if (data.ticker && data.ticker.text) {
           localStorage.setItem('sinki_ticker_config_v1', JSON.stringify(data.ticker));
@@ -152,6 +216,10 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
             ...getDefaultTop11Map(),
             ...(data.top11 || {}),
           },
+          heroBottles: Array.isArray(data.heroBottles) && data.heroBottles.length > 0
+            ? data.heroBottles
+            : getStoredHeroBottles(),
+          heroStageEffect: data.heroStageEffect || getStoredHeroStageEffect(),
           pricing: data.pricing || getStoredPricing(),
           ticker: data.ticker,
         };
@@ -166,6 +234,8 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
     chibi: getStoredChibi(),
     qrisImage: getStoredQris(),
     top11: getStoredTop11(),
+    heroBottles: getStoredHeroBottles(),
+    heroStageEffect: getStoredHeroStageEffect(),
     pricing: getStoredPricing(),
   };
 };
@@ -321,12 +391,52 @@ export const saveQrisToServer = async (
   }
 };
 
-export const resetStoredAssets = async (pin = '1995'): Promise<void> => {
+export const getStoredHeroBottles = (): string[] => {
   try {
-    localStorage.removeItem(LOGO_STORAGE_KEY);
-    localStorage.removeItem(CHIBI_STORAGE_KEY);
-    localStorage.removeItem(QRIS_STORAGE_KEY);
-    localStorage.removeItem(TOP11_STORAGE_KEY);
+    const raw = localStorage.getItem(HERO_BOTTLES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Filter out any legacy top11/ catalog fallback links
+        const validList = parsed.filter(
+          (item) => typeof item === 'string' && item.trim() !== '' && !item.includes('top11/top-')
+        );
+        return validList;
+      }
+    }
+    return [];
+  } catch {
+    return [];
+  }
+};
+
+export const getStoredHeroStageEffect = (): HeroStageEffect => {
+  try {
+    const raw = localStorage.getItem(HERO_STAGE_EFFECT_STORAGE_KEY) as HeroStageEffect;
+    if (raw && ['royal-elevation', 'parisian-turntable', 'golden-aura', 'horizon-slide'].includes(raw)) {
+      return raw;
+    }
+    return 'royal-elevation';
+  } catch {
+    return 'royal-elevation';
+  }
+};
+
+export const getStoredHeroStageEnabled = (): boolean => {
+  try {
+    const raw = localStorage.getItem(HERO_STAGE_ENABLED_STORAGE_KEY);
+    return raw === 'true';
+  } catch {
+    return false;
+  }
+};
+
+export const saveHeroStageEnabledToServer = async (
+  enabled: boolean,
+  pin = '1995'
+): Promise<boolean> => {
+  try {
+    localStorage.setItem(HERO_STAGE_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
 
     const token = getOwnerToken();
     try {
@@ -336,7 +446,113 @@ export const resetStoredAssets = async (pin = '1995'): Promise<void> => {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ pin, token, logo: null, chibi: null, qrisImage: null, top11: {} }),
+        body: JSON.stringify({ pin, heroStageEnabled: enabled, token }),
+      });
+    } catch {
+      // Offline fallback
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Failed to save hero stage enabled status:', err);
+    return true;
+  }
+};
+
+export const saveHeroBottleItemToServer = async (
+  index: number,
+  base64Data: string,
+  pin = '1995'
+): Promise<string[]> => {
+  try {
+    const current = [...getStoredHeroBottles()];
+    current[index] = base64Data;
+    localStorage.setItem(HERO_BOTTLES_STORAGE_KEY, JSON.stringify(current));
+
+    const token = getOwnerToken();
+    try {
+      const res = await fetch('/api/owner/update-hero-bottles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ pin, index, bottleData: base64Data, heroBottles: current, token }),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.heroBottles && Array.isArray(json.heroBottles)) {
+          localStorage.setItem(HERO_BOTTLES_STORAGE_KEY, JSON.stringify(json.heroBottles));
+          return json.heroBottles;
+        }
+      }
+    } catch {
+      // Offline fallback
+    }
+
+    return current;
+  } catch (err) {
+    console.error('Failed to save hero bottle:', err);
+    return getStoredHeroBottles();
+  }
+};
+
+export const saveHeroStageEffectToServer = async (
+  effect: HeroStageEffect,
+  pin = '1995'
+): Promise<boolean> => {
+  try {
+    localStorage.setItem(HERO_STAGE_EFFECT_STORAGE_KEY, effect);
+
+    const token = getOwnerToken();
+    try {
+      await fetch('/api/owner/update-assets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ pin, heroStageEffect: effect, token }),
+      });
+    } catch {
+      // Offline fallback
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Failed to save hero stage effect:', err);
+    return true;
+  }
+};
+
+export const resetStoredAssets = async (pin = '1995'): Promise<void> => {
+  try {
+    localStorage.removeItem(LOGO_STORAGE_KEY);
+    localStorage.removeItem(CHIBI_STORAGE_KEY);
+    localStorage.removeItem(QRIS_STORAGE_KEY);
+    localStorage.removeItem(TOP11_STORAGE_KEY);
+    localStorage.removeItem(HERO_BOTTLES_STORAGE_KEY);
+    localStorage.removeItem(HERO_STAGE_EFFECT_STORAGE_KEY);
+
+    const token = getOwnerToken();
+    try {
+      await fetch('/api/owner/update-assets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          pin,
+          token,
+          logo: null,
+          chibi: null,
+          qrisImage: null,
+          top11: {},
+          heroBottles: DEFAULT_HERO_BOTTLES,
+          heroStageEffect: 'royal-elevation',
+        }),
       });
     } catch {
       // Ignored on static hosting
@@ -345,3 +561,4 @@ export const resetStoredAssets = async (pin = '1995'): Promise<void> => {
     console.error('Failed to reset storage', e);
   }
 };
+

@@ -245,5 +245,6 @@ export const TOP_11_DATA: Top11Item[] = [
     bottleThemeColor: '#DFB76C',
     accentBadge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
     accentBorder: 'border-amber-500/40',
+    photo: 'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/top11/top-1792842000704.jpg',
   },
 ];

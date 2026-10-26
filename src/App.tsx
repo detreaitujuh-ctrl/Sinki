@@ -15,6 +15,10 @@ import {
   getStoredChibi,
   getStoredTop11,
   getStoredQris,
+  getStoredHeroBottles,
+  getStoredHeroStageEffect,
+  getStoredHeroStageEnabled,
+  HeroStageEffect,
   fetchServerAssets,
 } from './utils/assetStorage';
 import { PricingConfig, getStoredPricing } from './utils/pricingStorage';
@@ -61,6 +65,9 @@ export default function App() {
   const [customChibi, setCustomChibi] = useState<string | null>(getStoredChibi());
   const [customQris, setCustomQris] = useState<string | null>(getStoredQris());
   const [top11Photos, setTop11Photos] = useState<Record<string, string>>(getStoredTop11());
+  const [heroBottles, setHeroBottles] = useState<string[]>(() => getStoredHeroBottles());
+  const [heroStageEffect, setHeroStageEffect] = useState<HeroStageEffect>(() => getStoredHeroStageEffect());
+  const [heroStageEnabled, setHeroStageEnabled] = useState<boolean>(() => getStoredHeroStageEnabled());
   const [pricing, setPricing] = useState<PricingConfig>(() => getStoredPricing());
   const [tickerConfig, setTickerConfig] = useState<TickerConfig>(() => getStoredTicker());
   const [socialLinks, setSocialLinks] = useState<SocialLinks>(() => getStoredSocialLinks());
@@ -83,6 +90,14 @@ export default function App() {
       }
     });
 
+    // Preload hero 3D bottles
+    heroBottles.forEach((bottleUrl) => {
+      if (bottleUrl && typeof bottleUrl === 'string') {
+        const preloadImg = new Image();
+        preloadImg.src = bottleUrl;
+      }
+    });
+
     // Sync ticker config from server immediately
     fetchTickerFromServer().then((cfg) => {
       if (cfg) setTickerConfig(cfg);
@@ -96,7 +111,7 @@ export default function App() {
     // Sync top bestseller perfumes from server/cloud immediately
     fetchTopPerfumesFromServer().catch(() => {});
 
-    // Sync with server on initial load (includes ticker, logo, chibi, qris, pricing)
+    // Sync with server on initial load (includes ticker, logo, chibi, qris, pricing, hero bottles & stage effect)
     fetchServerAssets().then((assets) => {
       if (assets.logo) setCustomLogo(assets.logo);
       if (assets.chibi) setCustomChibi(assets.chibi);
@@ -111,6 +126,16 @@ export default function App() {
           }
         });
       }
+      if (assets.heroBottles && assets.heroBottles.length > 0) {
+        setHeroBottles(assets.heroBottles);
+        assets.heroBottles.forEach((bottleUrl) => {
+          if (bottleUrl && typeof bottleUrl === 'string') {
+            const preloadImg = new Image();
+            preloadImg.src = bottleUrl;
+          }
+        });
+      }
+      if (assets.heroStageEffect) setHeroStageEffect(assets.heroStageEffect);
       if (assets.pricing) setPricing(assets.pricing);
       if (assets.ticker) setTickerConfig(assets.ticker);
     });
@@ -186,12 +211,20 @@ export default function App() {
           pricing={pricing}
           tickerConfig={tickerConfig}
           socialLinks={socialLinks}
+          heroBottles={heroBottles}
+          heroStageEffect={heroStageEffect}
           onAssetsUpdated={(newLogo, newChibi) => {
             setCustomLogo(newLogo);
             setCustomChibi(newChibi);
           }}
           onQrisUpdated={(newQris) => {
             setCustomQris(newQris);
+          }}
+          onHeroBottlesUpdated={(updatedBottles) => {
+            setHeroBottles(updatedBottles);
+          }}
+          onHeroStageEffectUpdated={(effect) => {
+            setHeroStageEffect(effect);
           }}
           onTop11PhotoUpdated={(variantId, newPhoto) => {
             setTop11Photos((prev) => ({ ...prev, [variantId]: newPhoto }));
@@ -237,6 +270,9 @@ export default function App() {
               onOpenOwnerPin={() => setIsPinModalOpen(true)}
               customLogo={customLogo}
               customChibi={customChibi}
+              heroBottles={heroBottles}
+              heroStageEffect={heroStageEffect}
+              heroStageEnabled={heroStageEnabled}
               tickerConfig={tickerConfig}
               socialLinks={socialLinks}
             />
@@ -310,7 +346,7 @@ export default function App() {
           onShowToast={showToast}
         />
 
-        {/* Secret Owner Panel (Manages Logo, Chibi, QRIS, 11 Bestseller Bottles, & Custom Pricing) */}
+        {/* Secret Owner Panel (Manages Logo, Backdrop, 3D Bottles, QRIS, Top 11, & Custom Pricing) */}
         <AssetUploadModal
           isOpen={isAssetModalOpen}
           onClose={() => setIsAssetModalOpen(false)}
@@ -318,6 +354,8 @@ export default function App() {
           currentChibi={customChibi}
           currentQris={customQris}
           top11Photos={top11Photos}
+          heroBottles={heroBottles}
+          heroStageEffect={heroStageEffect}
           pricing={pricing}
           onAssetsUpdated={(newLogo, newChibi) => {
             setCustomLogo(newLogo);
@@ -325,6 +363,12 @@ export default function App() {
           }}
           onQrisUpdated={(newQris) => {
             setCustomQris(newQris);
+          }}
+          onHeroBottlesUpdated={(updatedBottles) => {
+            setHeroBottles(updatedBottles);
+          }}
+          onHeroStageEffectUpdated={(effect) => {
+            setHeroStageEffect(effect);
           }}
           onTop11PhotoUpdated={(variantId, newPhoto) => {
             setTop11Photos((prev) => {

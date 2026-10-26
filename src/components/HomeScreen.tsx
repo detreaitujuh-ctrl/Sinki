@@ -1,7 +1,14 @@
 import defaultHeroBottles from '../assets/images/sinki_hero_bottles_1791873562398.jpg';
-import React, { useState, useRef } from 'react';
-import { ExternalLink, Menu, ArrowRight, Share2, Check } from 'lucide-react';
-import { DEFAULT_CHIBI } from '../utils/assetStorage';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ExternalLink, Menu, ArrowRight, Share2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  DEFAULT_CHIBI,
+  HeroStageEffect,
+  DEFAULT_HERO_BOTTLES,
+  getStoredHeroBottles,
+  getStoredHeroStageEffect,
+  getStoredHeroStageEnabled,
+} from '../utils/assetStorage';
 import { getShortShareUrl } from '../utils/shareUtils';
 import { TickerConfig, TICKER_FONTS, getStoredTicker } from '../utils/tickerStorage';
 import {
@@ -18,6 +25,9 @@ interface HomeScreenProps {
   onOpenOwnerPin?: () => void;
   customLogo: string | null;
   customChibi: string | null;
+  heroBottles?: string[];
+  heroStageEffect?: HeroStageEffect;
+  heroStageEnabled?: boolean;
   tickerConfig?: TickerConfig;
   socialLinks?: SocialLinks;
 }
@@ -29,11 +39,89 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenOwnerPin,
   customLogo,
   customChibi,
+  heroBottles: propHeroBottles,
+  heroStageEffect: propHeroStageEffect,
+  heroStageEnabled: propHeroStageEnabled,
   tickerConfig,
   socialLinks: propSocialLinks,
 }) => {
   const currentSocial = propSocialLinks || getStoredSocialLinks();
   const [copied, setCopied] = useState(false);
+
+  // 3D Stage Bottle State - Hanya aktif jika Owner menyalakan sakelar & mengunggah PNG botol kustom
+  const isStageEnabled = propHeroStageEnabled !== undefined
+    ? propHeroStageEnabled
+    : getStoredHeroStageEnabled();
+
+  const rawBottles = (propHeroBottles && propHeroBottles.length > 0)
+    ? propHeroBottles
+    : getStoredHeroBottles();
+  const activeBottles = Array.isArray(rawBottles)
+    ? rawBottles.filter((b) => typeof b === 'string' && b.trim() !== '' && !b.includes('top11/top-'))
+    : [];
+  const hasCustomHeroBottles = isStageEnabled && activeBottles.length > 0;
+  const currentEffect: HeroStageEffect = propHeroStageEffect || getStoredHeroStageEffect();
+
+  const [activeBottleIdx, setActiveBottleIdx] = useState(0);
+  const [animKey, setAnimKey] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
+  const autoPlayTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const nextBottle = useCallback(() => {
+    if (!hasCustomHeroBottles) return;
+    setActiveBottleIdx((prev) => (prev + 1) % activeBottles.length);
+    setAnimKey((prev) => prev + 1);
+  }, [hasCustomHeroBottles, activeBottles.length]);
+
+  const prevBottle = useCallback(() => {
+    if (!hasCustomHeroBottles) return;
+    setActiveBottleIdx((prev) => (prev - 1 + activeBottles.length) % activeBottles.length);
+    setAnimKey((prev) => prev + 1);
+  }, [hasCustomHeroBottles, activeBottles.length]);
+
+  const selectBottle = (idx: number) => {
+    if (idx !== activeBottleIdx && idx < activeBottles.length) {
+      setActiveBottleIdx(idx);
+      setAnimKey((prev) => prev + 1);
+    }
+  };
+
+  // Auto-slide every 4 seconds only if custom bottles are uploaded
+  useEffect(() => {
+    if (!hasCustomHeroBottles || activeBottles.length <= 1) return;
+
+    autoPlayTimerRef.current = setInterval(() => {
+      nextBottle();
+    }, 4000);
+
+    return () => {
+      if (autoPlayTimerRef.current) {
+        clearInterval(autoPlayTimerRef.current);
+      }
+    };
+  }, [hasCustomHeroBottles, activeBottles.length, nextBottle]);
+
+  // Touch swipe gesture handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartXRef.current - touchEndX;
+
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) {
+        // Swiped left -> next
+        nextBottle();
+      } else {
+        // Swiped right -> prev
+        prevBottle();
+      }
+    }
+    touchStartXRef.current = null;
+  };
 
   const copyToClipboard = async () => {
     const publicUrl = await getShortShareUrl();
@@ -253,8 +341,63 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </div>
 
-      {/* CENTER STAGE SPACER: Ruang panggung tengah untuk botol parfum berdiri elegan */}
-      <div className="relative z-10 flex-1 w-full my-auto min-h-[190px]" />
+      {/* CENTER STAGE: Jika belum ada botol PNG kustom yang diunggah, tetap bersih seperti semula */}
+      {!hasCustomHeroBottles ? (
+        <div className="relative z-10 flex-1 w-full my-auto min-h-[190px]" />
+      ) : (
+        /* LAYER 1 (Z-10): 3D LUXURY BOTTLE STAGE PEDESTAL */
+        <div
+          className="relative z-10 flex-1 w-full my-auto min-h-[220px] max-h-[300px] flex flex-col items-center justify-center select-none"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Stage Bottle Frame */}
+          <div className="relative w-full h-full flex flex-col items-center justify-center">
+            {/* Subtle Pedestal Halo Behind Bottle */}
+            <div className="stage-pedestal-crystal absolute bottom-6 w-48 h-16 rounded-[100%] pointer-events-none filter blur-[1px]" />
+            
+            {/* Contact Shadow Under Bottle Base */}
+            <div className="absolute bottom-5 w-24 sm:w-28 h-3.5 bg-black/75 rounded-[100%] blur-[5px] pointer-events-none" />
+
+            {/* Active 3D Bottle with Selected Transition Effect */}
+            <div
+              key={animKey}
+              className={`relative flex items-center justify-center stage-effect-${currentEffect} stage-bottle-float cursor-pointer`}
+              onClick={nextBottle}
+              title="Ketuk untuk melihat botol berikutnya"
+            >
+              <img
+                src={activeBottles[activeBottleIdx]}
+                alt={`SINKI Eau De Parfum Edition ${activeBottleIdx + 1}`}
+                className="max-h-[195px] sm:max-h-[225px] w-auto max-w-[80%] object-contain select-none filter drop-shadow-[0_12px_22px_rgba(0,0,0,0.85)] drop-shadow-[0_0_15px_rgba(223,183,108,0.18)]"
+                draggable={false}
+              />
+            </div>
+
+            {/* Discreet Micro Indicators if more than 1 bottle */}
+            {activeBottles.length > 1 && (
+              <div className="absolute bottom-0 flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-black/40 border border-white/10 backdrop-blur-xs">
+                {activeBottles.map((_, idx) => {
+                  const isActive = activeBottleIdx === idx;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => selectBottle(idx)}
+                      className={`transition-all duration-300 rounded-full ${
+                        isActive
+                          ? 'w-4 h-1.5 bg-gradient-to-r from-[#DFB76C] to-[#F0DFB6] shadow-[0_0_8px_rgba(223,183,108,0.7)]'
+                          : 'w-1.5 h-1.5 bg-white/25 hover:bg-white/50'
+                      }`}
+                      aria-label={`Lihat Botol #${idx + 1}`}
+                      title={`Botol #${idx + 1}`}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* LOWER SECTION:
           1. Story Card "Define your presence" + Icon-Only Share Button

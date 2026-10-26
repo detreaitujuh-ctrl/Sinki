@@ -262,18 +262,14 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-            {filteredPerfumes.map((perfume, idx) => {
+            {filteredPerfumes.map((perfume) => {
               const theme = getCategoryColor(perfume.category);
               const isFav = favorites.includes(perfume.id);
-
-              // Boutique Shimmer: Jeda kilau cahaya emas beruntun agar tampil dinamis berkelas
-              const shimmerDelay = `${(idx * 0.4) % 4.8}s`;
 
               return (
                 <div
                   key={perfume.id}
-                  style={{ '--shimmer-delay': shimmerDelay } as React.CSSProperties}
-                  className="group luxury-card-sheen relative flex flex-col justify-between p-3.5 rounded-2xl bg-gradient-to-b from-[#181a28]/95 to-[#12131e]/95 border border-white/10 hover:border-[#DFB76C]/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300"
+                  className="relative flex flex-col justify-between p-3.5 rounded-2xl bg-[#141624] border border-white/10 shadow-sm"
                 >
                   {/* Top card bar: Category badge + Favorite heart */}
                   <div className="flex items-center justify-between mb-2.5">
@@ -301,7 +297,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                       Eau De Parfum
                     </span>
 
-                    <h3 className="font-display text-[13px] sm:text-[14px] font-bold text-white group-hover:text-[#F0DFB6] transition-colors leading-snug line-clamp-2 min-h-[36px] drop-shadow-sm tracking-wide">
+                    <h3 className="font-display text-[13px] sm:text-[14px] font-bold text-white leading-snug line-clamp-2 min-h-[36px] drop-shadow-sm tracking-wide">
                       {perfume.name}
                     </h3>
 
@@ -329,7 +325,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                         onSelectPerfumeToOrder(perfume);
                       }
                     }}
-                    className="w-full mt-auto py-1.5 px-2 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:brightness-95 text-slate-950 text-[10.5px] font-black flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] shadow-sm hover:shadow-[0_2px_12px_rgba(223,183,108,0.3)] text-center cursor-pointer"
+                    className="w-full mt-auto py-1.5 px-2 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 text-[10.5px] font-black flex items-center justify-center gap-1.5 active:scale-[0.98] shadow-sm text-center cursor-pointer"
                     title={`Pesan parfum ${perfume.name}`}
                   >
                     <ShoppingBag size={12} className="shrink-0" />
