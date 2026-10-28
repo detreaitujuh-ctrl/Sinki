@@ -1,3 +1,5 @@
+import { SUPABASE_STORAGE_BASE, getOwnerToken } from './assetStorage';
+
 // Storage utility to manage SINKI Articles & Scent Guides
 export interface ArticleItem {
   id: string;
@@ -47,6 +49,7 @@ export const INITIAL_ARTICLES: ArticleItem[] = [
 ];
 
 const ARTICLES_STORAGE_KEY = 'sinki_public_articles_list';
+const ARTICLES_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}articles.json`;
 
 export const getStoredArticles = (): ArticleItem[] => {
   try {
@@ -66,7 +69,52 @@ export const getStoredArticles = (): ArticleItem[] => {
 export const saveArticlesToStorage = (articles: ArticleItem[]): void => {
   try {
     localStorage.setItem(ARTICLES_STORAGE_KEY, JSON.stringify(articles));
+    window.dispatchEvent(new CustomEvent('sinki_articles_updated', { detail: articles }));
   } catch (err) {
     console.error('Failed to save articles to localStorage:', err);
+  }
+};
+
+export const fetchArticlesFromServer = async (): Promise<ArticleItem[]> => {
+  try {
+    const res = await fetch(`/api/articles?t=${Date.now()}`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        saveArticlesToStorage(data);
+        return data;
+      }
+    }
+  } catch {}
+
+  try {
+    const res = await fetch(`${ARTICLES_PUBLIC_URL}?t=${Date.now()}`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        saveArticlesToStorage(data);
+        return data;
+      }
+    }
+  } catch {}
+
+  return getStoredArticles();
+};
+
+export const saveArticlesToServer = async (articles: ArticleItem[]): Promise<boolean> => {
+  saveArticlesToStorage(articles);
+  const token = getOwnerToken();
+  try {
+    const res = await fetch('/api/owner/update-articles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ articles, token }),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 };

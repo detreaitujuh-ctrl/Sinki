@@ -15,7 +15,8 @@ import {
   EyeOff,
   ShieldCheck,
 } from 'lucide-react';
-import { TOP_11_DATA } from '../data/top11';
+import { TOP_11_DATA, Top11Item } from '../data/top11';
+import { getStoredTopPerfumes } from '../utils/topPerfumesStorage';
 import { QrisPaymentCard } from './QrisPaymentCard';
 import {
   PricingConfig,
@@ -29,6 +30,7 @@ interface OrderScreenProps {
   onShowToast: (msg: string) => void;
   pricing?: PricingConfig;
   customQris?: string | null;
+  topPerfumes?: Top11Item[];
   selectedPerfumeFromCollection?: { name: string; category?: string } | null;
 }
 
@@ -46,33 +48,34 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
   onShowToast,
   pricing,
   customQris,
+  topPerfumes,
   selectedPerfumeFromCollection,
 }) => {
+  const activeTopList = topPerfumes && topPerfumes.length > 0 ? topPerfumes : getStoredTopPerfumes();
+
   // Order Selection State
   const [tier, setTier] = useState<PerfumeTier>('non_premium');
   const [selectedSize, setSelectedSize] = useState<BottleSize>(30);
-  const [selectedVariant, setSelectedVariant] = useState(TOP_11_DATA[0].name);
+  const [selectedVariant, setSelectedVariant] = useState(() => (activeTopList[0]?.name || TOP_11_DATA[0].name));
   const [customVariantName, setCustomVariantName] = useState('');
 
   // Sync when a perfume is chosen directly from Collection screen
   useEffect(() => {
     if (selectedPerfumeFromCollection) {
       const perfName = selectedPerfumeFromCollection.name;
-      // Check if variant is in TOP_11_DATA
-      const isTop11 = TOP_11_DATA.some((item) => item.name.toLowerCase() === perfName.toLowerCase());
-      if (isTop11) {
+      const isTop = activeTopList.some((item) => item.name.toLowerCase() === perfName.toLowerCase());
+      if (isTop) {
         setSelectedVariant(perfName);
         setCustomVariantName('');
       } else {
         setCustomVariantName(perfName);
       }
 
-      // If category is mykonos, automatically set tier to mykonos
       if (selectedPerfumeFromCollection.category === 'mykonos' || perfName.toLowerCase().includes('mykonos')) {
         setTier('mykonos');
       }
     }
-  }, [selectedPerfumeFromCollection]);
+  }, [selectedPerfumeFromCollection, activeTopList]);
   const [quantity, setQuantity] = useState(1);
 
   // Price List Visibility Toggle (Inline so it never turns black or gets blocked by transforms)
@@ -488,7 +491,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                 }}
                 className="w-full py-2.5 px-3 rounded-xl bg-[#141626] border border-white/15 text-white font-semibold text-xs focus:outline-none focus:border-[#DFB76C] appearance-none pr-8 cursor-pointer shadow-inner"
               >
-                {TOP_11_DATA.map((item) => (
+                {activeTopList.map((item) => (
                   <option key={item.id} value={item.name} className="bg-[#141626] text-white">
                     #{item.rank}: {item.name} ({item.type})
                   </option>

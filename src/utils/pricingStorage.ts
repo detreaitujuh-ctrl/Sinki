@@ -1,4 +1,5 @@
 // Utility to manage, persist, and calculate perfume pricing configuration
+import { getOwnerToken } from './assetStorage';
 
 export interface PricingConfig {
   nonPremium: Record<number, number>;
@@ -42,33 +43,40 @@ export const getStoredPricing = (): PricingConfig => {
 };
 
 export const savePricingToServer = async (
-  pricing: PricingConfig,
-  pin = '1995'
+  pricing: PricingConfig
 ): Promise<boolean> => {
   try {
     localStorage.setItem(PRICING_STORAGE_KEY, JSON.stringify(pricing));
 
+    const token = getOwnerToken();
     const res = await fetch('/api/owner/update-pricing', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin, pricing }),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ token, pricing }),
     });
 
     return res.ok;
   } catch (err) {
     console.error('Failed to save pricing to server:', err);
-    return true;
+    return false;
   }
 };
 
-export const resetPricingToServer = async (pin = '1995'): Promise<PricingConfig> => {
+export const resetPricingToServer = async (): Promise<PricingConfig> => {
   try {
     localStorage.setItem(PRICING_STORAGE_KEY, JSON.stringify(DEFAULT_PRICING));
 
+    const token = getOwnerToken();
     await fetch('/api/owner/update-pricing', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin, pricing: DEFAULT_PRICING }),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ token, pricing: DEFAULT_PRICING }),
     });
   } catch (err) {
     console.error('Failed to reset pricing on server:', err);

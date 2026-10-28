@@ -29,7 +29,17 @@ import {
   getStoredSocialLinks,
   fetchSocialLinksFromServer,
 } from './utils/socialStorage';
-import { fetchTopPerfumesFromServer } from './utils/topPerfumesStorage';
+import {
+  Top11Item,
+  getStoredTopPerfumes,
+  fetchTopPerfumesFromServer,
+} from './utils/topPerfumesStorage';
+import {
+  PerfumeItem,
+  getStoredPerfumes,
+  fetchPerfumesFromServer,
+} from './utils/perfumeStorage';
+import { fetchArticlesFromServer } from './utils/articleStorage';
 
 const TABS: TabType[] = ['home', 'collection', 'top11', 'order', 'review'];
 
@@ -71,6 +81,8 @@ export default function App() {
   const [pricing, setPricing] = useState<PricingConfig>(() => getStoredPricing());
   const [tickerConfig, setTickerConfig] = useState<TickerConfig>(() => getStoredTicker());
   const [socialLinks, setSocialLinks] = useState<SocialLinks>(() => getStoredSocialLinks());
+  const [perfumes, setPerfumes] = useState<PerfumeItem[]>(() => getStoredPerfumes());
+  const [topPerfumes, setTopPerfumes] = useState<Top11Item[]>(() => getStoredTopPerfumes());
 
   // Modals & Drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -109,7 +121,25 @@ export default function App() {
     });
 
     // Sync top bestseller perfumes from server/cloud immediately
-    fetchTopPerfumesFromServer().catch(() => {});
+    fetchTopPerfumesFromServer()
+      .then((items) => {
+        if (Array.isArray(items) && items.length > 0) {
+          setTopPerfumes(items);
+        }
+      })
+      .catch(() => {});
+
+    // Sync full perfumes catalog from server/cloud immediately
+    fetchPerfumesFromServer()
+      .then((items) => {
+        if (Array.isArray(items) && items.length > 0) {
+          setPerfumes(items);
+        }
+      })
+      .catch(() => {});
+
+    // Sync articles from server/cloud immediately
+    fetchArticlesFromServer().catch(() => {});
 
     // Sync with server on initial load (includes ticker, logo, chibi, qris, pricing, hero bottles & stage effect)
     fetchServerAssets().then((assets) => {
@@ -118,7 +148,6 @@ export default function App() {
       if (assets.qrisImage) setCustomQris(assets.qrisImage);
       if (assets.top11) {
         setTop11Photos(assets.top11);
-        // Preload all updated bottle images in background immediately into browser cache
         Object.values(assets.top11).forEach((photoUrl) => {
           if (photoUrl && typeof photoUrl === 'string') {
             const preloadImg = new Image();
@@ -136,12 +165,32 @@ export default function App() {
         });
       }
       if (assets.heroStageEffect) setHeroStageEffect(assets.heroStageEffect);
+      if (typeof assets.heroStageEnabled === 'boolean') setHeroStageEnabled(assets.heroStageEnabled);
       if (assets.pricing) setPricing(assets.pricing);
       if (assets.ticker) setTickerConfig(assets.ticker);
     });
 
-    // Auto-refresh running text when visitor returns to tab or every 30s
-    const handleTickerRefresh = () => {
+    const handleTopPerfumesEvent = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setTopPerfumes(e.detail);
+      } else {
+        setTopPerfumes(getStoredTopPerfumes());
+      }
+    };
+
+    const handlePerfumesEvent = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setPerfumes(e.detail);
+      } else {
+        setPerfumes(getStoredPerfumes());
+      }
+    };
+
+    window.addEventListener('sinki_top_perfumes_updated', handleTopPerfumesEvent);
+    window.addEventListener('sinki_perfumes_updated', handlePerfumesEvent);
+
+    // Auto-refresh public data when visitor returns to tab or every 30s
+    const handleLiveRefresh = () => {
       if (!document.hidden) {
         fetchTickerFromServer().then((cfg) => {
           if (cfg) setTickerConfig(cfg);
@@ -149,15 +198,23 @@ export default function App() {
         fetchSocialLinksFromServer().then((links) => {
           if (links) setSocialLinks(links);
         });
+        fetchPerfumesFromServer().then((items) => {
+          if (Array.isArray(items) && items.length > 0) setPerfumes(items);
+        });
+        fetchTopPerfumesFromServer().then((items) => {
+          if (Array.isArray(items) && items.length > 0) setTopPerfumes(items);
+        });
       }
     };
-    window.addEventListener('focus', handleTickerRefresh);
-    document.addEventListener('visibilitychange', handleTickerRefresh);
-    const tickerInterval = setInterval(handleTickerRefresh, 30000);
+    window.addEventListener('focus', handleLiveRefresh);
+    document.addEventListener('visibilitychange', handleLiveRefresh);
+    const tickerInterval = setInterval(handleLiveRefresh, 30000);
 
     return () => {
-      window.removeEventListener('focus', handleTickerRefresh);
-      document.removeEventListener('visibilitychange', handleTickerRefresh);
+      window.removeEventListener('sinki_top_perfumes_updated', handleTopPerfumesEvent);
+      window.removeEventListener('sinki_perfumes_updated', handlePerfumesEvent);
+      window.removeEventListener('focus', handleLiveRefresh);
+      document.removeEventListener('visibilitychange', handleLiveRefresh);
       clearInterval(tickerInterval);
     };
   }, []);
@@ -210,9 +267,11 @@ export default function App() {
           top11Photos={top11Photos}
           pricing={pricing}
           tickerConfig={tickerConfig}
+          perfumes={perfumes}
           socialLinks={socialLinks}
           heroBottles={heroBottles}
           heroStageEffect={heroStageEffect}
+          heroStageEnabled={heroStageEnabled}
           onAssetsUpdated={(newLogo, newChibi) => {
             setCustomLogo(newLogo);
             setCustomChibi(newChibi);
@@ -226,6 +285,9 @@ export default function App() {
           onHeroStageEffectUpdated={(effect) => {
             setHeroStageEffect(effect);
           }}
+          onHeroStageEnabledUpdated={(enabled) => {
+            setHeroStageEnabled(enabled);
+          }}
           onTop11PhotoUpdated={(variantId, newPhoto) => {
             setTop11Photos((prev) => ({ ...prev, [variantId]: newPhoto }));
           }}
@@ -234,6 +296,9 @@ export default function App() {
           }}
           onTickerUpdated={(newTicker) => {
             setTickerConfig(newTicker);
+          }}
+          onPerfumesUpdated={(newList) => {
+            setPerfumes(newList);
           }}
           onSocialLinksUpdated={(newLinks) => {
             setSocialLinks(newLinks);
@@ -278,12 +343,13 @@ export default function App() {
             />
           </div>
 
-          {/* View 2: Collection (Grid 2x2 with all 68 variants) */}
+          {/* View 2: Collection (Grid 2x2 with all active variants) */}
           <div className={`w-full h-full ${activeTab === 'collection' ? 'block' : 'hidden'}`}>
             <CollectionScreen
               onBackToHome={() => setActiveTab('home')}
               onShowToast={showToast}
               scrollToTopTrigger={collectionScrollTrigger}
+              perfumes={perfumes}
               onSelectPerfumeToOrder={(perfume) => {
                 setSelectedPerfumeForOrder({ name: perfume.name, category: perfume.category });
                 setActiveTab('order');
@@ -310,6 +376,7 @@ export default function App() {
               onShowToast={showToast}
               pricing={pricing}
               customQris={customQris}
+              topPerfumes={topPerfumes}
               selectedPerfumeFromCollection={selectedPerfumeForOrder}
             />
           </div>
@@ -338,7 +405,7 @@ export default function App() {
           }}
         />
 
-        {/* Secret Owner PIN Modal (Triggered strictly by tapping logo 5x, PIN: 1995) */}
+        {/* Secret Owner PIN Modal (Triggered strictly by tapping logo 5x) */}
         <PinModal
           isOpen={isPinModalOpen}
           onClose={() => setIsPinModalOpen(false)}

@@ -17,9 +17,6 @@ const LOCAL_STORAGE_KEY = 'sinki_reviews_v5';
 const RECENT_SUBMISSIONS_KEY = 'sinki_recent_reviews_cache_v5';
 const REVIEWS_FILE_NAME = 'reviews.json';
 const REVIEWS_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${REVIEWS_FILE_NAME}`;
-const SUPABASE_STORAGE_UPLOAD_URL = 'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/reviews.json';
-const SUPABASE_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
 
 export const MAX_REVIEWS_LIMIT = 10;
 
@@ -63,26 +60,7 @@ const recordLocalSubmission = (review: ReviewItem) => {
   } catch {}
 };
 
-/**
- * Menyinkronkan daftar ulasan langsung ke cloud Supabase Storage (Metode Permanen Upsert)
- */
-export const syncReviewsDirectlyToCloud = async (reviews: ReviewItem[]): Promise<boolean> => {
-  try {
-    const res = await fetch(SUPABASE_STORAGE_UPLOAD_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json',
-        'x-upsert': 'true',
-      },
-      body: JSON.stringify(reviews, null, 2),
-    });
-    return res.ok;
-  } catch (err) {
-    console.warn('[Direct Cloud Sync Notice] Reviews:', err);
-    return false;
-  }
-};
+
 
 /**
  * Mengambil ulasan dari penyimpanan lokal (instant cache)
@@ -232,7 +210,7 @@ export const saveReviewToSupabase = async (
   setCachedReviews(updated);
   recordLocalSubmission(newReview);
 
-  // 1. Coba via API backend Express
+  // Kirim via API backend resmi (Node / Cloudflare Worker)
   try {
     const res = await fetch('/api/reviews', {
       method: 'POST',
@@ -253,9 +231,6 @@ export const saveReviewToSupabase = async (
     console.warn('Server review submission notice:', err);
   }
 
-  // 2. Fallback permanen: Sinkronkan langsung ke Supabase Storage Cloud
-  await syncReviewsDirectlyToCloud(updated);
-
   return { success: true, reviews: updated };
 };
 
@@ -270,7 +245,6 @@ export const deleteReviewFromSupabase = async (
   const updated = currentList.filter((r) => r.id !== reviewId);
   setCachedReviews(updated);
 
-  // Coba hapus via API server
   try {
     const res = await fetch('/api/owner/delete-review', {
       method: 'POST',
@@ -278,7 +252,7 @@ export const deleteReviewFromSupabase = async (
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ id: reviewId, token, pin: '1995' }),
+      body: JSON.stringify({ id: reviewId, token }),
     });
 
     const contentType = res.headers.get('content-type') || '';
@@ -294,8 +268,6 @@ export const deleteReviewFromSupabase = async (
     console.error('Exception deleting review via backend:', err);
   }
 
-  // Fallback sinkronkan langsung ke cloud
-  await syncReviewsDirectlyToCloud(updated);
   return { success: true, reviews: updated };
 };
 
@@ -331,8 +303,6 @@ export const likeReviewInSupabase = async (
     console.warn('Server like notice:', err);
   }
 
-  // Fallback sinkronkan langsung ke cloud
-  await syncReviewsDirectlyToCloud(updated);
   return { success: true, reviews: updated };
 };
 
@@ -350,7 +320,7 @@ export const resetReviewsToDefaultInSupabase = async (): Promise<ReviewItem[]> =
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ token, pin: '1995' }),
+      body: JSON.stringify({ token }),
     });
 
     const contentType = res.headers.get('content-type') || '';
@@ -366,6 +336,5 @@ export const resetReviewsToDefaultInSupabase = async (): Promise<ReviewItem[]> =
     console.error('Error resetting reviews:', e);
   }
 
-  await syncReviewsDirectlyToCloud([]);
   return [];
 };

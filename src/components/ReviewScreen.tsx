@@ -155,16 +155,13 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
     }
   });
 
-  // Fitur Rahasia: Tekan Logo 5x untuk Akses Hapus dengan PIN Pemilik (1995)
+  // Fitur Rahasia: Tekan Logo 5x untuk Akses Hapus dengan PIN Pemilik
   const [logoTapCount, setLogoTapCount] = useState(0);
   const [lastTapTime, setLastTapTime] = useState(0);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
-
-  // PIN Pemilik SINKI (Dirahasiakan, tidak ditampilkan di antarmuka)
-  const SECRET_ADMIN_PIN = '1995';
 
   // Handler klik logo 5x
   const handleLogoTap = () => {
@@ -199,15 +196,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         setPinError(res.error || 'PIN salah! Silakan coba lagi.');
       }
     } catch {
-      if (pinInput.trim() === '1995') {
-        setIsAdminMode(true);
-        setIsAdminModalOpen(false);
-        setPinInput('');
-        setPinError('');
-        onShowToast('🛡️ Mode Pengelola Aktif! Tombol hapus ulasan kini muncul.');
-      } else {
-        setPinError('PIN salah! Silakan coba lagi.');
-      }
+      setPinError('Gagal terhubung ke server verifikasi PIN.');
     }
   };
 

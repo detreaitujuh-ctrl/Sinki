@@ -35,7 +35,7 @@ export const Top11UploadModal: React.FC<Top11UploadModalProps> = ({
       onShowToast(`Mengoptimalkan foto botol ${item.name}...`);
 
       const optimized = await compressImage(file, 900, 900, 0.88);
-      const success = await saveTop11PhotoToServer(item.id, optimized, '1995');
+      const success = await saveTop11PhotoToServer(item.id, optimized);
 
       if (success) {
         setPreview(optimized);
@@ -56,7 +56,7 @@ export const Top11UploadModal: React.FC<Top11UploadModalProps> = ({
     try {
       setIsProcessing(true);
       // Remove from server
-      await saveTop11PhotoToServer(item.id, '', '1995');
+      await saveTop11PhotoToServer(item.id, '');
       setPreview(null);
       onPhotoUpdated(item.id, null);
       onShowToast(`Foto botol ${item.name} dikembalikan ke botol bawaan.`);

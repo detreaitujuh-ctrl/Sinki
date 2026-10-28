@@ -7,7 +7,7 @@ import {
   RotateCcw,
   MessageCircle,
 } from 'lucide-react';
-import { getStoredQris, saveQrisToServer } from '../utils/assetStorage';
+import { getStoredQris, saveQrisToServer, verifyOwnerPinOnServer } from '../utils/assetStorage';
 import { ImageAdjusterModal } from './ImageAdjusterModal';
 import { openWhatsAppDirect } from '../utils/whatsappHelper';
 
@@ -87,14 +87,19 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
     setLastTapTime(now);
   };
 
-  // Verifikasi PIN Pemilik Toko
-  const handleVerifyOwnerPin = (e: React.FormEvent) => {
+  // Verifikasi PIN Pemilik Toko via Server
+  const handleVerifyOwnerPin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (ownerPin === '1995') {
-      setIsPinVerified(true);
-      setPinError('');
-    } else {
-      setPinError('PIN salah! Silakan coba lagi.');
+    try {
+      const res = await verifyOwnerPinOnServer(ownerPin.trim());
+      if (res.success) {
+        setIsPinVerified(true);
+        setPinError('');
+      } else {
+        setPinError(res.error || 'PIN salah! Silakan coba lagi.');
+      }
+    } catch {
+      setPinError('Gagal terhubung ke server verifikasi PIN.');
     }
   };
 
@@ -117,7 +122,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
     setIsAdjusterOpen(false);
     try {
       setIsUploading(true);
-      await saveQrisToServer(croppedBase64, '1995');
+      await saveQrisToServer(croppedBase64);
       setCustomQris(croppedBase64);
       setIsUploadModalOpen(false);
       setIsPinVerified(false);
@@ -127,7 +132,9 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
       }
     } catch (err) {
       console.error(err);
-      alert('Gagal menyimpan foto QRIS.');
+      if (onShowToast) {
+        onShowToast('Gagal menyimpan foto QRIS.');
+      }
     } finally {
       setIsUploading(false);
       setAdjusterImageSrc(null);
@@ -137,7 +144,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
   // Reset QRIS
   const handleResetQris = async () => {
     try {
-      await saveQrisToServer('', '1995');
+      await saveQrisToServer('');
       setCustomQris(null);
       setIsUploadModalOpen(false);
       setIsPinVerified(false);
@@ -269,7 +276,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
                   </p>
                   <input
                     type="password"
-                    maxLength={6}
+                    maxLength={12}
                     autoFocus
                     placeholder="Masukkan PIN Pemilik"
                     value={ownerPin}

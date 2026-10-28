@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, X, KeyRound, AlertCircle } from 'lucide-react';
+import { Lock, X, AlertCircle, Check } from 'lucide-react';
 import { verifyOwnerPinOnServer } from '../utils/assetStorage';
 
 interface PinModalProps {
@@ -17,57 +17,14 @@ export const PinModal: React.FC<PinModalProps> = ({
 }) => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
-
-  // Keyboard support: Allow typing 1995 with physical keyboard (PC/laptop)
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key >= '0' && e.key <= '9') {
-        setPin((prev) => {
-          if (prev.length < 4) {
-            const next = prev + e.key;
-            if (next.length === 4) {
-              validatePin(next);
-            }
-            return next;
-          }
-          return prev;
-        });
-        setError(false);
-      } else if (e.key === 'Backspace') {
-        setPin((prev) => prev.slice(0, -1));
-        setError(false);
-      } else if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  const handleNumberClick = (digit: string) => {
-    if (pin.length < 4) {
-      const nextPin = pin + digit;
-      setPin(nextPin);
-      setError(false);
-      if (nextPin.length === 4) {
-        validatePin(nextPin);
-      }
-    }
-  };
-
-  const handleDelete = () => {
-    setPin((prev) => prev.slice(0, -1));
-    setError(false);
-  };
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const validatePin = async (inputPin: string) => {
+    const trimmed = inputPin.trim();
+    if (!trimmed || isVerifying) return;
+    setIsVerifying(true);
     try {
-      const res = await verifyOwnerPinOnServer(inputPin);
+      const res = await verifyOwnerPinOnServer(trimmed);
       if (res.success) {
         onShowToast('Akses Pemilik Berhasil! Membuka Panel...');
         onSuccess();
@@ -82,21 +39,57 @@ export const PinModal: React.FC<PinModalProps> = ({
         }, 1200);
       }
     } catch {
-      if (inputPin === '1995') {
-        onShowToast('Akses Pemilik Berhasil! Membuka Panel...');
-        onSuccess();
+      setError(true);
+      onShowToast('Gagal terhubung ke server verifikasi PIN.');
+      setTimeout(() => {
         setPin('');
         setError(false);
-      } else {
-        setError(true);
-        onShowToast('PIN Pemilik salah! Silakan coba lagi.');
-        setTimeout(() => {
-          setPin('');
-          setError(false);
-        }, 1200);
-      }
+      }, 1200);
+    } finally {
+      setIsVerifying(false);
     }
   };
+
+  // Keyboard support: Allow typing 4-12 character PIN with physical keyboard (PC/laptop)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (pin.length >= 4) {
+          validatePin(pin);
+        }
+      } else if (e.key === 'Backspace') {
+        setPin((prev) => prev.slice(0, -1));
+        setError(false);
+      } else if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        setPin((prev) => (prev.length < 12 ? prev + e.key : prev));
+        setError(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, pin, isVerifying]);
+
+  if (!isOpen) return null;
+
+  const handleNumberClick = (digit: string) => {
+    if (pin.length < 12 && !isVerifying) {
+      setPin((prev) => prev + digit);
+      setError(false);
+    }
+  };
+
+  const handleDelete = () => {
+    setPin((prev) => prev.slice(0, -1));
+    setError(false);
+  };
+
+  const dotCount = Math.max(4, pin.length);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
@@ -127,18 +120,18 @@ export const PinModal: React.FC<PinModalProps> = ({
             Masukkan PIN Pemilik
           </h4>
           <p className="text-[10px] text-slate-400 mt-1">
-            Gunakan tombol angka di bawah atau ketik di keyboard
+            Ketik PIN (4–12 digit) lalu tekan Masuk atau Enter
           </p>
         </div>
 
         {/* PIN Dots Display */}
-        <div className="flex justify-center items-center gap-3 py-2">
-          {[0, 1, 2, 3].map((index) => {
+        <div className="flex flex-wrap justify-center items-center gap-2 py-2 min-h-[32px]">
+          {Array.from({ length: dotCount }).map((_, index) => {
             const isFilled = index < pin.length;
             return (
               <div
                 key={index}
-                className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
                   error
                     ? 'bg-red-500 scale-110 shadow-[0_0_8px_rgba(239,68,68,0.7)]'
                     : isFilled
@@ -162,25 +155,33 @@ export const PinModal: React.FC<PinModalProps> = ({
             <button
               key={digit}
               onClick={() => handleNumberClick(digit)}
-              className="py-3 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-[#DFB76C] active:text-slate-950 active:scale-95 border border-white/10 hover:border-[#DFB76C]/40 text-white font-display font-bold text-lg transition-all"
+              disabled={isVerifying}
+              className="py-3 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-[#DFB76C] active:text-slate-950 active:scale-95 border border-white/10 hover:border-[#DFB76C]/40 text-white font-display font-bold text-lg transition-all disabled:opacity-50"
             >
               {digit}
             </button>
           ))}
-          <div className="flex items-center justify-center text-slate-500">
-            <KeyRound size={18} />
-          </div>
+          <button
+            onClick={handleDelete}
+            disabled={isVerifying}
+            className="py-3 rounded-2xl bg-white/5 hover:bg-red-500/25 active:scale-95 border border-white/10 hover:border-red-500/40 text-slate-300 font-medium text-xs transition-all flex items-center justify-center disabled:opacity-50"
+          >
+            Hapus
+          </button>
           <button
             onClick={() => handleNumberClick('0')}
-            className="py-3 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-[#DFB76C] active:text-slate-950 active:scale-95 border border-white/10 hover:border-[#DFB76C]/40 text-white font-display font-bold text-lg transition-all"
+            disabled={isVerifying}
+            className="py-3 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-[#DFB76C] active:text-slate-950 active:scale-95 border border-white/10 hover:border-[#DFB76C]/40 text-white font-display font-bold text-lg transition-all disabled:opacity-50"
           >
             0
           </button>
           <button
-            onClick={handleDelete}
-            className="py-3 rounded-2xl bg-white/5 hover:bg-red-500/25 active:scale-95 border border-white/10 hover:border-red-500/40 text-slate-300 font-medium text-xs transition-all flex items-center justify-center"
+            onClick={() => validatePin(pin)}
+            disabled={pin.length < 4 || isVerifying}
+            className="py-3 rounded-2xl bg-gradient-to-r from-[#DFB76C] to-[#A07C3A] text-slate-950 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1 active:scale-95 disabled:opacity-35"
           >
-            Hapus
+            <Check size={14} />
+            <span>{isVerifying ? '...' : 'Masuk'}</span>
           </button>
         </div>
       </div>

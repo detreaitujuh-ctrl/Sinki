@@ -1,5 +1,5 @@
 import { BookOpen, ChevronRight, Shield } from 'lucide-react';
-import { getStoredArticles, ArticleItem } from '../utils/articleStorage';
+import { getStoredArticles, fetchArticlesFromServer, ArticleItem } from '../utils/articleStorage';
 import React from 'react';
 import { X, LayoutGrid, MessageCircle, ShoppingBag, ExternalLink } from 'lucide-react';
 import { openWhatsAppDirect } from '../utils/whatsappHelper';
@@ -28,7 +28,26 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
   const currentSocial = propSocialLinks || getStoredSocialLinks();
   const [isJournalOpen, setIsJournalOpen] = React.useState(false);
   const [selectedArticle, setSelectedArticle] = React.useState<ArticleItem | null>(null);
-  const articles = getStoredArticles();
+  const [articles, setArticles] = React.useState<ArticleItem[]>(() => getStoredArticles());
+
+  React.useEffect(() => {
+    if (isOpen || isJournalOpen) {
+      fetchArticlesFromServer().then((list) => {
+        if (Array.isArray(list) && list.length > 0) {
+          setArticles(list);
+        }
+      });
+    }
+    const handleArticlesEvent = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setArticles(e.detail);
+      } else {
+        setArticles(getStoredArticles());
+      }
+    };
+    window.addEventListener('sinki_articles_updated', handleArticlesEvent);
+    return () => window.removeEventListener('sinki_articles_updated', handleArticlesEvent);
+  }, [isOpen, isJournalOpen]);
 
   if (!isOpen) return null;
 
@@ -116,7 +135,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
 
             {/* Shopee Official */}
             <a
-              href="https://shopee.co.id"
+              href={currentSocial.shopee || 'https://shopee.co.id'}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-white/[0.06] hover:bg-orange-500/20 border border-white/10 hover:border-orange-400/50 text-left transition-all group shadow-sm"

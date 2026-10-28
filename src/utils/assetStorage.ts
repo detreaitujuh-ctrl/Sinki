@@ -108,12 +108,8 @@ export const verifyOwnerPinOnServer = async (
       return { success: true, token: data.token };
     }
     return { success: false, error: data.error || 'PIN Pemilik tidak valid!' };
-  } catch (err) {
-    // Offline / dev fallback: verify locally if offline
-    if (pin.trim() === '1995') {
-      return { success: true, token: 'local-offline-session' };
-    }
-    return { success: false, error: 'Koneksi ke server gagal' };
+  } catch {
+    return { success: false, error: 'Koneksi ke server verifikasi gagal' };
   }
 };
 
@@ -181,11 +177,51 @@ export interface ServerAssetsResponse {
   top11?: Record<string, string>;
   heroBottles?: string[];
   heroStageEffect?: HeroStageEffect;
+  heroStageEnabled?: boolean;
   pricing?: PricingConfig;
   ticker?: any;
 }
 
-// Fetch public assets from server or cache
+const applyAssetsPayload = (data: any): ServerAssetsResponse => {
+  if (data.logo) localStorage.setItem(LOGO_STORAGE_KEY, data.logo);
+  if (data.chibi) localStorage.setItem(CHIBI_STORAGE_KEY, data.chibi);
+  if (data.qrisImage) localStorage.setItem(QRIS_STORAGE_KEY, data.qrisImage);
+  if (data.top11) localStorage.setItem(TOP11_STORAGE_KEY, JSON.stringify(data.top11));
+  if (Array.isArray(data.heroBottles) && data.heroBottles.length > 0) {
+    localStorage.setItem(HERO_BOTTLES_STORAGE_KEY, JSON.stringify(data.heroBottles));
+  }
+  if (data.heroStageEffect) {
+    localStorage.setItem(HERO_STAGE_EFFECT_STORAGE_KEY, data.heroStageEffect);
+  }
+  if (typeof data.heroStageEnabled === 'boolean') {
+    localStorage.setItem(HERO_STAGE_ENABLED_STORAGE_KEY, data.heroStageEnabled ? 'true' : 'false');
+  }
+  if (data.pricing) localStorage.setItem('sinki_custom_pricing_config', JSON.stringify(data.pricing));
+  if (data.ticker && data.ticker.text) {
+    localStorage.setItem('sinki_ticker_config_v1', JSON.stringify(data.ticker));
+  }
+
+  return {
+    logo: data.logo || DEFAULT_LOGO,
+    chibi: data.chibi || DEFAULT_CHIBI,
+    qrisImage: data.qrisImage || DEFAULT_QRIS,
+    top11: {
+      ...getDefaultTop11Map(),
+      ...(data.top11 || {}),
+    },
+    heroBottles:
+      Array.isArray(data.heroBottles) && data.heroBottles.length > 0
+        ? data.heroBottles
+        : getStoredHeroBottles(),
+    heroStageEffect: data.heroStageEffect || getStoredHeroStageEffect(),
+    heroStageEnabled:
+      typeof data.heroStageEnabled === 'boolean' ? data.heroStageEnabled : getStoredHeroStageEnabled(),
+    pricing: data.pricing || getStoredPricing(),
+    ticker: data.ticker,
+  };
+};
+
+// Fetch public assets from server, Supabase public CDN, or cache
 export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
   try {
     const res = await fetch(`/api/public-assets?t=${Date.now()}`, { cache: 'no-store' });
@@ -193,41 +229,22 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
       const contentType = res.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
         const data = await res.json();
-        if (data.logo) localStorage.setItem(LOGO_STORAGE_KEY, data.logo);
-        if (data.chibi) localStorage.setItem(CHIBI_STORAGE_KEY, data.chibi);
-        if (data.qrisImage) localStorage.setItem(QRIS_STORAGE_KEY, data.qrisImage);
-        if (data.top11) localStorage.setItem(TOP11_STORAGE_KEY, JSON.stringify(data.top11));
-        if (Array.isArray(data.heroBottles) && data.heroBottles.length > 0) {
-          localStorage.setItem(HERO_BOTTLES_STORAGE_KEY, JSON.stringify(data.heroBottles));
-        }
-        if (data.heroStageEffect) {
-          localStorage.setItem(HERO_STAGE_EFFECT_STORAGE_KEY, data.heroStageEffect);
-        }
-        if (data.pricing) localStorage.setItem('sinki_custom_pricing_config', JSON.stringify(data.pricing));
-        if (data.ticker && data.ticker.text) {
-          localStorage.setItem('sinki_ticker_config_v1', JSON.stringify(data.ticker));
-        }
-
-        return {
-          logo: data.logo || DEFAULT_LOGO,
-          chibi: data.chibi || DEFAULT_CHIBI,
-          qrisImage: data.qrisImage || DEFAULT_QRIS,
-          top11: {
-            ...getDefaultTop11Map(),
-            ...(data.top11 || {}),
-          },
-          heroBottles: Array.isArray(data.heroBottles) && data.heroBottles.length > 0
-            ? data.heroBottles
-            : getStoredHeroBottles(),
-          heroStageEffect: data.heroStageEffect || getStoredHeroStageEffect(),
-          pricing: data.pricing || getStoredPricing(),
-          ticker: data.ticker,
-        };
+        return applyAssetsPayload(data);
       }
     }
   } catch {
-    // Expected on static hosting or offline
+    // Fallback to public CDN
   }
+
+  try {
+    const res = await fetch(`${SUPABASE_STORAGE_BASE}assets.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object') {
+        return applyAssetsPayload(data);
+      }
+    }
+  } catch {}
 
   return {
     logo: getStoredLogo(),
@@ -236,6 +253,7 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
     top11: getStoredTop11(),
     heroBottles: getStoredHeroBottles(),
     heroStageEffect: getStoredHeroStageEffect(),
+    heroStageEnabled: getStoredHeroStageEnabled(),
     pricing: getStoredPricing(),
   };
 };
@@ -243,8 +261,7 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
 // Save Home assets (Logo & Chibi) securely through server endpoint
 export const saveAssetToServer = async (
   type: 'logo' | 'chibi',
-  base64Data: string,
-  pin = '1995'
+  base64Data: string
 ): Promise<boolean> => {
   try {
     const storageKey = type === 'logo' ? LOGO_STORAGE_KEY : CHIBI_STORAGE_KEY;
@@ -258,7 +275,7 @@ export const saveAssetToServer = async (
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ pin, [type]: base64Data, token }),
+        body: JSON.stringify({ [type]: base64Data, token }),
       });
 
       if (res.ok) {
@@ -266,27 +283,30 @@ export const saveAssetToServer = async (
         if (json.data && json.data[type]) {
           localStorage.setItem(storageKey, json.data[type]);
         }
+        return true;
       }
+      return false;
     } catch {
-      // Ignored if offline
+      return false;
     }
-
-    return true;
   } catch (err) {
     console.error('Failed to sync asset:', err);
-    return true;
+    return false;
   }
 };
 
 // Save Top 11 bottle photo securely through server endpoint
 export const saveTop11PhotoToServer = async (
   variantId: string,
-  base64Data: string,
-  pin = '1995'
+  base64Data: string
 ): Promise<boolean> => {
   try {
     const current = getStoredTop11();
-    current[variantId] = base64Data;
+    if (base64Data) {
+      current[variantId] = base64Data;
+    } else {
+      delete current[variantId];
+    }
     localStorage.setItem(TOP11_STORAGE_KEY, JSON.stringify(current));
 
     const token = getOwnerToken();
@@ -298,7 +318,6 @@ export const saveTop11PhotoToServer = async (
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          pin,
           variantId,
           photoData: base64Data,
           token,
@@ -311,15 +330,15 @@ export const saveTop11PhotoToServer = async (
           current[variantId] = json.photoUrl;
           localStorage.setItem(TOP11_STORAGE_KEY, JSON.stringify(current));
         }
+        return true;
       }
+      return false;
     } catch {
-      // Ignored if offline
+      return false;
     }
-
-    return true;
   } catch (err) {
     console.error('Failed to save Top 11 photo:', err);
-    return true;
+    return false;
   }
 };
 
@@ -357,11 +376,14 @@ export const getStoredQris = (): string => {
 };
 
 export const saveQrisToServer = async (
-  base64Data: string,
-  pin = '1995'
+  base64Data: string
 ): Promise<boolean> => {
   try {
-    localStorage.setItem(QRIS_STORAGE_KEY, base64Data);
+    if (base64Data) {
+      localStorage.setItem(QRIS_STORAGE_KEY, base64Data);
+    } else {
+      localStorage.removeItem(QRIS_STORAGE_KEY);
+    }
 
     const token = getOwnerToken();
     try {
@@ -371,7 +393,7 @@ export const saveQrisToServer = async (
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ pin, qrisImage: base64Data, token }),
+        body: JSON.stringify({ qrisImage: base64Data || null, token }),
       });
 
       if (res.ok) {
@@ -379,15 +401,15 @@ export const saveQrisToServer = async (
         if (json.data && json.data.qrisImage) {
           localStorage.setItem(QRIS_STORAGE_KEY, json.data.qrisImage);
         }
+        return true;
       }
+      return false;
     } catch {
-      // Ignored if offline
+      return false;
     }
-
-    return true;
   } catch (err) {
     console.error('Failed to sync QRIS asset:', err);
-    return true;
+    return false;
   }
 };
 
@@ -432,37 +454,34 @@ export const getStoredHeroStageEnabled = (): boolean => {
 };
 
 export const saveHeroStageEnabledToServer = async (
-  enabled: boolean,
-  pin = '1995'
+  enabled: boolean
 ): Promise<boolean> => {
   try {
     localStorage.setItem(HERO_STAGE_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
 
     const token = getOwnerToken();
     try {
-      await fetch('/api/owner/update-assets', {
+      const res = await fetch('/api/owner/update-assets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ pin, heroStageEnabled: enabled, token }),
+        body: JSON.stringify({ heroStageEnabled: enabled, token }),
       });
+      return res.ok;
     } catch {
-      // Offline fallback
+      return false;
     }
-
-    return true;
   } catch (err) {
     console.error('Failed to save hero stage enabled status:', err);
-    return true;
+    return false;
   }
 };
 
 export const saveHeroBottleItemToServer = async (
   index: number,
-  base64Data: string,
-  pin = '1995'
+  base64Data: string
 ): Promise<string[]> => {
   try {
     const current = [...getStoredHeroBottles()];
@@ -477,7 +496,7 @@ export const saveHeroBottleItemToServer = async (
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ pin, index, bottleData: base64Data, heroBottles: current, token }),
+        body: JSON.stringify({ index, bottleData: base64Data, heroBottles: current, token }),
       });
 
       if (res.ok) {
@@ -488,7 +507,7 @@ export const saveHeroBottleItemToServer = async (
         }
       }
     } catch {
-      // Offline fallback
+      // Fallback
     }
 
     return current;
@@ -499,34 +518,32 @@ export const saveHeroBottleItemToServer = async (
 };
 
 export const saveHeroStageEffectToServer = async (
-  effect: HeroStageEffect,
-  pin = '1995'
+  effect: HeroStageEffect
 ): Promise<boolean> => {
   try {
     localStorage.setItem(HERO_STAGE_EFFECT_STORAGE_KEY, effect);
 
     const token = getOwnerToken();
     try {
-      await fetch('/api/owner/update-assets', {
+      const res = await fetch('/api/owner/update-assets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ pin, heroStageEffect: effect, token }),
+        body: JSON.stringify({ heroStageEffect: effect, token }),
       });
+      return res.ok;
     } catch {
-      // Offline fallback
+      return false;
     }
-
-    return true;
   } catch (err) {
     console.error('Failed to save hero stage effect:', err);
-    return true;
+    return false;
   }
 };
 
-export const resetStoredAssets = async (pin = '1995'): Promise<void> => {
+export const resetStoredAssets = async (): Promise<void> => {
   try {
     localStorage.removeItem(LOGO_STORAGE_KEY);
     localStorage.removeItem(CHIBI_STORAGE_KEY);
@@ -544,7 +561,6 @@ export const resetStoredAssets = async (pin = '1995'): Promise<void> => {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          pin,
           token,
           logo: null,
           chibi: null,
@@ -555,7 +571,7 @@ export const resetStoredAssets = async (pin = '1995'): Promise<void> => {
         }),
       });
     } catch {
-      // Ignored on static hosting
+      // Ignored if unreachable
     }
   } catch (e) {
     console.error('Failed to reset storage', e);

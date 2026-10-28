@@ -1,3 +1,5 @@
+import { getOwnerToken, SUPABASE_STORAGE_BASE } from './assetStorage';
+
 export interface SocialLinks {
   tiktok: string;
   instagram: string;
@@ -16,12 +18,7 @@ export const DEFAULT_SOCIAL_LINKS: SocialLinks = {
 };
 
 const SOCIAL_STORAGE_KEY = 'sinki_social_links_v1';
-const SUPABASE_STORAGE_UPLOAD_URL =
-  'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/social_links.json';
-const SUPABASE_PUBLIC_URL =
-  'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/social_links.json';
-const SUPABASE_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
+const SUPABASE_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}social_links.json`;
 
 /**
  * Format input TikTok: jika user hanya memasukkan username atau @handle,
@@ -149,8 +146,7 @@ export const fetchSocialLinksFromServer = async (): Promise<SocialLinks> => {
  * Menyimpan tautan sosial ke server & Supabase Storage (Khusus Pemilik)
  */
 export const saveSocialLinksToServer = async (
-  newLinks: Partial<SocialLinks>,
-  pin = '1995'
+  newLinks: Partial<SocialLinks>
 ): Promise<SocialLinks> => {
   const current = getStoredSocialLinks();
   const updated: SocialLinks = {
@@ -164,11 +160,8 @@ export const saveSocialLinksToServer = async (
 
   setStoredSocialLinks(updated);
 
-  // 1. Kirim ke Server Express
   try {
-    const token =
-      sessionStorage.getItem('sinki_owner_auth_token') ||
-      localStorage.getItem('sinki_owner_auth_token');
+    const token = getOwnerToken();
 
     const res = await fetch('/api/owner/update-social-links', {
       method: 'POST',
@@ -176,7 +169,7 @@ export const saveSocialLinksToServer = async (
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ pin, socialLinks: updated }),
+      body: JSON.stringify({ token, socialLinks: updated }),
     });
     if (res.ok) {
       const json = await res.json();
@@ -189,27 +182,12 @@ export const saveSocialLinksToServer = async (
     console.warn('Backend social link notice:', err);
   }
 
-  // 2. Direct Sync ke Supabase Storage (Metode Permanen Cloudflare/SPA)
-  try {
-    await fetch(SUPABASE_STORAGE_UPLOAD_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json',
-        'x-upsert': 'true',
-      },
-      body: JSON.stringify(updated, null, 2),
-    });
-  } catch (err) {
-    console.warn('Supabase direct social sync notice:', err);
-  }
-
   return updated;
 };
 
 /**
  * Reset tautan sosial ke default
  */
-export const resetSocialLinksToDefault = async (pin = '1995'): Promise<SocialLinks> => {
-  return saveSocialLinksToServer(DEFAULT_SOCIAL_LINKS, pin);
+export const resetSocialLinksToDefault = async (): Promise<SocialLinks> => {
+  return saveSocialLinksToServer(DEFAULT_SOCIAL_LINKS);
 };

@@ -1,5 +1,6 @@
 // Utility to track, persist, and visualize real-time visitor analytics for Sinki
 // Records origin/referrer (Instagram, TikTok, WhatsApp, Google, Direct, etc.), devices, and pages.
+import { getOwnerToken } from './assetStorage';
 
 export interface VisitorEvent {
   id: string;
@@ -298,6 +299,16 @@ export function recordVisit(pageName: string = 'Beranda'): AnalyticsData {
   const updatedHourly = [...current.hourlyTrends];
   updatedHourly[hour] = (updatedHourly[hour] || 0) + 1;
 
+  // Sanitize query params so auth tokens/keys are never recorded in analytics
+  const safeParams = new URLSearchParams(window.location.search);
+  for (const key of Array.from(safeParams.keys())) {
+    if (/token|key|secret|pin|password|auth|code/i.test(key)) {
+      safeParams.delete(key);
+    }
+  }
+  const safeQuery = safeParams.toString();
+  const safePath = window.location.pathname + (safeQuery ? `?${safeQuery}` : '');
+
   // New Event Feed
   const newEvent: VisitorEvent = {
     id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
@@ -307,7 +318,7 @@ export function recordVisit(pageName: string = 'Beranda'): AnalyticsData {
     page: pageName,
     device,
     os,
-    path: window.location.pathname + window.location.search,
+    path: safePath,
   };
 
   // Keep last 40 visitor logs
@@ -369,9 +380,9 @@ export async function fetchAnalyticsFromServer(): Promise<AnalyticsData> {
 }
 
 /**
- * Reset data analitik kembali murni ke 0 (Hanya Owner/Pengelola dengan PIN 1995)
+ * Reset data analitik kembali murni ke 0 (Khusus Owner/Pengelola terautentikasi)
  */
-export async function resetAnalyticsData(pin = '1995'): Promise<AnalyticsData> {
+export async function resetAnalyticsData(): Promise<AnalyticsData> {
   const freshZeroData: AnalyticsData = {
     ...EMPTY_ANALYTICS,
     startedAt: new Date().toISOString(),
@@ -380,10 +391,14 @@ export async function resetAnalyticsData(pin = '1995'): Promise<AnalyticsData> {
   saveLocalAnalytics(freshZeroData);
 
   try {
+    const token = getOwnerToken();
     await fetch('/api/owner/reset-analytics', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin }),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ token }),
     });
   } catch (err) {
     console.warn('Notice resetting server analytics:', err);

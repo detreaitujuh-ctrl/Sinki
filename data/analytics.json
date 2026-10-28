@@ -72,7 +72,7 @@
       "page": "Beranda",
       "device": "Mobile",
       "os": "Android",
-      "path": "/?__aistudio_auth_token=Ea57CDdNmSdGVlZ7JYZ0vP_iQCCu-xV2T7axJA0yNFE%3D"
+      "path": "/"
     },
     {
       "id": "evt_1793022866518_a9fo",
@@ -82,7 +82,7 @@
       "page": "Katalog Koleksi",
       "device": "Mobile",
       "os": "Android",
-      "path": "/?__aistudio_auth_token=Ea57CDdNmSdGVlZ7JYZ0vP_iQCCu-xV2T7axJA0yNFE%3D"
+      "path": "/"
     },
     {
       "id": "evt_1792739933804_lu25",
@@ -242,7 +242,7 @@
       "page": "Beranda",
       "device": "Mobile",
       "os": "Android",
-      "path": "/?__aistudio_auth_token=pMmKc-RhpONOTpTRapfb4IEi6RTDh1poUpUhyOWSMMk%3D"
+      "path": "/"
     }
   ]
 }

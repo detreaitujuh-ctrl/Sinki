@@ -133,7 +133,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
       onShowToast(`Memproses Botol 3D #${selectedHeroBottleIdx + 1}...`);
       const base64Data = await compressImage(file, 1000, 1000, 0.9);
       onShowToast(`Menyimpan Botol 3D #${selectedHeroBottleIdx + 1} ke server...`);
-      const updated = await saveHeroBottleItemToServer(selectedHeroBottleIdx, base64Data, '1995');
+      const updated = await saveHeroBottleItemToServer(selectedHeroBottleIdx, base64Data);
       setHeroBottlesList(updated);
       if (onHeroBottlesUpdated) {
         onHeroBottlesUpdated(updated);
@@ -155,7 +155,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
       if (onHeroStageEffectUpdated) {
         onHeroStageEffectUpdated(effectId);
       }
-      await saveHeroStageEffectToServer(effectId, '1995');
+      await saveHeroStageEffectToServer(effectId);
       const effectName = STAGE_EFFECTS.find((e) => e.id === effectId)?.name || effectId;
       onShowToast(`Efek panggung diubah ke "${effectName}"! ✨`);
     } catch (err) {
@@ -221,19 +221,19 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
 
       if (adjusterType === 'logo') {
         onShowToast('Menyimpan logo resmi ke server...');
-        await saveAssetToServer('logo', croppedBase64, '1995');
+        await saveAssetToServer('logo', croppedBase64);
         setLogoPreview(croppedBase64);
         onAssetsUpdated(croppedBase64, chibiPreview);
         onShowToast('Lambang Logo berhasil disimpan permanen! ✅');
       } else if (adjusterType === 'chibi') {
         onShowToast('Menyimpan foto Chibi ke server...');
-        await saveAssetToServer('chibi', croppedBase64, '1995');
+        await saveAssetToServer('chibi', croppedBase64);
         setChibiPreview(croppedBase64);
         onAssetsUpdated(logoPreview, croppedBase64);
         onShowToast('Foto Chibi berhasil disimpan permanen! ✅');
       } else if (adjusterType === 'qris') {
         onShowToast('Menyimpan foto barcode QRIS ke server...');
-        await saveQrisToServer(croppedBase64, '1995');
+        await saveQrisToServer(croppedBase64);
         setQrisPreview(croppedBase64);
         if (onQrisUpdated) {
           onQrisUpdated(croppedBase64);
@@ -241,7 +241,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
         onShowToast('Foto QRIS berhasil disimpan permanen! ✅');
       } else if (adjusterType === 'bottle' && selectedVariantId) {
         onShowToast('Menyimpan foto botol ke server...');
-        await saveTop11PhotoToServer(selectedVariantId, croppedBase64, '1995');
+        await saveTop11PhotoToServer(selectedVariantId, croppedBase64);
         onTop11PhotoUpdated(selectedVariantId, croppedBase64);
         onShowToast('Foto botol berhasil diperbarui permanen! ✅');
         setSelectedVariantId(null);
@@ -256,7 +256,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
   };
 
   const handleResetHome = async () => {
-    await resetStoredAssets('1995');
+    await resetStoredAssets();
     setLogoPreview(null);
     setChibiPreview(null);
     onAssetsUpdated(null, null);
@@ -267,7 +267,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
     try {
       setIsProcessing(true);
       onShowToast('Menyimpan daftar harga ke server...');
-      await savePricingToServer(pricingForm, '1995');
+      await savePricingToServer(pricingForm);
       if (onPricingUpdated) {
         onPricingUpdated(pricingForm);
       }
@@ -283,7 +283,7 @@ export const AssetUploadModal: React.FC<AssetUploadModalProps> = ({
   const handleResetPricing = async () => {
     try {
       setIsProcessing(true);
-      const res = await resetPricingToServer('1995');
+      const res = await resetPricingToServer();
       setPricingForm(res);
       if (onPricingUpdated) {
         onPricingUpdated(res);

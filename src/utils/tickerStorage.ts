@@ -152,7 +152,7 @@ export const saveTickerToServer = async (config: TickerConfig): Promise<TickerCo
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ ticker: toSave, token, pin: '241026' }),
+      body: JSON.stringify({ ticker: toSave, token }),
     });
     if (res.ok) {
       const json = await res.json();

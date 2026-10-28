@@ -63,13 +63,12 @@ import { CardFittingModal } from './CardFittingModal';
 import {
   ArticleItem,
   getStoredArticles,
-  saveArticlesToStorage,
-  INITIAL_ARTICLES,
+  fetchArticlesFromServer,
+  saveArticlesToServer,
 } from '../utils/articleStorage';
 import {
   Top11Item,
   getStoredTopPerfumes,
-  saveTopPerfumesToStorage,
   fetchTopPerfumesFromServer,
   saveTopPerfumesToServer,
   addTopPerfume,
@@ -80,6 +79,7 @@ import {
 import {
   ReviewItem,
   getCachedReviews,
+  fetchReviewsFromSupabase,
   deleteReviewFromSupabase,
   resetReviewsToDefaultInSupabase,
 } from '../utils/reviewStorage';
@@ -95,6 +95,7 @@ import {
 import { PerfumeCategory, PerfumeItem } from '../data/perfumes';
 import {
   getStoredPerfumes,
+  fetchPerfumesFromServer,
   savePerfumesToServer,
   resetPerfumesToDefault,
 } from '../utils/perfumeStorage';
@@ -125,6 +126,7 @@ interface DimensiSinkiScreenProps {
   top11Photos: Record<string, string>;
   heroBottles?: string[];
   heroStageEffect?: HeroStageEffect;
+  heroStageEnabled?: boolean;
   pricing?: PricingConfig;
   tickerConfig?: TickerConfig;
   perfumes?: PerfumeItem[];
@@ -134,6 +136,7 @@ interface DimensiSinkiScreenProps {
   onTop11PhotoUpdated: (variantId: string, newPhoto: string) => void;
   onHeroBottlesUpdated?: (bottles: string[]) => void;
   onHeroStageEffectUpdated?: (effect: HeroStageEffect) => void;
+  onHeroStageEnabledUpdated?: (enabled: boolean) => void;
   onPricingUpdated: (newPricing: PricingConfig) => void;
   onTickerUpdated?: (newTicker: TickerConfig) => void;
   onPerfumesUpdated?: (newList: PerfumeItem[]) => void;
@@ -160,6 +163,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   top11Photos,
   heroBottles: propHeroBottles,
   heroStageEffect: propHeroStageEffect,
+  heroStageEnabled: propHeroStageEnabled,
   pricing,
   tickerConfig,
   perfumes,
@@ -169,6 +173,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   onTop11PhotoUpdated,
   onHeroBottlesUpdated,
   onHeroStageEffectUpdated,
+  onHeroStageEnabledUpdated,
   onPricingUpdated,
   onTickerUpdated,
   onPerfumesUpdated,
@@ -177,14 +182,17 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   // 3D Stage Bottles & Effect State
   const [heroBottlesList, setHeroBottlesList] = useState<string[]>(() => propHeroBottles || getStoredHeroBottles());
   const [activeStageEffect, setActiveStageEffect] = useState<HeroStageEffect>(() => propHeroStageEffect || getStoredHeroStageEffect());
-  const [isHeroStageEnabled, setIsHeroStageEnabled] = useState<boolean>(() => getStoredHeroStageEnabled());
+  const [isHeroStageEnabled, setIsHeroStageEnabled] = useState<boolean>(() =>
+    typeof propHeroStageEnabled === 'boolean' ? propHeroStageEnabled : getStoredHeroStageEnabled()
+  );
   const [selectedHeroBottleIdx, setSelectedHeroBottleIdx] = useState<number | null>(null);
   const heroBottleInputRef = useRef<HTMLInputElement>(null);
 
   const handleToggleStageEnabled = async () => {
     const next = !isHeroStageEnabled;
     setIsHeroStageEnabled(next);
-    await saveHeroStageEnabledToServer(next, '1995');
+    onHeroStageEnabledUpdated?.(next);
+    await saveHeroStageEnabledToServer(next);
     onShowToast(
       next
         ? 'Panggung 3D Beranda diaktifkan! ✨ (Akan tampil saat botol diunggah)'
@@ -193,7 +201,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   };
 
   useEffect(() => {
-    if (propHeroBottles && propHeroBottles.length === 4) {
+    if (propHeroBottles && propHeroBottles.length > 0) {
       setHeroBottlesList(propHeroBottles);
     }
   }, [propHeroBottles]);
@@ -204,6 +212,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     }
   }, [propHeroStageEffect]);
 
+  useEffect(() => {
+    if (typeof propHeroStageEnabled === 'boolean') {
+      setIsHeroStageEnabled(propHeroStageEnabled);
+    }
+  }, [propHeroStageEnabled]);
+
   const handleHeroBottleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (selectedHeroBottleIdx === null) return;
     const file = e.target.files?.[0];
@@ -213,7 +227,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       onShowToast(`Memproses Botol 3D #${selectedHeroBottleIdx + 1}...`);
       const base64Data = await compressImage(file, 1000, 1000, 0.9);
       onShowToast(`Menyimpan Botol 3D #${selectedHeroBottleIdx + 1} ke server...`);
-      const updated = await saveHeroBottleItemToServer(selectedHeroBottleIdx, base64Data, '1995');
+      const updated = await saveHeroBottleItemToServer(selectedHeroBottleIdx, base64Data);
       setHeroBottlesList(updated);
       onHeroBottlesUpdated?.(updated);
       onShowToast(`Botol 3D #${selectedHeroBottleIdx + 1} berhasil disimpan permanen! ✅`);
@@ -230,7 +244,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     try {
       setActiveStageEffect(effectId);
       onHeroStageEffectUpdated?.(effectId);
-      await saveHeroStageEffectToServer(effectId, '1995');
+      await saveHeroStageEffectToServer(effectId);
       const effectName = STAGE_EFFECTS.find((e) => e.id === effectId)?.name || effectId;
       onShowToast(`Efek panggung diubah ke "${effectName}"! ✨`);
     } catch (err) {
@@ -377,6 +391,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   useEffect(() => {
     if (perfumes) {
       setPerfumesList(perfumes);
+    } else {
+      fetchPerfumesFromServer().then((items) => {
+        if (items && items.length > 0) setPerfumesList(items);
+      });
     }
   }, [perfumes]);
 
@@ -595,7 +613,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   const [pricingForm, setPricingForm] = useState<PricingConfig>(pricing || DEFAULT_PRICING);
   const [isSavingPricing, setIsSavingPricing] = useState(false);
 
-  // Reviews State
+  // Reviews & Articles State
   const [reviewsList, setReviewsList] = useState<ReviewItem[]>(getCachedReviews);
   const [articlesList, setArticlesList] = useState<ArticleItem[]>(() => getStoredArticles());
   const [isAddingArticle, setIsAddingArticle] = useState(false);
@@ -603,7 +621,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   const [newCategory, setNewCategory] = useState<'tips' | 'men' | 'women' | 'promo' | 'story'>('tips');
   const [newContent, setNewContent] = useState('');
 
-  const handleAddArticleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchReviewsFromSupabase().then((list) => {
+      if (Array.isArray(list)) setReviewsList(list);
+    });
+    fetchArticlesFromServer().then((list) => {
+      if (Array.isArray(list) && list.length > 0) setArticlesList(list);
+    });
+  }, []);
+
+  const handleAddArticleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newContent.trim()) {
       onShowToast('Judul dan isi konten tidak boleh kosong!');
@@ -628,18 +655,22 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     };
     const updated = [newArt, ...articlesList];
     setArticlesList(updated);
-    saveArticlesToStorage(updated);
     setIsAddingArticle(false);
     setNewTitle('');
     setNewContent('');
-    onShowToast('Konten baru berhasil diterbitkan ke website!');
+    const ok = await saveArticlesToServer(updated);
+    onShowToast(
+      ok
+        ? 'Konten baru berhasil diterbitkan & disinkronkan ke cloud! ✅'
+        : 'Konten disimpan lokal (cek konfigurasi sesi/cloud server).'
+    );
   };
 
-  const handleDeleteArticle = (id: string, title: string) => {
+  const handleDeleteArticle = async (id: string, title: string) => {
     if (confirm(`Hapus konten "${title}"?`)) {
       const updated = articlesList.filter((a) => a.id !== id);
       setArticlesList(updated);
-      saveArticlesToStorage(updated);
+      await saveArticlesToServer(updated);
       onShowToast(`Konten "${title}" berhasil dihapus.`);
     }
   };
@@ -664,19 +695,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         }
       }
     } catch {
-      if (enteredPin.trim() === '1995') {
-        setIsAuthenticated(true);
-        setPinError('');
-        onShowToast('Selamat datang di Dimensi-Sinki, Owner 👑');
-      } else {
-        const nextAttempt = attemptCount + 1;
-        setAttemptCount(nextAttempt);
-        setPinError('PIN Rahasia salah!');
-        setEnteredPin('');
-        if (nextAttempt >= 3) {
-          onShowToast('Akses ditolak! Mengalihkan ke halaman publik...');
-          onExitToPublic();
-        }
+      const nextAttempt = attemptCount + 1;
+      setAttemptCount(nextAttempt);
+      setPinError('Gagal terhubung ke server verifikasi PIN!');
+      setEnteredPin('');
+      if (nextAttempt >= 3) {
+        onShowToast('Akses ditolak! Mengalihkan ke halaman publik...');
+        onExitToPublic();
       }
     }
   };
@@ -723,23 +748,23 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     try {
       if (target === 'hero') {
         onShowToast('Menyimpan foto utama beranda ke server...');
-        await saveAssetToServer('chibi', adjustedBase64, '1995');
+        await saveAssetToServer('chibi', adjustedBase64);
         onAssetsUpdated(currentLogo, adjustedBase64);
         onShowToast('Foto Utama Beranda berhasil disimpan permanen! ✅');
       } else if (target === 'logo') {
         onShowToast('Menyimpan logo resmi ke server...');
-        await saveAssetToServer('logo', adjustedBase64, '1995');
+        await saveAssetToServer('logo', adjustedBase64);
         onAssetsUpdated(adjustedBase64, currentChibi);
         onShowToast('Logo SINKI berhasil disimpan permanen! ✅');
       } else if (target === 'qris') {
         onShowToast('Menyimpan barcode QRIS ke server...');
-        await saveQrisToServer(adjustedBase64, '1995');
+        await saveQrisToServer(adjustedBase64);
         onQrisUpdated(adjustedBase64);
         onShowToast('Barcode QRIS berhasil disimpan permanen! ✅');
       } else if (target) {
         const cleanNumber = target.replace('top-', '');
         onShowToast(`Menyimpan foto botol ${cleanNumber} ke server...`);
-        await saveTop11PhotoToServer(target, adjustedBase64, '1995');
+        await saveTop11PhotoToServer(target, adjustedBase64);
         onTop11PhotoUpdated(target, adjustedBase64);
         onShowToast(`Foto botol ${cleanNumber} berhasil disimpan permanen! ✅`);
       }
@@ -749,14 +774,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     }
   };
 
-  const handleSavePricing = () => {
+  const handleSavePricing = async () => {
     setIsSavingPricing(true);
-    savePricingToServer(pricingForm);
+    const ok = await savePricingToServer(pricingForm);
     onPricingUpdated(pricingForm);
-    setTimeout(() => {
-      setIsSavingPricing(false);
-      onShowToast('Daftar harga berhasil disimpan permanen! ✅');
-    }, 400);
+    setIsSavingPricing(false);
+    onShowToast(
+      ok
+        ? 'Daftar harga berhasil disimpan permanen ke server! ✅'
+        : 'Harga tersimpan di perangkat ini (server belum terkonfigurasi/sesi habis).'
+    );
   };
 
   const handleDeleteReview = async (id: string, name: string) => {
@@ -892,8 +919,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           <form onSubmit={handlePinSubmit} className="space-y-4">
             <input
               type="password"
-              inputMode="numeric"
-              maxLength={6}
+              maxLength={12}
               placeholder="Masukkan PIN Rahasia"
               value={enteredPin}
               onChange={(e) => {
@@ -1389,7 +1415,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               </div>
 
               <div className="rounded-3xl bg-[#0e111d] border border-white/10 p-2 sm:p-4 shadow-xl">
-                <AnalyticsView onShowToast={onShowToast} pin="1995" isCompact={false} />
+                <AnalyticsView onShowToast={onShowToast} isCompact={false} />
               </div>
             </div>
           )}

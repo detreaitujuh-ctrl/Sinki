@@ -41,6 +41,7 @@ export const getStoredPerfumes = (): PerfumeItem[] => {
 export const setStoredPerfumes = (list: PerfumeItem[]) => {
   try {
     localStorage.setItem(PERFUMES_LOCAL_KEY, JSON.stringify(list));
+    window.dispatchEvent(new CustomEvent('sinki_perfumes_updated', { detail: list }));
   } catch (err) {
     console.error('Failed setting perfumes in local storage:', err);
   }
@@ -98,7 +99,7 @@ export const savePerfumesToServer = async (list: PerfumeItem[]): Promise<Perfume
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ perfumes: normalized, token, pin: '1995' }),
+      body: JSON.stringify({ perfumes: normalized, token }),
     });
   } catch (err) {
     console.warn('Notice saving perfumes to server:', err);

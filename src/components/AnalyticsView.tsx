@@ -26,13 +26,11 @@ import {
 
 interface AnalyticsViewProps {
   onShowToast: (msg: string) => void;
-  pin?: string;
   isCompact?: boolean; // If rendered inside a smaller modal
 }
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   onShowToast,
-  pin = '1995',
   isCompact = false,
 }) => {
   const [data, setData] = useState<AnalyticsData>(() => getLocalAnalytics());
@@ -72,7 +70,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const handleReset = async () => {
     setShowResetConfirm(false);
     try {
-      const zeroData = await resetAnalyticsData(pin);
+      const zeroData = await resetAnalyticsData();
       setData(zeroData);
       onShowToast('Statistik berhasil di-reset kembali murni ke 0! 🎯');
     } catch (e) {
