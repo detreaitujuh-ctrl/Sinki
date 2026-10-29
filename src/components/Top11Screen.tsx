@@ -48,12 +48,26 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
     return () => window.removeEventListener('sinki_top_perfumes_updated', handleUpdate);
   }, []);
 
+  const rankButtonsRef = useRef<(HTMLButtonElement | null)[]>([]);
+
   // Setiap kali masuk ke halaman Top, otomatis kembali segar ke Juara 1
   useEffect(() => {
     if (isActive) {
       setCurrentIndex(0);
     }
   }, [isActive]);
+
+  // Otomatis scroll bilah nomor urut (1..50) agar nomor aktif selalu berada di tengah layar
+  useEffect(() => {
+    const activeBtn = rankButtonsRef.current[currentIndex];
+    if (activeBtn) {
+      activeBtn.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  }, [currentIndex]);
 
   // Preload semua foto botol ke memori browser agar saat digeser atau dibuka muncul instan 0 detik
   useEffect(() => {
@@ -221,14 +235,17 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
           </div>
         </div>
 
-        {/* Quick Rank Number Pills (Clean numbers 1, 2, 3...) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2.5 pb-0.5">
+        {/* Quick Rank Number Pills (Clean numbers 1, 2, 3... up to 50) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2.5 pb-0.5 scroll-smooth">
           {topItems.map((item, idx) => {
             const isActive = viewMode === 'spotlight' && currentIndex === idx;
 
             return (
               <button
                 key={item.id}
+                ref={(el) => {
+                  rankButtonsRef.current[idx] = el;
+                }}
                 onClick={() => {
                   setCurrentIndex(idx);
                   setViewMode('spotlight');

@@ -27,6 +27,7 @@ import {
 interface AnalyticsViewProps {
   onShowToast: (msg: string) => void;
   isCompact?: boolean; // If rendered inside a smaller modal
+  pin?: string;
 }
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({

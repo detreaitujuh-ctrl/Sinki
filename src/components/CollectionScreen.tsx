@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Heart, ShoppingBag, X, ArrowLeft, Filter } from 'lucide-react';
 import { PerfumeCategory, PerfumeItem } from '../data/perfumes';
-import { getStoredPerfumes } from '../utils/perfumeStorage';
+import { getStoredPerfumes, fetchPerfumesFromServer } from '../utils/perfumeStorage';
 
 interface CollectionScreenProps {
   onBackToHome: () => void;
@@ -20,6 +20,28 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<PerfumeCategory | 'all'>('all');
+  const [catalogPerfumes, setCatalogPerfumes] = useState<PerfumeItem[]>(() =>
+    perfumes && perfumes.length > 0 ? perfumes : getStoredPerfumes()
+  );
+
+  // Ambil varian parfum terbaru dari server & dengarkan update admin
+  useEffect(() => {
+    fetchPerfumesFromServer().then((list) => {
+      if (list && Array.isArray(list) && list.length > 0) {
+        setCatalogPerfumes(list);
+      }
+    });
+
+    const handleUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setCatalogPerfumes(e.detail);
+      } else {
+        setCatalogPerfumes(getStoredPerfumes());
+      }
+    };
+    window.addEventListener('sinki_perfumes_updated', handleUpdate);
+    return () => window.removeEventListener('sinki_perfumes_updated', handleUpdate);
+  }, []);
 
   // Responsif jika ada trigger scroll ke paling atas
   useEffect(() => {
@@ -55,9 +77,9 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
 
   // Seluruh parfum aktif (yang tidak disembunyikan admin)
   const activePerfumes = useMemo(() => {
-    const source = perfumes && perfumes.length > 0 ? perfumes : getStoredPerfumes();
+    const source = catalogPerfumes && catalogPerfumes.length > 0 ? catalogPerfumes : getStoredPerfumes();
     return source.filter((item) => item.isActive !== false);
-  }, [perfumes]);
+  }, [catalogPerfumes]);
 
   // Hitung jumlah varian aktif per kategori secara real-time
   const categoryCounts = useMemo(() => {

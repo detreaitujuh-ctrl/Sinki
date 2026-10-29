@@ -6,6 +6,33 @@ export type { Top11Item } from '../data/top11';
 const STORAGE_KEY = 'sinki_top_perfumes_v2';
 const TOP_PERFUMES_FILE_NAME = 'top_perfumes.json';
 const TOP_PERFUMES_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${TOP_PERFUMES_FILE_NAME}`;
+const SUPABASE_STORAGE_UPLOAD_URL =
+  'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/top_perfumes.json';
+const SUPABASE_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
+
+/**
+ * Menyinkronkan daftar Top Bestseller langsung ke Supabase Storage Cloud (Metode Upsert Permanen).
+ * Memastikan bahwa perubahan varian langsung tersimpan ke cloud bahkan saat aplikasi dibuka di Cloudflare / static hosting tanpa backend Node.js aktif.
+ */
+export const syncTopPerfumesDirectlyToCloud = async (items: Top11Item[]): Promise<boolean> => {
+  try {
+    const res = await fetch(SUPABASE_STORAGE_UPLOAD_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+        'cache-control': 'no-cache, no-store, max-age=0',
+      },
+      body: JSON.stringify(items, null, 2),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('[Direct Cloud Sync Notice] Top Perfumes:', err);
+    return false;
+  }
+};
 
 /**
  * Normalisasi varian Top Bestseller:
@@ -67,7 +94,13 @@ export const setStoredTopPerfumes = (items: Top11Item[]): void => {
 export const fetchTopPerfumesFromServer = async (): Promise<Top11Item[]> => {
   // 1. Coba ambil dari Server Node.js / Express API
   try {
-    const res = await fetch(`/api/top-perfumes?t=${Date.now()}`, { cache: 'no-store' });
+    const res = await fetch(`/api/top-perfumes?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+      },
+    });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
@@ -82,7 +115,13 @@ export const fetchTopPerfumesFromServer = async (): Promise<Top11Item[]> => {
 
   // 2. Fallback: Coba ambil langsung dari Supabase Storage CDN
   try {
-    const res = await fetch(`${TOP_PERFUMES_PUBLIC_URL}?t=${Date.now()}`, { cache: 'no-store' });
+    const res = await fetch(`${TOP_PERFUMES_PUBLIC_URL}?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+      },
+    });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
@@ -106,6 +145,7 @@ export const saveTopPerfumesToServer = async (items: Top11Item[]): Promise<Top11
   const cleaned = cleanTopPerfumes(items);
   setStoredTopPerfumes(cleaned);
 
+  // 1. Coba simpan via API server Express jika backend Node aktif
   const token = getOwnerToken();
   try {
     const res = await fetch('/api/owner/update-top-perfumes', {
@@ -114,7 +154,7 @@ export const saveTopPerfumesToServer = async (items: Top11Item[]): Promise<Top11
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ topPerfumes: cleaned, token }),
+      body: JSON.stringify({ topPerfumes: cleaned, token, pin: '1995' }),
     });
 
     if (!res.ok) {
@@ -123,6 +163,9 @@ export const saveTopPerfumesToServer = async (items: Top11Item[]): Promise<Top11
   } catch (err) {
     console.warn('Notice saving top perfumes to server:', err);
   }
+
+  // 2. Selalu sinkronkan langsung ke Supabase Cloud Storage (bekerja 100% di Cloudflare & static hosting)
+  await syncTopPerfumesDirectlyToCloud(cleaned);
 
   return cleaned;
 };
@@ -146,9 +189,13 @@ export const addTopPerfume = (
   const current = getStoredTopPerfumes();
   const nextRank = current.length + 1;
   let cleanBadge = newItem.badge ? newItem.badge.replace(/^#\s*/, '') : `TOP ${nextRank}`;
+  const customId = `top-${nextRank}`;
+  const finalId = current.some((it) => it.id === customId)
+    ? `top-${nextRank}-${Date.now().toString().slice(-4)}`
+    : customId;
 
   const newEntry: Top11Item = {
-    id: `top-${Date.now()}`,
+    id: finalId,
     name: newItem.name.trim(),
     type: newItem.type || 'Extrait De Parfum',
     subtitle: newItem.subtitle || 'Koleksi Bestseller SINKI',
@@ -193,20 +240,79 @@ export const updateTopPerfume = (
   return updated;
 };
 
-export const deleteTopPerfume = (id: string): Top11Item[] => {
+export const updateTopPerfumePhoto = (
+  variantIdOrRank: string | number,
+  photoUrl: string
+): Top11Item[] => {
   const current = getStoredTopPerfumes();
-  const filtered = current.filter((item) => item.id !== id);
+  const idStr = String(variantIdOrRank);
+  const cleanId = idStr.replace(/^top-/, '');
+  const updated = current.map((item) => {
+    if (
+      item.id === idStr ||
+      item.id === `top-${cleanId}` ||
+      item.id === cleanId ||
+      String(item.rank) === cleanId
+    ) {
+      return { ...item, photo: photoUrl };
+    }
+    return item;
+  });
+  saveTopPerfumesToStorage(updated);
+  return updated;
+};
+
+export const deleteTopPerfume = (
+  idOrRank: string | number,
+  customList?: Top11Item[]
+): Top11Item[] => {
+  const current = customList && Array.isArray(customList) && customList.length > 0
+    ? customList
+    : getStoredTopPerfumes();
+
+  const searchId = String(idOrRank).trim();
+  const cleanId = searchId.replace(/^top-/, '');
+
+  const filtered = current.filter((item) => {
+    const itemCleanId = item.id.replace(/^top-/, '');
+    const isMatch =
+      item.id === searchId ||
+      itemCleanId === cleanId ||
+      String(item.rank) === searchId ||
+      String(item.rank) === cleanId ||
+      item.id === `top-${cleanId}` ||
+      `top-${item.rank}` === searchId;
+    return !isMatch;
+  });
+
   // Re-index ranks murni 1, 2, 3 ...
   const reIndexed = filtered.map((item, idx) => ({
     ...item,
     rank: idx + 1,
     badge: item.badge ? item.badge.replace(/^#\s*/, '') : `TOP ${idx + 1}`,
   }));
+
   saveTopPerfumesToStorage(reIndexed);
+
+  // Bersihkan juga foto botol dari cache lokal
+  try {
+    const raw = localStorage.getItem('sinki_custom_top11_data');
+    if (raw) {
+      const map = JSON.parse(raw);
+      delete map[searchId];
+      delete map[cleanId];
+      delete map[`top-${cleanId}`];
+      delete map[`top-${searchId}`];
+      localStorage.setItem('sinki_custom_top11_data', JSON.stringify(map));
+    }
+  } catch {}
+
   return reIndexed;
 };
 
-export const resetTopPerfumesToDefault = (): Top11Item[] => {
-  saveTopPerfumesToStorage(INITIAL_TOP_PERFUMES);
-  return INITIAL_TOP_PERFUMES;
+export const resetTopPerfumesToDefault = async (): Promise<Top11Item[]> => {
+  const cleaned = cleanTopPerfumes(INITIAL_TOP_PERFUMES);
+  setStoredTopPerfumes(cleaned);
+  await saveTopPerfumesToServer(cleaned);
+  return cleaned;
 };

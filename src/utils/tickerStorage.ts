@@ -135,6 +135,30 @@ export const fetchTickerFromServer = async (): Promise<TickerConfig> => {
   return getStoredTicker();
 };
 
+const SUPABASE_STORAGE_UPLOAD_URL =
+  'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/ticker_config.json';
+const SUPABASE_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
+
+export const syncTickerDirectlyToCloud = async (config: TickerConfig): Promise<boolean> => {
+  try {
+    const res = await fetch(SUPABASE_STORAGE_UPLOAD_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+        'cache-control': 'no-cache, no-store, max-age=0',
+      },
+      body: JSON.stringify(config, null, 2),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('[Direct Cloud Sync Notice] Ticker:', err);
+    return false;
+  }
+};
+
 export const saveTickerToServer = async (config: TickerConfig): Promise<TickerConfig> => {
   const toSave: TickerConfig = {
     text: config.text.trim() || DEFAULT_TICKER.text,
@@ -158,12 +182,14 @@ export const saveTickerToServer = async (config: TickerConfig): Promise<TickerCo
       const json = await res.json();
       if (json && json.ticker) {
         setStoredTicker(json.ticker);
-        return json.ticker;
       }
     }
   } catch (err) {
     console.warn('Notice saving ticker to server:', err);
   }
+
+  // Sync langsung ke Supabase Cloud Storage
+  await syncTickerDirectlyToCloud(toSave);
 
   return toSave;
 };

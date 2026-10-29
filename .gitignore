@@ -8,3 +8,4 @@ coverage/
 !.env.example
 data/owner_pin*.json
 .aistudio/
+public/assets/aistudio/

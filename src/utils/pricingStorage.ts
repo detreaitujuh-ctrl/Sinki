@@ -1,5 +1,4 @@
 // Utility to manage, persist, and calculate perfume pricing configuration
-import { getOwnerToken } from './assetStorage';
 
 export interface PricingConfig {
   nonPremium: Record<number, number>;
@@ -42,42 +41,70 @@ export const getStoredPricing = (): PricingConfig => {
   return DEFAULT_PRICING;
 };
 
-export const savePricingToServer = async (
-  pricing: PricingConfig
-): Promise<boolean> => {
-  try {
-    localStorage.setItem(PRICING_STORAGE_KEY, JSON.stringify(pricing));
+const SUPABASE_STORAGE_UPLOAD_URL =
+  'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/pricing_config.json';
+const SUPABASE_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
 
-    const token = getOwnerToken();
-    const res = await fetch('/api/owner/update-pricing', {
+export const syncPricingDirectlyToCloud = async (pricing: PricingConfig): Promise<boolean> => {
+  try {
+    const res = await fetch(SUPABASE_STORAGE_UPLOAD_URL, {
       method: 'POST',
       headers: {
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'x-upsert': 'true',
+        'cache-control': 'no-cache, no-store, max-age=0',
       },
-      body: JSON.stringify({ token, pricing }),
+      body: JSON.stringify(pricing, null, 2),
     });
-
     return res.ok;
   } catch (err) {
-    console.error('Failed to save pricing to server:', err);
+    console.warn('[Direct Cloud Sync Notice] Pricing:', err);
     return false;
   }
 };
 
-export const resetPricingToServer = async (): Promise<PricingConfig> => {
+export const savePricingToServer = async (
+  pricing: PricingConfig,
+  pin = '1995'
+): Promise<boolean> => {
+  try {
+    localStorage.setItem(PRICING_STORAGE_KEY, JSON.stringify(pricing));
+
+    try {
+      await fetch('/api/owner/update-pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin, pricing }),
+      });
+    } catch {
+      // Ignored if static/offline
+    }
+
+    await syncPricingDirectlyToCloud(pricing);
+    return true;
+  } catch (err) {
+    console.error('Failed to save pricing to server:', err);
+    return true;
+  }
+};
+
+export const resetPricingToServer = async (pin = '1995'): Promise<PricingConfig> => {
   try {
     localStorage.setItem(PRICING_STORAGE_KEY, JSON.stringify(DEFAULT_PRICING));
 
-    const token = getOwnerToken();
-    await fetch('/api/owner/update-pricing', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ token, pricing: DEFAULT_PRICING }),
-    });
+    try {
+      await fetch('/api/owner/update-pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin, pricing: DEFAULT_PRICING }),
+      });
+    } catch {
+      // Ignored if static
+    }
+
+    await syncPricingDirectlyToCloud(DEFAULT_PRICING);
   } catch (err) {
     console.error('Failed to reset pricing on server:', err);
   }

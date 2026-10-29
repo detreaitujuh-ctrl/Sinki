@@ -143,7 +143,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                     ? 'bg-gradient-to-r from-[#382c16] via-[#8c6b29] to-[#D4AF57] text-[#F8EBCB] border-[#D4AF57]/60 shadow-[0_2px_12px_rgba(212,175,87,0.3)] scale-[0.98]'
                     : 'bg-transparent hover:bg-white/5 border-transparent'
                 }`}
-                aria-label="Koleksi Top 11 SINKI"
+                aria-label={`Koleksi Top ${topCount} SINKI`}
               >
                 {/* Icon Container with Golden Nectar Droplet */}
                 <div className="relative">

@@ -712,7 +712,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                     </span>
                     <div className="grid grid-cols-5 gap-1.5">
                       {[
-                        { id: 'top11' as const, label: 'Top 11' },
+                        { id: 'top11' as const, label: 'Bestseller' },
                         { id: 'women' as const, label: 'Women' },
                         { id: 'men' as const, label: 'Men' },
                         { id: 'unisex' as const, label: 'Unisex' },
