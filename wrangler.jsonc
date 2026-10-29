@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "sinki",
+  "account_id": "7fa5fe899e7efab6217c2d19b48c17ff",
   "main": "worker.ts",
   "compatibility_date": "2026-10-17",
   "observability": {
