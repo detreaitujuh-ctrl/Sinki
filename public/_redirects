@@ -1,0 +1,3 @@
+# Cloudflare Pages SPA Routing Fallback
+# Ensures all deep links (/dimensi-sinki, /order, etc.) route seamlessly to index.html with HTTP 200
+/*    /index.html   200
