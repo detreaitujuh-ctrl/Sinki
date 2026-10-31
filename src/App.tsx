@@ -18,6 +18,15 @@ import {
   getStoredHeroBottles,
   getStoredHeroStageEffect,
   getStoredHeroStageEnabled,
+  getStoredHeroMediaType,
+  getStoredHeroVideoUrl,
+  getStoredHeroVideoPoster,
+  getStoredHeroVideoFit,
+  getStoredHeroVideoPosition,
+  getStoredHeroHeightMode,
+  HeroVideoFit,
+  HeroVideoPosition,
+  HeroHeightMode,
   HeroStageEffect,
   fetchServerAssets,
 } from './utils/assetStorage';
@@ -68,6 +77,12 @@ export default function App() {
   const [heroBottles, setHeroBottles] = useState<string[]>(() => getStoredHeroBottles());
   const [heroStageEffect, setHeroStageEffect] = useState<HeroStageEffect>(() => getStoredHeroStageEffect());
   const [heroStageEnabled, setHeroStageEnabled] = useState<boolean>(() => getStoredHeroStageEnabled());
+  const [heroMediaType, setHeroMediaType] = useState<'image' | 'video'>(() => getStoredHeroMediaType());
+  const [heroVideoUrl, setHeroVideoUrl] = useState<string | null>(() => getStoredHeroVideoUrl());
+  const [heroVideoPoster, setHeroVideoPoster] = useState<string | null>(() => getStoredHeroVideoPoster());
+  const [heroVideoFit, setHeroVideoFit] = useState<HeroVideoFit>(() => getStoredHeroVideoFit());
+  const [heroVideoPosition, setHeroVideoPosition] = useState<HeroVideoPosition>(() => getStoredHeroVideoPosition());
+  const [heroHeightMode, setHeroHeightMode] = useState<HeroHeightMode>(() => getStoredHeroHeightMode());
   const [pricing, setPricing] = useState<PricingConfig>(() => getStoredPricing());
   const [tickerConfig, setTickerConfig] = useState<TickerConfig>(() => getStoredTicker());
   const [socialLinks, setSocialLinks] = useState<SocialLinks>(() => getStoredSocialLinks());
@@ -136,6 +151,13 @@ export default function App() {
         });
       }
       if (assets.heroStageEffect) setHeroStageEffect(assets.heroStageEffect);
+      if (assets.heroStageEnabled !== undefined) setHeroStageEnabled(assets.heroStageEnabled);
+      if (assets.heroMediaType) setHeroMediaType(assets.heroMediaType);
+      if (assets.heroVideoUrl) setHeroVideoUrl(assets.heroVideoUrl);
+      if (assets.heroVideoPoster) setHeroVideoPoster(assets.heroVideoPoster);
+      if (assets.heroVideoFit) setHeroVideoFit(assets.heroVideoFit);
+      if (assets.heroVideoPosition) setHeroVideoPosition(assets.heroVideoPosition);
+      if (assets.heroHeightMode) setHeroHeightMode(assets.heroHeightMode);
       if (assets.pricing) setPricing(assets.pricing);
       if (assets.ticker) setTickerConfig(assets.ticker);
     });
@@ -213,6 +235,13 @@ export default function App() {
           socialLinks={socialLinks}
           heroBottles={heroBottles}
           heroStageEffect={heroStageEffect}
+          heroStageEnabled={heroStageEnabled}
+          heroMediaType={heroMediaType}
+          heroVideoUrl={heroVideoUrl}
+          heroVideoPoster={heroVideoPoster}
+          heroVideoFit={heroVideoFit}
+          heroVideoPosition={heroVideoPosition}
+          heroHeightMode={heroHeightMode}
           onAssetsUpdated={(newLogo, newChibi) => {
             setCustomLogo(newLogo);
             setCustomChibi(newChibi);
@@ -225,6 +254,17 @@ export default function App() {
           }}
           onHeroStageEffectUpdated={(effect) => {
             setHeroStageEffect(effect);
+          }}
+          onHeroStageEnabledUpdated={(enabled) => {
+            setHeroStageEnabled(enabled);
+          }}
+          onHeroVideoUpdated={(settings) => {
+            if (settings.heroMediaType !== undefined) setHeroMediaType(settings.heroMediaType);
+            if (settings.heroVideoUrl !== undefined) setHeroVideoUrl(settings.heroVideoUrl);
+            if (settings.heroVideoPoster !== undefined) setHeroVideoPoster(settings.heroVideoPoster);
+            if (settings.heroVideoFit !== undefined) setHeroVideoFit(settings.heroVideoFit);
+            if (settings.heroVideoPosition !== undefined) setHeroVideoPosition(settings.heroVideoPosition);
+            if (settings.heroHeightMode !== undefined) setHeroHeightMode(settings.heroHeightMode);
           }}
           onTop11PhotoUpdated={(variantId, newPhoto) => {
             setTop11Photos((prev) => ({ ...prev, [variantId]: newPhoto }));
@@ -273,6 +313,12 @@ export default function App() {
               heroBottles={heroBottles}
               heroStageEffect={heroStageEffect}
               heroStageEnabled={heroStageEnabled}
+              heroMediaType={heroMediaType}
+              heroVideoUrl={heroVideoUrl}
+              heroVideoPoster={heroVideoPoster}
+              heroVideoFit={heroVideoFit}
+              heroVideoPosition={heroVideoPosition}
+              heroHeightMode={heroHeightMode}
               tickerConfig={tickerConfig}
               socialLinks={socialLinks}
             />

@@ -257,6 +257,25 @@ async function uploadBase64Image(
   }
 }
 
+async function deleteStorageFiles(env: Env, fileNames: string[]): Promise<boolean> {
+  const { url, key, bucket } = getSupabaseConfig(env);
+  if (!key || !fileNames || fileNames.length === 0) return false;
+  try {
+    const res = await fetch(`${url}/storage/v1/object/${bucket}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        apikey: key,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prefixes: fileNames }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 function deduplicateReviews(list: any[]): any[] {
   if (!Array.isArray(list)) return [];
   const seenIds = new Set<string>();
@@ -421,6 +440,9 @@ export default {
           heroBottles: Array.isArray(assets?.heroBottles) ? assets.heroBottles : [],
           heroStageEffect: assets?.heroStageEffect || 'royal-elevation',
           heroStageEnabled: Boolean(assets?.heroStageEnabled),
+          heroMediaType: assets?.heroMediaType || 'image',
+          heroVideoUrl: assets?.heroVideoUrl || null,
+          heroVideoPoster: assets?.heroVideoPoster || null,
           pricing: assets?.pricing,
           ticker: ticker?.text ? ticker : DEFAULT_TICKER,
           updatedAt: assets?.updatedAt || ticker?.updatedAt,
@@ -597,7 +619,22 @@ export default {
           return jsonResponse({ error: 'Akses ditolak: Sesi Pemilik tidak valid!' }, 403);
         }
         const existing = await readStorageJson<any>(env, 'assets.json', {});
-        const { logo, chibi, qrisImage, top11, heroBottles, heroStageEffect, heroStageEnabled } = body;
+        const {
+          logo,
+          chibi,
+          qrisImage,
+          top11,
+          heroBottles,
+          heroStageEffect,
+          heroStageEnabled,
+          heroMediaType,
+          heroVideoUrl,
+          heroVideoPoster,
+          heroVideoFit,
+          heroVideoPosition,
+          heroHeightMode,
+          oldVideoUrlToDelete,
+        } = body;
 
         let newLogo = existing.logo ?? null;
         let newChibi = existing.chibi ?? null;
@@ -606,6 +643,21 @@ export default {
         let newHeroBottles = Array.isArray(existing.heroBottles) ? [...existing.heroBottles] : [];
         let newHeroStageEffect = existing.heroStageEffect || 'royal-elevation';
         let newHeroStageEnabled = Boolean(existing.heroStageEnabled);
+        let newHeroMediaType = existing.heroMediaType || 'image';
+        let newHeroVideoUrl = existing.heroVideoUrl || null;
+        let newHeroVideoPoster = existing.heroVideoPoster || null;
+        let newHeroVideoFit = existing.heroVideoFit || 'cover';
+        let newHeroVideoPosition = existing.heroVideoPosition || 'center';
+        let newHeroHeightMode = existing.heroHeightMode || 'balanced';
+
+        // Hapus otomatis video lama dari Supabase
+        const videoToDelete = oldVideoUrlToDelete || (heroVideoUrl && existing.heroVideoUrl && heroVideoUrl !== existing.heroVideoUrl ? existing.heroVideoUrl : null);
+        if (videoToDelete && typeof videoToDelete === 'string') {
+          const fn = videoToDelete.split('/').pop()?.split('?')[0];
+          if (fn && fn !== 'sinki_logo.png' && fn !== 'sinki_chibi.png') {
+            await deleteStorageFiles(env, [fn]);
+          }
+        }
 
         if (logo !== undefined) {
           if (logo) {
@@ -652,6 +704,28 @@ export default {
         if (typeof heroStageEffect === 'string') newHeroStageEffect = heroStageEffect;
         if (typeof heroStageEnabled === 'boolean') newHeroStageEnabled = heroStageEnabled;
 
+        if (heroMediaType !== undefined) {
+          newHeroMediaType = heroMediaType === 'video' ? 'video' : 'image';
+        }
+
+        if (heroVideoUrl !== undefined) {
+          newHeroVideoUrl = heroVideoUrl || null;
+        }
+
+        if (heroVideoPoster !== undefined) {
+          if (heroVideoPoster && heroVideoPoster.startsWith('data:')) {
+            const up = await uploadBase64Image(env, 'sinki_hero_poster.jpg', heroVideoPoster);
+            if (!up.success) return jsonResponse({ error: up.error }, 500);
+            newHeroVideoPoster = up.url || heroVideoPoster;
+          } else {
+            newHeroVideoPoster = heroVideoPoster || null;
+          }
+        }
+
+        if (heroVideoFit !== undefined) newHeroVideoFit = heroVideoFit;
+        if (heroVideoPosition !== undefined) newHeroVideoPosition = heroVideoPosition;
+        if (heroHeightMode !== undefined) newHeroHeightMode = heroHeightMode;
+
         const updatedData = {
           ...existing,
           logo: newLogo,
@@ -661,12 +735,42 @@ export default {
           heroBottles: newHeroBottles,
           heroStageEffect: newHeroStageEffect,
           heroStageEnabled: newHeroStageEnabled,
+          heroMediaType: newHeroMediaType,
+          heroVideoUrl: newHeroVideoUrl,
+          heroVideoPoster: newHeroVideoPoster,
+          heroVideoFit: newHeroVideoFit,
+          heroVideoPosition: newHeroVideoPosition,
+          heroHeightMode: newHeroHeightMode,
           updatedAt: new Date().toISOString(),
         };
 
         const saved = await writeStorageJson(env, 'assets.json', updatedData);
         if (!saved.ok) return jsonResponse({ error: saved.error }, 500);
-        return jsonResponse({ success: true, message: 'Foto SINKI & Pengaturan Panggung berhasil disimpan!', data: updatedData });
+        return jsonResponse({ success: true, message: 'Foto SINKI & Pengaturan Video Hero berhasil disimpan!', data: updatedData });
+      }
+
+      if (pathname === '/api/owner/delete-storage-file' && request.method === 'POST') {
+        if (!(await isAuthorizedRequest(request, body, env))) {
+          return jsonResponse({ error: 'Akses ditolak: Sesi Pemilik tidak valid!' }, 403);
+        }
+        const filePath = body?.path;
+        const paths = body?.paths;
+        const toDelete: string[] = [];
+        if (filePath && typeof filePath === 'string') {
+          const fn = filePath.split('/').pop()?.split('?')[0];
+          if (fn) toDelete.push(fn);
+        }
+        if (Array.isArray(paths)) {
+          for (const p of paths) {
+            const fn = typeof p === 'string' ? p.split('/').pop()?.split('?')[0] : null;
+            if (fn) toDelete.push(fn);
+          }
+        }
+        if (toDelete.length > 0) {
+          const ok = await deleteStorageFiles(env, toDelete);
+          return jsonResponse({ success: ok, deleted: toDelete });
+        }
+        return jsonResponse({ success: true, deleted: [] });
       }
 
       if (pathname === '/api/owner/update-hero-bottles' && request.method === 'POST') {

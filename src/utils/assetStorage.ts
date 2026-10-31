@@ -8,7 +8,17 @@ const TOP11_STORAGE_KEY = 'sinki_custom_top11_data';
 const HERO_BOTTLES_STORAGE_KEY = 'sinki_hero_bottles_v1';
 const HERO_STAGE_EFFECT_STORAGE_KEY = 'sinki_hero_stage_effect_v1';
 const HERO_STAGE_ENABLED_STORAGE_KEY = 'sinki_hero_stage_enabled_v1';
+const HERO_VIDEO_URL_KEY = 'sinki_hero_video_url_v1';
+const HERO_VIDEO_POSTER_KEY = 'sinki_hero_video_poster_v1';
+const HERO_MEDIA_TYPE_KEY = 'sinki_hero_media_type_v1';
+const HERO_VIDEO_FIT_KEY = 'sinki_hero_video_fit_v1';
+const HERO_VIDEO_POS_KEY = 'sinki_hero_video_pos_v1';
+const HERO_HEIGHT_MODE_KEY = 'sinki_hero_height_mode_v1';
 const SESSION_TOKEN_KEY = 'sinki_owner_auth_token';
+
+export type HeroVideoFit = 'cover' | 'contain';
+export type HeroVideoPosition = 'center' | 'top' | 'bottom';
+export type HeroHeightMode = 'compact' | 'balanced' | 'tall' | 'full'; // compact: 60%, balanced: 68%, tall: 76%, full: 100% full-bleed mentok atas
 
 // Public CDN Base URL for reading public images (safe for frontend)
 export const SUPABASE_STORAGE_BASE = 'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/';
@@ -16,6 +26,8 @@ export const SUPABASE_STORAGE_BASE = 'https://tsxclttisxnmvdkwziqx.supabase.co/s
 export const DEFAULT_LOGO = `${SUPABASE_STORAGE_BASE}sinki_logo.png`;
 export const DEFAULT_CHIBI = `${SUPABASE_STORAGE_BASE}sinki_chibi.png`;
 export const DEFAULT_QRIS = `${SUPABASE_STORAGE_BASE}sinki_qris.jpg`;
+export const DEFAULT_HERO_VIDEO_URL = `${SUPABASE_STORAGE_BASE}hero_video.mp4`;
+export const DEFAULT_HERO_VIDEO_POSTER = `${SUPABASE_STORAGE_BASE}sinki_hero_poster.jpg`;
 
 export type HeroStageEffect = 'royal-elevation' | 'parisian-turntable' | 'golden-aura' | 'horizon-slide';
 
@@ -181,6 +193,13 @@ export interface ServerAssetsResponse {
   top11?: Record<string, string>;
   heroBottles?: string[];
   heroStageEffect?: HeroStageEffect;
+  heroStageEnabled?: boolean;
+  heroMediaType?: 'image' | 'video';
+  heroVideoUrl?: string | null;
+  heroVideoPoster?: string | null;
+  heroVideoFit?: HeroVideoFit;
+  heroVideoPosition?: HeroVideoPosition;
+  heroHeightMode?: HeroHeightMode;
   pricing?: PricingConfig;
   ticker?: any;
 }
@@ -203,6 +222,35 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
         if (data.heroStageEffect) {
           localStorage.setItem(HERO_STAGE_EFFECT_STORAGE_KEY, data.heroStageEffect);
         }
+        if (data.heroStageEnabled !== undefined) {
+          localStorage.setItem(HERO_STAGE_ENABLED_STORAGE_KEY, data.heroStageEnabled ? 'true' : 'false');
+        }
+        if (data.heroMediaType) {
+          localStorage.setItem(HERO_MEDIA_TYPE_KEY, data.heroMediaType);
+        }
+        if (data.heroVideoUrl !== undefined) {
+          if (data.heroVideoUrl) {
+            localStorage.setItem(HERO_VIDEO_URL_KEY, data.heroVideoUrl);
+          } else if (data.heroVideoUrl === '') {
+            localStorage.removeItem(HERO_VIDEO_URL_KEY);
+          }
+        }
+        if (data.heroVideoPoster !== undefined) {
+          if (data.heroVideoPoster) {
+            localStorage.setItem(HERO_VIDEO_POSTER_KEY, data.heroVideoPoster);
+          } else if (data.heroVideoPoster === '') {
+            localStorage.removeItem(HERO_VIDEO_POSTER_KEY);
+          }
+        }
+        if (data.heroVideoFit) {
+          localStorage.setItem(HERO_VIDEO_FIT_KEY, data.heroVideoFit);
+        }
+        if (data.heroVideoPosition) {
+          localStorage.setItem(HERO_VIDEO_POS_KEY, data.heroVideoPosition);
+        }
+        if (data.heroHeightMode) {
+          localStorage.setItem(HERO_HEIGHT_MODE_KEY, data.heroHeightMode);
+        }
         if (data.pricing) localStorage.setItem('sinki_custom_pricing_config', JSON.stringify(data.pricing));
         if (data.ticker && data.ticker.text) {
           localStorage.setItem('sinki_ticker_config_v1', JSON.stringify(data.ticker));
@@ -220,6 +268,13 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
             ? data.heroBottles
             : getStoredHeroBottles(),
           heroStageEffect: data.heroStageEffect || getStoredHeroStageEffect(),
+          heroStageEnabled: data.heroStageEnabled !== undefined ? data.heroStageEnabled : getStoredHeroStageEnabled(),
+          heroMediaType: data.heroMediaType || getStoredHeroMediaType(),
+          heroVideoUrl: data.heroVideoUrl || getStoredHeroVideoUrl(),
+          heroVideoPoster: data.heroVideoPoster || getStoredHeroVideoPoster(),
+          heroVideoFit: data.heroVideoFit || getStoredHeroVideoFit(),
+          heroVideoPosition: data.heroVideoPosition || getStoredHeroVideoPosition(),
+          heroHeightMode: data.heroHeightMode || getStoredHeroHeightMode(),
           pricing: data.pricing || getStoredPricing(),
           ticker: data.ticker,
         };
@@ -236,6 +291,13 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
     top11: getStoredTop11(),
     heroBottles: getStoredHeroBottles(),
     heroStageEffect: getStoredHeroStageEffect(),
+    heroStageEnabled: getStoredHeroStageEnabled(),
+    heroMediaType: getStoredHeroMediaType(),
+    heroVideoUrl: getStoredHeroVideoUrl(),
+    heroVideoPoster: getStoredHeroVideoPoster(),
+    heroVideoFit: getStoredHeroVideoFit(),
+    heroVideoPosition: getStoredHeroVideoPosition(),
+    heroHeightMode: getStoredHeroHeightMode(),
     pricing: getStoredPricing(),
   };
 };
@@ -662,5 +724,285 @@ export const purgeSinkiBrowserCache = async (): Promise<void> => {
     console.warn('Purge browser caches notice:', err);
   }
 };
+
+export const getStoredHeroVideoUrl = (): string | null => {
+  try {
+    const val = localStorage.getItem(HERO_VIDEO_URL_KEY);
+    if (val !== null) return val || null;
+    return DEFAULT_HERO_VIDEO_URL;
+  } catch {
+    return DEFAULT_HERO_VIDEO_URL;
+  }
+};
+
+export const getStoredHeroVideoPoster = (): string | null => {
+  try {
+    const val = localStorage.getItem(HERO_VIDEO_POSTER_KEY);
+    if (val !== null) return val || null;
+    return DEFAULT_HERO_VIDEO_POSTER;
+  } catch {
+    return DEFAULT_HERO_VIDEO_POSTER;
+  }
+};
+
+export const getStoredHeroMediaType = (): 'image' | 'video' => {
+  try {
+    const val = localStorage.getItem(HERO_MEDIA_TYPE_KEY);
+    if (val === 'image') return 'image';
+    return 'video';
+  } catch {
+    return 'video';
+  }
+};
+
+export const getStoredHeroVideoFit = (): HeroVideoFit => {
+  try {
+    const val = localStorage.getItem(HERO_VIDEO_FIT_KEY);
+    return val === 'contain' ? 'contain' : 'cover';
+  } catch {
+    return 'cover';
+  }
+};
+
+export const getStoredHeroVideoPosition = (): HeroVideoPosition => {
+  try {
+    const val = localStorage.getItem(HERO_VIDEO_POS_KEY);
+    return val === 'top' || val === 'bottom' ? val : 'center';
+  } catch {
+    return 'center';
+  }
+};
+
+export const getStoredHeroHeightMode = (): HeroHeightMode => {
+  try {
+    const val = localStorage.getItem(HERO_HEIGHT_MODE_KEY);
+    return val === 'compact' || val === 'tall' || val === 'full' ? val : 'full';
+  } catch {
+    return 'full';
+  }
+};
+
+/**
+ * Menghapus file secara permanen dari Supabase Storage (sinki-media)
+ * Mencegah file lama menumpuk saat owner mengganti video atau poster baru.
+ */
+export const deleteFileFromSupabase = async (fileUrlOrPath: string): Promise<boolean> => {
+  try {
+    if (!fileUrlOrPath) return false;
+    // Bersihkan query string and ambil filename / relative path
+    const clean = fileUrlOrPath.replace(SUPABASE_STORAGE_BASE, '').split('?')[0];
+    const filename = clean.split('/').pop();
+    if (!filename || filename.length < 3) return false;
+
+    const token = getOwnerToken();
+
+    // 1. Coba hapus melalui server endpoint
+    try {
+      await fetch('/api/owner/delete-storage-file', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ path: clean, token }),
+      });
+    } catch {}
+
+    // 2. Direct Supabase Storage REST API DELETE (Bekerja langsung di frontend)
+    try {
+      await fetch(`https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prefixes: [clean, filename] }),
+      });
+    } catch {}
+
+    return true;
+  } catch (err) {
+    console.warn('[Supabase Storage Delete File Notice]:', err);
+    return false;
+  }
+};
+
+export const saveHeroVideoSettingsToServer = async (
+  settings: {
+    heroMediaType?: 'image' | 'video';
+    heroVideoUrl?: string | null;
+    heroVideoPoster?: string | null;
+    heroVideoFit?: HeroVideoFit;
+    heroVideoPosition?: HeroVideoPosition;
+    heroHeightMode?: HeroHeightMode;
+    oldVideoUrlToDelete?: string | null;
+  },
+  pin = '1995'
+): Promise<boolean> => {
+  try {
+    if (settings.heroMediaType !== undefined) {
+      localStorage.setItem(HERO_MEDIA_TYPE_KEY, settings.heroMediaType);
+    }
+    if (settings.heroVideoUrl !== undefined) {
+      if (settings.heroVideoUrl) {
+        localStorage.setItem(HERO_VIDEO_URL_KEY, settings.heroVideoUrl);
+      } else {
+        localStorage.removeItem(HERO_VIDEO_URL_KEY);
+      }
+    }
+    if (settings.heroVideoPoster !== undefined) {
+      if (settings.heroVideoPoster) {
+        localStorage.setItem(HERO_VIDEO_POSTER_KEY, settings.heroVideoPoster);
+      } else {
+        localStorage.removeItem(HERO_VIDEO_POSTER_KEY);
+      }
+    }
+    if (settings.heroVideoFit !== undefined) {
+      localStorage.setItem(HERO_VIDEO_FIT_KEY, settings.heroVideoFit);
+    }
+    if (settings.heroVideoPosition !== undefined) {
+      localStorage.setItem(HERO_VIDEO_POS_KEY, settings.heroVideoPosition);
+    }
+    if (settings.heroHeightMode !== undefined) {
+      localStorage.setItem(HERO_HEIGHT_MODE_KEY, settings.heroHeightMode);
+    }
+
+    const token = getOwnerToken();
+    try {
+      await fetch('/api/owner/update-assets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          pin,
+          token,
+          ...settings,
+        }),
+      });
+    } catch {
+      // Offline fallback
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Failed to save hero video settings:', err);
+    return false;
+  }
+};
+
+/**
+ * Ekstrak frame gambar awal secara otomatis dari video (file atau URL)
+ * Menjamin cover/poster otomatis mengikuti gambar video baru tanpa harus potong manual!
+ */
+export const extractVideoFrame = (
+  source: File | string,
+  timeSec = 0.5
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+
+    let objectUrl: string | null = null;
+    if (source instanceof File) {
+      objectUrl = URL.createObjectURL(source);
+      video.src = objectUrl;
+    } else {
+      video.src = source;
+    }
+
+    const cleanup = () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      video.remove();
+    };
+
+    video.onloadedmetadata = () => {
+      const seekTime = Math.min(timeSec, Math.max(0, (video.duration || 1) / 2));
+      video.currentTime = seekTime;
+    };
+
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 720;
+        canvas.height = video.videoHeight || 1280;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+          cleanup();
+          resolve(dataUrl);
+          return;
+        }
+      } catch (err) {
+        console.warn('Canvas capture error (likely CORS for external URL):', err);
+      }
+      cleanup();
+      reject(new Error('Gagal mengekstrak frame video'));
+    };
+
+    video.onerror = (e) => {
+      cleanup();
+      reject(e);
+    };
+
+    // Safety timeout
+    setTimeout(() => {
+      cleanup();
+      reject(new Error('Waktu pengambilan frame video habis'));
+    }, 10000);
+  });
+};
+
+/**
+ * Unggah video langsung ke Supabase Storage (sinki-media/hero_video.mp4).
+ * Otomatis menghapus video lama dari Supabase sebelum mengunggah video baru (Zero Waste Storage).
+ */
+export const uploadVideoDirectlyToSupabase = async (
+  storagePath: string,
+  fileOrBlob: Blob,
+  contentType = 'video/mp4',
+  oldVideoUrlOrPath?: string | null
+): Promise<string | null> => {
+  try {
+    // 1. Hapus video lama dari Supabase jika ada URL video lama
+    if (oldVideoUrlOrPath) {
+      await deleteFileFromSupabase(oldVideoUrlOrPath);
+    }
+
+    // 2. Hapus varian file video lama yang sering digunakan agar storage Supabase tetap ramping
+    if (storagePath.includes('hero_video')) {
+      const candidates = ['hero_video.webm', 'hero_video.mov', 'sinki_hero.mp4', 'sinki_hero_video.mp4'];
+      for (const stale of candidates) {
+        if (stale !== storagePath) {
+          deleteFileFromSupabase(stale).catch(() => {});
+        }
+      }
+    }
+
+    const uploadUrl = `https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/${storagePath}`;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': contentType,
+        'x-upsert': 'true',
+      },
+      body: fileOrBlob,
+    });
+
+    if (res.ok) {
+      return `${SUPABASE_STORAGE_BASE}${storagePath}?v=${Date.now()}`;
+    }
+  } catch (err) {
+    console.warn('[Direct Supabase Video Upload Notice]:', err);
+  }
+  return null;
+};
+
 
 

@@ -329,9 +329,35 @@ interface AssetsData {
   top11?: Record<string, string>;
   heroBottles?: string[];
   heroStageEffect?: string;
+  heroMediaType?: 'image' | 'video';
+  heroVideoUrl?: string | null;
+  heroVideoPoster?: string | null;
+  heroVideoFit?: string;
+  heroVideoPosition?: string;
+  heroHeightMode?: string;
   pricing?: any;
   ticker?: any;
   updatedAt?: string;
+}
+
+const DEFAULT_HERO_VIDEO = 'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/hero_video.mp4';
+const DEFAULT_HERO_POSTER = 'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/sinki_hero_poster.jpg';
+
+async function persistAssets(assets: AssetsData): Promise<void> {
+  try {
+    fs.writeFileSync(ASSETS_FILE, JSON.stringify(assets, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Error writing local assets file:', e);
+  }
+  try {
+    await supabase.storage.from(SUPABASE_BUCKET).upload('assets.json', JSON.stringify(assets, null, 2), {
+      contentType: 'application/json',
+      upsert: true,
+    });
+    console.log('[Supabase Sync] Assets data berhasil disimpan permanen ke Supabase Cloud!');
+  } catch (err) {
+    console.warn('[Supabase Sync Notice] assets.json:', err);
+  }
 }
 
 const getAssets = (): AssetsData => {
@@ -339,6 +365,12 @@ const getAssets = (): AssetsData => {
   if (fs.existsSync(ASSETS_FILE)) {
     try {
       const parsed = JSON.parse(fs.readFileSync(ASSETS_FILE, 'utf-8'));
+      const resolvedVideoUrl = parsed.heroVideoUrl !== undefined
+        ? (parsed.heroVideoUrl || null)
+        : DEFAULT_HERO_VIDEO;
+      const resolvedMediaType = parsed.heroMediaType || (resolvedVideoUrl ? 'video' : 'image');
+      const resolvedPoster = parsed.heroVideoPoster || DEFAULT_HERO_POSTER;
+
       return {
         logo: parsed.logo || null,
         chibi: parsed.chibi || null,
@@ -346,15 +378,49 @@ const getAssets = (): AssetsData => {
         top11: parsed.top11 && typeof parsed.top11 === 'object' ? parsed.top11 : {},
         heroBottles: Array.isArray(parsed.heroBottles) ? parsed.heroBottles : [],
         heroStageEffect: parsed.heroStageEffect || 'royal-elevation',
+        heroMediaType: resolvedMediaType,
+        heroVideoUrl: resolvedVideoUrl,
+        heroVideoPoster: resolvedPoster,
+        heroVideoFit: parsed.heroVideoFit || 'cover',
+        heroVideoPosition: parsed.heroVideoPosition || 'center',
+        heroHeightMode: parsed.heroHeightMode || 'full',
         pricing: parsed.pricing,
         ticker: currentTicker,
         updatedAt: parsed.updatedAt || currentTicker?.updatedAt,
       };
     } catch {
-      return { logo: null, chibi: null, qrisImage: null, top11: {}, heroBottles: [], heroStageEffect: 'royal-elevation', ticker: currentTicker };
+      return {
+        logo: null,
+        chibi: null,
+        qrisImage: null,
+        top11: {},
+        heroBottles: [],
+        heroStageEffect: 'royal-elevation',
+        heroMediaType: 'video',
+        heroVideoUrl: DEFAULT_HERO_VIDEO,
+        heroVideoPoster: DEFAULT_HERO_POSTER,
+        heroVideoFit: 'cover',
+        heroVideoPosition: 'center',
+        heroHeightMode: 'full',
+        ticker: currentTicker,
+      };
     }
   }
-  return { logo: null, chibi: null, qrisImage: null, top11: {}, heroBottles: [], heroStageEffect: 'royal-elevation', ticker: currentTicker };
+  return {
+    logo: null,
+    chibi: null,
+    qrisImage: null,
+    top11: {},
+    heroBottles: [],
+    heroStageEffect: 'royal-elevation',
+    heroMediaType: 'video',
+    heroVideoUrl: DEFAULT_HERO_VIDEO,
+    heroVideoPoster: DEFAULT_HERO_POSTER,
+    heroVideoFit: 'cover',
+    heroVideoPosition: 'center',
+    heroHeightMode: 'full',
+    ticker: currentTicker,
+  };
 };
 
 // Short URL endpoint for concise sharing links
@@ -638,7 +704,21 @@ app.post('/api/owner/update-assets', async (req, res) => {
     return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
   }
 
-  const { logo, chibi, qrisImage, top11, heroBottles, heroStageEffect } = req.body;
+  const {
+    logo,
+    chibi,
+    qrisImage,
+    top11,
+    heroBottles,
+    heroStageEffect,
+    heroMediaType,
+    heroVideoUrl,
+    heroVideoPoster,
+    heroVideoFit,
+    heroVideoPosition,
+    heroHeightMode,
+    oldVideoUrlToDelete,
+  } = req.body;
   const existing = getAssets();
   let newLogo = existing.logo;
   let newChibi = existing.chibi;
@@ -646,6 +726,27 @@ app.post('/api/owner/update-assets', async (req, res) => {
   const newTop11 = { ...(existing.top11 || {}) };
   let newHeroBottles = Array.isArray(existing.heroBottles) ? [...existing.heroBottles] : [];
   let newHeroStageEffect = existing.heroStageEffect || 'royal-elevation';
+  let newHeroMediaType = existing.heroMediaType || 'image';
+  let newHeroVideoUrl = existing.heroVideoUrl || null;
+  let newHeroVideoPoster = existing.heroVideoPoster || null;
+  let newHeroVideoFit = existing.heroVideoFit || 'cover';
+  let newHeroVideoPosition = existing.heroVideoPosition || 'center';
+  let newHeroHeightMode = existing.heroHeightMode || 'balanced';
+
+  // Hapus otomatis video lama dari Supabase jika ada video baru yang diunggah
+  const videoToDelete = oldVideoUrlToDelete || (heroVideoUrl && existing.heroVideoUrl && heroVideoUrl !== existing.heroVideoUrl ? existing.heroVideoUrl : null);
+  if (videoToDelete && typeof videoToDelete === 'string') {
+    try {
+      const cleanPath = videoToDelete.replace('https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/', '').split('?')[0];
+      const fn = cleanPath.split('/').pop();
+      if (fn && fn !== 'sinki_logo.png' && fn !== 'sinki_chibi.png' && fn !== 'sinki_qris.jpg') {
+        await supabase.storage.from(SUPABASE_BUCKET).remove([cleanPath, fn]);
+        console.log(`[Supabase Storage] Otomatis menghapus video lama: ${fn}`);
+      }
+    } catch (removeErr) {
+      console.warn('[Supabase Storage Remove Video Notice]:', removeErr);
+    }
+  }
 
   if (logo !== undefined) {
     if (logo) {
@@ -693,6 +794,35 @@ app.post('/api/owner/update-assets', async (req, res) => {
     newHeroStageEffect = heroStageEffect;
   }
 
+  if (heroMediaType !== undefined) {
+    newHeroMediaType = heroMediaType === 'video' ? 'video' : 'image';
+  }
+
+  if (heroVideoUrl !== undefined) {
+    newHeroVideoUrl = heroVideoUrl || null;
+  }
+
+  if (heroVideoPoster !== undefined) {
+    if (heroVideoPoster && heroVideoPoster.startsWith('data:')) {
+      const up = await uploadToSupabaseWithOverwrite('sinki_hero_poster.jpg', heroVideoPoster);
+      newHeroVideoPoster = up.success && up.url ? up.url : heroVideoPoster;
+    } else {
+      newHeroVideoPoster = heroVideoPoster || null;
+    }
+  }
+
+  if (heroVideoFit !== undefined && (heroVideoFit === 'cover' || heroVideoFit === 'contain')) {
+    newHeroVideoFit = heroVideoFit;
+  }
+
+  if (heroVideoPosition !== undefined && (heroVideoPosition === 'center' || heroVideoPosition === 'top' || heroVideoPosition === 'bottom')) {
+    newHeroVideoPosition = heroVideoPosition;
+  }
+
+  if (heroHeightMode !== undefined && (heroHeightMode === 'compact' || heroHeightMode === 'balanced' || heroHeightMode === 'tall' || heroHeightMode === 'full')) {
+    newHeroHeightMode = heroHeightMode;
+  }
+
   const updatedData: AssetsData = {
     logo: newLogo,
     chibi: newChibi,
@@ -700,16 +830,63 @@ app.post('/api/owner/update-assets', async (req, res) => {
     top11: newTop11,
     heroBottles: newHeroBottles,
     heroStageEffect: newHeroStageEffect,
+    heroMediaType: newHeroMediaType,
+    heroVideoUrl: newHeroVideoUrl,
+    heroVideoPoster: newHeroVideoPoster,
+    heroVideoFit: newHeroVideoFit,
+    heroVideoPosition: newHeroVideoPosition,
+    heroHeightMode: newHeroHeightMode,
     pricing: existing.pricing,
     updatedAt: new Date().toISOString(),
   };
 
-  fs.writeFileSync(ASSETS_FILE, JSON.stringify(updatedData), 'utf-8');
+  await persistAssets(updatedData);
   return res.json({
     success: true,
-    message: 'Foto SINKI & Pengaturan Panggung berhasil disimpan!',
+    message: 'Foto SINKI & Pengaturan Video Hero berhasil disimpan permanen ke server & cloud!',
     data: updatedData,
   });
+});
+
+// POST delete asset / video file from Supabase storage
+app.post('/api/owner/delete-storage-file', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+
+  const { path: filePath, paths } = req.body;
+  const toDelete: string[] = [];
+
+  const sanitize = (raw: string) => {
+    return raw.replace('https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/', '').split('?')[0];
+  };
+
+  if (filePath && typeof filePath === 'string') {
+    const clean = sanitize(filePath);
+    if (clean) toDelete.push(clean);
+  }
+
+  if (Array.isArray(paths)) {
+    for (const p of paths) {
+      if (typeof p === 'string') {
+        const clean = sanitize(p);
+        if (clean) toDelete.push(clean);
+      }
+    }
+  }
+
+  if (toDelete.length > 0) {
+    try {
+      await supabase.storage.from(SUPABASE_BUCKET).remove(toDelete);
+      console.log(`[Supabase Storage API] Dihapus dari bucket ${SUPABASE_BUCKET}:`, toDelete);
+      return res.json({ success: true, deleted: toDelete });
+    } catch (err: any) {
+      console.error('[Supabase Storage API Delete Error]:', err);
+      return res.status(500).json({ error: err?.message || 'Gagal menghapus file dari Supabase' });
+    }
+  }
+
+  return res.json({ success: true, deleted: [] });
 });
 
 // POST update a specific 3D Hero Bottle (1-4) by Owner
@@ -747,7 +924,7 @@ app.post('/api/owner/update-hero-bottles', async (req, res) => {
     updatedAt: new Date().toISOString(),
   };
 
-  fs.writeFileSync(ASSETS_FILE, JSON.stringify(updatedData), 'utf-8');
+  await persistAssets(updatedData);
   return res.json({
     success: true,
     message: `Foto Botol 3D #${idx + 1} berhasil disimpan & disinkronkan!`,
@@ -830,7 +1007,7 @@ app.post('/api/owner/update-top11', async (req, res) => {
 });
 
 // POST update pricing configuration by Owner
-app.post('/api/owner/update-pricing', (req, res) => {
+app.post('/api/owner/update-pricing', async (req, res) => {
   if (!isAuthorized(req)) {
     return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
   }
@@ -847,8 +1024,8 @@ app.post('/api/owner/update-pricing', (req, res) => {
     updatedAt: new Date().toISOString(),
   };
 
-  fs.writeFileSync(ASSETS_FILE, JSON.stringify(updatedData), 'utf-8');
-  return res.json({ success: true, message: 'Daftar harga SINKI berhasil disimpan permanen ke server!' });
+  await persistAssets(updatedData);
+  return res.json({ success: true, message: 'Daftar harga SINKI berhasil disimpan permanen ke server & cloud!' });
 });
 
 // SENSOR KATA KASAR DI BACKEND (Word Boundary Regex Anti-False Positive)
@@ -1297,8 +1474,16 @@ async function hydrateDataFromSupabase() {
       const text = await data.text();
       const parsed = JSON.parse(text);
       if (parsed && typeof parsed === 'object') {
-        fs.writeFileSync(ASSETS_FILE, text, 'utf-8');
-        console.log('[Supabase Hydration] Assets data berhasil dimuat dari cloud');
+        if (!parsed.heroVideoUrl) {
+          parsed.heroVideoUrl = DEFAULT_HERO_VIDEO;
+          parsed.heroMediaType = 'video';
+          parsed.heroHeightMode = parsed.heroHeightMode || 'full';
+        }
+        if (!parsed.heroVideoPoster) {
+          parsed.heroVideoPoster = DEFAULT_HERO_POSTER;
+        }
+        fs.writeFileSync(ASSETS_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
+        console.log('[Supabase Hydration] Assets data berhasil dimuat dari cloud dengan Video Hero');
       }
     } else if (fs.existsSync(ASSETS_FILE)) {
       const local = fs.readFileSync(ASSETS_FILE, 'utf-8');

@@ -38,6 +38,11 @@ import {
   Share2,
   MessageCircle,
   ShoppingBag,
+  Film,
+  Play,
+  Video,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 
 import { AnalyticsView } from './AnalyticsView';
@@ -54,9 +59,22 @@ import {
   getStoredHeroBottles,
   getStoredHeroStageEffect,
   getStoredHeroStageEnabled,
+  getStoredHeroMediaType,
+  getStoredHeroVideoUrl,
+  getStoredHeroVideoPoster,
+  getStoredHeroVideoFit,
+  getStoredHeroVideoPosition,
+  getStoredHeroHeightMode,
+  HeroVideoFit,
+  HeroVideoPosition,
+  HeroHeightMode,
   saveHeroBottleItemToServer,
   saveHeroStageEffectToServer,
   saveHeroStageEnabledToServer,
+  saveHeroVideoSettingsToServer,
+  extractVideoFrame,
+  uploadVideoDirectlyToSupabase,
+  deleteFileFromSupabase,
   compressImage,
   removeTop11PhotoFromStorage,
   purgeSinkiBrowserCache,
@@ -128,6 +146,13 @@ interface DimensiSinkiScreenProps {
   top11Photos: Record<string, string>;
   heroBottles?: string[];
   heroStageEffect?: HeroStageEffect;
+  heroStageEnabled?: boolean;
+  heroMediaType?: 'image' | 'video';
+  heroVideoUrl?: string | null;
+  heroVideoPoster?: string | null;
+  heroVideoFit?: HeroVideoFit;
+  heroVideoPosition?: HeroVideoPosition;
+  heroHeightMode?: HeroHeightMode;
   pricing?: PricingConfig;
   tickerConfig?: TickerConfig;
   perfumes?: PerfumeItem[];
@@ -137,6 +162,15 @@ interface DimensiSinkiScreenProps {
   onTop11PhotoUpdated: (variantId: string, newPhoto: string) => void;
   onHeroBottlesUpdated?: (bottles: string[]) => void;
   onHeroStageEffectUpdated?: (effect: HeroStageEffect) => void;
+  onHeroStageEnabledUpdated?: (enabled: boolean) => void;
+  onHeroVideoUpdated?: (settings: {
+    heroMediaType?: 'image' | 'video';
+    heroVideoUrl?: string | null;
+    heroVideoPoster?: string | null;
+    heroVideoFit?: HeroVideoFit;
+    heroVideoPosition?: HeroVideoPosition;
+    heroHeightMode?: HeroHeightMode;
+  }) => void;
   onPricingUpdated: (newPricing: PricingConfig) => void;
   onTickerUpdated?: (newTicker: TickerConfig) => void;
   onPerfumesUpdated?: (newList: PerfumeItem[]) => void;
@@ -163,6 +197,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   top11Photos,
   heroBottles: propHeroBottles,
   heroStageEffect: propHeroStageEffect,
+  heroStageEnabled: propHeroStageEnabled,
+  heroMediaType: propHeroMediaType,
+  heroVideoUrl: propHeroVideoUrl,
+  heroVideoPoster: propHeroVideoPoster,
+  heroVideoFit: propHeroVideoFit,
+  heroVideoPosition: propHeroVideoPosition,
+  heroHeightMode: propHeroHeightMode,
   pricing,
   tickerConfig,
   perfumes,
@@ -172,22 +213,90 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   onTop11PhotoUpdated,
   onHeroBottlesUpdated,
   onHeroStageEffectUpdated,
+  onHeroStageEnabledUpdated,
+  onHeroVideoUpdated,
   onPricingUpdated,
   onTickerUpdated,
   onPerfumesUpdated,
   onSocialLinksUpdated,
 }) => {
+  // Hero Video & Poster Crossfade State
+  const [heroMediaType, setHeroMediaType] = useState<'image' | 'video'>(() => propHeroMediaType || getStoredHeroMediaType());
+  const [heroVideoUrl, setHeroVideoUrl] = useState<string>(() => propHeroVideoUrl || getStoredHeroVideoUrl() || '');
+  const [heroVideoPoster, setHeroVideoPoster] = useState<string | null>(() => propHeroVideoPoster || getStoredHeroVideoPoster());
+  const [heroVideoFit, setHeroVideoFit] = useState<HeroVideoFit>(() => propHeroVideoFit || getStoredHeroVideoFit());
+  const [heroVideoPosition, setHeroVideoPosition] = useState<HeroVideoPosition>(() => propHeroVideoPosition || getStoredHeroVideoPosition());
+  const [heroHeightMode, setHeroHeightMode] = useState<HeroHeightMode>(() => propHeroHeightMode || getStoredHeroHeightMode());
+  const [adminPreviewRatio, setAdminPreviewRatio] = useState<'9:16' | 'full' | '1:1' | '16:9'>('9:16');
+  const [videoUrlInput, setVideoUrlInput] = useState<string>(() => propHeroVideoUrl || getStoredHeroVideoUrl() || '');
+  const [mediaSubTab, setMediaSubTab] = useState<'all' | 'video' | 'identity' | 'stage' | 'bestsellers'>('all');
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isExtractingFrame, setIsExtractingFrame] = useState(false);
+  const [isTestingFade, setIsTestingFade] = useState(false);
+  const heroVideoInputRef = useRef<HTMLInputElement>(null);
+  const heroPosterInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync external props if updated from server
+  useEffect(() => {
+    if (propHeroMediaType) setHeroMediaType(propHeroMediaType);
+  }, [propHeroMediaType]);
+
+  useEffect(() => {
+    if (propHeroVideoUrl !== undefined) {
+      setHeroVideoUrl(propHeroVideoUrl || '');
+      setVideoUrlInput(propHeroVideoUrl || '');
+    }
+  }, [propHeroVideoUrl]);
+
+  useEffect(() => {
+    if (propHeroVideoPoster !== undefined) {
+      setHeroVideoPoster(propHeroVideoPoster);
+    }
+  }, [propHeroVideoPoster]);
+
+  useEffect(() => {
+    if (propHeroVideoFit) setHeroVideoFit(propHeroVideoFit);
+  }, [propHeroVideoFit]);
+
+  useEffect(() => {
+    if (propHeroVideoPosition) setHeroVideoPosition(propHeroVideoPosition);
+  }, [propHeroVideoPosition]);
+
+  useEffect(() => {
+    if (propHeroHeightMode) setHeroHeightMode(propHeroHeightMode);
+  }, [propHeroHeightMode]);
+
+  const handleUpdateLayoutSetting = async (
+    field: 'heroVideoFit' | 'heroVideoPosition' | 'heroHeightMode',
+    value: any
+  ) => {
+    if (field === 'heroVideoFit') setHeroVideoFit(value);
+    if (field === 'heroVideoPosition') setHeroVideoPosition(value);
+    if (field === 'heroHeightMode') setHeroHeightMode(value);
+
+    await saveHeroVideoSettingsToServer({ [field]: value }, '1995');
+    onHeroVideoUpdated?.({ [field]: value });
+    onShowToast(`Layout video disesuaikan! ✨`);
+  };
+
   // 3D Stage Bottles & Effect State
   const [heroBottlesList, setHeroBottlesList] = useState<string[]>(() => propHeroBottles || getStoredHeroBottles());
   const [activeStageEffect, setActiveStageEffect] = useState<HeroStageEffect>(() => propHeroStageEffect || getStoredHeroStageEffect());
-  const [isHeroStageEnabled, setIsHeroStageEnabled] = useState<boolean>(() => getStoredHeroStageEnabled());
+  const [isHeroStageEnabled, setIsHeroStageEnabled] = useState<boolean>(() => propHeroStageEnabled !== undefined ? propHeroStageEnabled : getStoredHeroStageEnabled());
   const [selectedHeroBottleIdx, setSelectedHeroBottleIdx] = useState<number | null>(null);
   const heroBottleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (propHeroStageEnabled !== undefined) {
+      setIsHeroStageEnabled(propHeroStageEnabled);
+    }
+  }, [propHeroStageEnabled]);
 
   const handleToggleStageEnabled = async () => {
     const next = !isHeroStageEnabled;
     setIsHeroStageEnabled(next);
     await saveHeroStageEnabledToServer(next, '1995');
+    onHeroStageEnabledUpdated?.(next);
     onShowToast(
       next
         ? 'Panggung 3D Beranda diaktifkan! ✨ (Akan tampil saat botol diunggah)'
@@ -238,6 +347,204 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       onShowToast(`Efek panggung diubah ke "${effectName}"! ✨`);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // === HANDLER VIDEO SINEMATIK BERANDA & FRAME EXTRACTOR ===
+  const handleToggleMediaType = async (mode: 'image' | 'video') => {
+    setHeroMediaType(mode);
+    onHeroVideoUpdated?.({ heroMediaType: mode });
+    await saveHeroVideoSettingsToServer({ heroMediaType: mode }, '1995');
+    onShowToast(
+      mode === 'video'
+        ? 'Mode Video Sinematik Beranda diaktifkan! 🎬'
+        : 'Mode Gambar Statis Beranda diaktifkan.'
+    );
+  };
+
+  const handleVideoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      onShowToast('Format file harus berupa video (.mp4, .webm, .mov)!');
+      return;
+    }
+
+    try {
+      setIsUploadingVideo(true);
+      onShowToast('Memproses video & mengambil gambar awal otomatis...');
+
+      // 1. Ekstrak frame awal otomatis sebagai gambar poster awalan
+      let extractedPoster: string | null = null;
+      try {
+        setIsExtractingFrame(true);
+        extractedPoster = await extractVideoFrame(file, 0.5);
+      } catch (extractErr) {
+        console.warn('Frame extraction notice:', extractErr);
+      } finally {
+        setIsExtractingFrame(false);
+      }
+
+      // Referensi video lama untuk dibersihkan dari storage Supabase
+      const previousVideoUrl = heroVideoUrl;
+
+      // 2. Upload video ke Supabase Storage (sinki-media/hero_video.mp4) dan otomatis hapus video lama
+      onShowToast('Menghapus video lama & mengunggah video baru ke Supabase Cloud...');
+      const cloudVideoUrl = await uploadVideoDirectlyToSupabase('hero_video.mp4', file, file.type, previousVideoUrl);
+      const finalVideoUrl = cloudVideoUrl || URL.createObjectURL(file);
+
+      setHeroVideoUrl(finalVideoUrl);
+      setVideoUrlInput(finalVideoUrl);
+      setHeroMediaType('video');
+
+      if (extractedPoster) {
+        setHeroVideoPoster(extractedPoster);
+      }
+
+      await saveHeroVideoSettingsToServer(
+        {
+          heroMediaType: 'video',
+          heroVideoUrl: finalVideoUrl,
+          oldVideoUrlToDelete: previousVideoUrl,
+          ...(extractedPoster ? { heroVideoPoster: extractedPoster } : {}),
+        },
+        '1995'
+      );
+
+      onHeroVideoUpdated?.({
+        heroMediaType: 'video',
+        heroVideoUrl: finalVideoUrl,
+        ...(extractedPoster ? { heroVideoPoster: extractedPoster } : {}),
+      });
+
+      onShowToast('Video baru aktif & video lama di Supabase otomatis terhapus! ✅');
+    } catch (err) {
+      console.error('Error uploading video:', err);
+      onShowToast('Gagal mengunggah video.');
+    } finally {
+      setIsUploadingVideo(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleSaveVideoUrl = async () => {
+    const trimmed = videoUrlInput.trim();
+    if (!trimmed) {
+      onShowToast('Tautan URL video tidak boleh kosong!');
+      return;
+    }
+
+    try {
+      setIsUploadingVideo(true);
+      onShowToast('Menyimpan tautan video & menyinkronkan frame cover...');
+
+      let extractedPoster: string | null = null;
+      try {
+        extractedPoster = await extractVideoFrame(trimmed, 0.5);
+      } catch (extractErr) {
+        console.warn('Remote URL extraction notice:', extractErr);
+      }
+
+      setHeroVideoUrl(trimmed);
+      setHeroMediaType('video');
+      if (extractedPoster) {
+        setHeroVideoPoster(extractedPoster);
+      }
+
+      await saveHeroVideoSettingsToServer(
+        {
+          heroMediaType: 'video',
+          heroVideoUrl: trimmed,
+          ...(extractedPoster ? { heroVideoPoster: extractedPoster } : {}),
+        },
+        '1995'
+      );
+
+      onHeroVideoUpdated?.({
+        heroMediaType: 'video',
+        heroVideoUrl: trimmed,
+        ...(extractedPoster ? { heroVideoPoster: extractedPoster } : {}),
+      });
+
+      onShowToast(
+        extractedPoster
+          ? 'Video tersimpan & cover otomatis mengikuti gambar video baru! ✅'
+          : 'Tautan video berhasil disimpan! ✅'
+      );
+    } catch (err) {
+      console.error(err);
+      onShowToast('Gagal menyimpan URL video.');
+    } finally {
+      setIsUploadingVideo(false);
+    }
+  };
+
+  const handleCustomPosterUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      onShowToast('Mengompresi foto cover kustom...');
+      const base64Data = await compressImage(file, 1080, 1080, 0.9);
+      setHeroVideoPoster(base64Data);
+
+      await saveHeroVideoSettingsToServer({ heroVideoPoster: base64Data }, '1995');
+      onHeroVideoUpdated?.({ heroVideoPoster: base64Data });
+      onShowToast('Foto cover kustom berhasil disimpan permanen! ✅');
+    } catch (err) {
+      console.error(err);
+      onShowToast('Gagal menyimpan foto cover.');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleExtractFrameNow = async () => {
+    if (!heroVideoUrl) {
+      onShowToast('Belum ada video yang aktif untuk diambil gambarnya.');
+      return;
+    }
+    try {
+      setIsExtractingFrame(true);
+      onShowToast('Mengambil frame gambar dari video saat ini...');
+      const frameData = await extractVideoFrame(heroVideoUrl, 0.5);
+      setHeroVideoPoster(frameData);
+      await saveHeroVideoSettingsToServer({ heroVideoPoster: frameData }, '1995');
+      onHeroVideoUpdated?.({ heroVideoPoster: frameData });
+      onShowToast('Gambar cover berhasil diperbarui mengikuti video saat ini! ✅');
+    } catch (err) {
+      console.warn('Manual extraction notice:', err);
+      onShowToast('Tidak dapat mengambil frame langsung (CORS link eksternal). Silakan pilih "Ganti Foto Cover" manual.');
+    } finally {
+      setIsExtractingFrame(false);
+    }
+  };
+
+  const handleRemoveHeroVideo = async () => {
+    if (confirm('Hapus video hero dan kembali ke mode gambar botol standar?')) {
+      const oldUrl = heroVideoUrl;
+      setHeroVideoUrl('');
+      setVideoUrlInput('');
+      setHeroMediaType('image');
+
+      if (oldUrl) {
+        deleteFileFromSupabase(oldUrl).catch(() => {});
+      }
+
+      await saveHeroVideoSettingsToServer(
+        {
+          heroMediaType: 'image',
+          heroVideoUrl: null,
+          oldVideoUrlToDelete: oldUrl,
+        },
+        '1995'
+      );
+      onHeroVideoUpdated?.({
+        heroMediaType: 'image',
+        heroVideoUrl: null,
+      });
+      onShowToast('Video dinonaktifkan & file lama di Supabase berhasil dibersihkan.');
     }
   };
 
@@ -362,7 +669,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   // Perfumes Catalog State & Handlers
   const [perfumesList, setPerfumesList] = useState<PerfumeItem[]>(() => perfumes || getStoredPerfumes());
   const [perfumeSearchQuery, setPerfumeSearchQuery] = useState('');
-  const [perfumeCategoryFilter, setPerfumeCategoryFilter] = useState<PerfumeCategory>('women');
+  const [perfumeCategoryFilter, setPerfumeCategoryFilter] = useState<PerfumeCategory | 'all'>('all');
   const [isAddingPerfume, setIsAddingPerfume] = useState(false);
   const [editingPerfume, setEditingPerfume] = useState<PerfumeItem | null>(null);
   const [newPerfumeForm, setNewPerfumeForm] = useState<{
@@ -1051,18 +1358,45 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     icon: React.ComponentType<{ size?: number; className?: string }>;
   }
 
-  // Nav Items Definitions
-  const navItems: NavItemDef[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'analytics', label: 'Grafik Pengunjung', badge: 'Live', icon: BarChart3 },
-    { id: 'security', label: 'Keamanan & Health', badge: '100%', icon: ShieldCheck },
-    { id: 'variants', label: 'Katalog Varian', badge: perfumesList.length.toString(), icon: Package },
-    { id: 'media', label: 'Media & Galeri', badge: '14', icon: ImageIcon },
-    { id: 'banner', label: 'Teks & Harga', icon: Sliders },
-    { id: 'content', label: 'Konten Website', badge: articlesList.length.toString(), icon: FileText },
-    { id: 'reviews', label: 'Ulasan Masuk', badge: reviewsList.length.toString(), icon: MessageSquare },
-    { id: 'settings', label: 'Pengaturan', icon: Settings },
+  interface NavGroupDef {
+    groupTitle: string;
+    items: NavItemDef[];
+  }
+
+  // Nav Groups Definitions (Terorganisir Rapi Sesuai Kategori)
+  const navGroups: NavGroupDef[] = [
+    {
+      groupTitle: 'Ringkasan & Analitik',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'analytics', label: 'Grafik Pengunjung', badge: 'Live', icon: BarChart3 },
+        { id: 'security', label: 'Keamanan Sistem', badge: '100%', icon: ShieldCheck },
+      ],
+    },
+    {
+      groupTitle: 'Katalog & Tampilan',
+      items: [
+        { id: 'media', label: 'Media & Video Hero', badge: '14', icon: ImageIcon },
+        { id: 'variants', label: 'Katalog Varian', badge: perfumesList.length.toString(), icon: Package },
+        { id: 'banner', label: 'Teks & Harga', icon: Sliders },
+      ],
+    },
+    {
+      groupTitle: 'Pelanggan & Konten',
+      items: [
+        { id: 'reviews', label: 'Ulasan Masuk', badge: reviewsList.length.toString(), icon: MessageSquare },
+        { id: 'content', label: 'Artikel Edukasi', badge: articlesList.length.toString(), icon: FileText },
+      ],
+    },
+    {
+      groupTitle: 'Sistem',
+      items: [
+        { id: 'settings', label: 'Pengaturan & Brand', icon: Settings },
+      ],
+    },
   ];
+
+  const navItems: NavItemDef[] = navGroups.flatMap((g) => g.items);
 
   // ========================================================
   // 2. TAMPILAN DASHBOARD PROFESIONAL: ADAPTIVE DESKTOP + MOBILE
@@ -1088,7 +1422,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Top Brand Block */}
           <div className="flex items-center justify-between pb-4 border-b border-white/10">
             <div className="flex items-center gap-3">
@@ -1118,45 +1452,52 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             </button>
           </div>
 
-          {/* Navigation Menu */}
-          <nav className="space-y-1.5">
-            <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 px-2 block mb-2 font-mono">
-              Menu Utama
-            </span>
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeMenu === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveMenu(item.id as MenuKey);
-                    setIsSidebarOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-semibold transition-all active:scale-98 ${
-                    isActive
-                      ? 'bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm'
-                      : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon size={16} className={isActive ? 'text-amber-400' : 'text-slate-400'} />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge && (
-                    <span
-                      className={`text-[9.5px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                        isActive
-                          ? 'bg-amber-500/25 text-amber-200'
-                          : 'bg-white/5 text-slate-400'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          {/* Navigation Menu Terorganisir per Kategori */}
+          <nav className="space-y-4 overflow-y-auto no-scrollbar max-h-[calc(100vh-210px)] pr-1">
+            {navGroups.map((group, gIdx) => (
+              <div key={gIdx} className="space-y-1.5">
+                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-amber-400/80 px-2 block">
+                  {group.groupTitle}
+                </span>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeMenu === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveMenu(item.id as MenuKey);
+                          setIsSidebarOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between py-2 px-3 rounded-xl text-xs font-semibold transition-all active:scale-98 ${
+                          isActive
+                            ? 'bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm font-bold'
+                            : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon size={15} className={isActive ? 'text-amber-400' : 'text-slate-400'} />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          <span
+                            className={`text-[9.5px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                              isActive
+                                ? 'bg-amber-500/25 text-amber-200'
+                                : 'bg-white/5 text-slate-400'
+                            }`}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
         </div>
 
@@ -1238,6 +1579,42 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             </div>
           </div>
         </header>
+
+        {/* HORIZONTAL LUXURY ADMIN TAB BAR (Responsive on Mobile & Desktop) */}
+        <div className="sticky top-[53px] z-20 bg-[#0a0c14]/95 backdrop-blur-md border-b border-white/10 px-3 sm:px-6 py-2 shadow-md">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeMenu === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveMenu(item.id as MenuKey)}
+                  className={`flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs whitespace-nowrap transition-all shrink-0 active:scale-95 select-none ${
+                    isActive
+                      ? 'bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-amber-600/25 text-amber-200 border border-amber-500/50 shadow-[0_2px_12px_rgba(245,186,73,0.18)] font-bold ring-1 ring-amber-400/20'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] border border-transparent'
+                  }`}
+                >
+                  <Icon size={14} className={isActive ? 'text-amber-400' : 'text-slate-400'} />
+                  <span>{item.label}</span>
+                  {item.badge && (
+                    <span
+                      className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full font-bold leading-none ${
+                        isActive
+                          ? 'bg-amber-400/30 text-amber-200 border border-amber-400/40'
+                          : 'bg-white/5 text-slate-500'
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* CONTAINER ISI KONTEN (Widescreen di Laptop: max-w-7xl, fluid p-6) */}
         <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24 lg:pb-12">
@@ -1566,10 +1943,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   </div>
 
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                    {(['women', 'men', 'powdery', 'unisex'] as const).map((cat) => {
+                    {(['all', 'women', 'men', 'powdery', 'unisex'] as const).map((cat) => {
                       const isSelected = perfumeCategoryFilter === cat;
-                      const count = perfumesList.filter((p) => p.category === cat).length;
-                      const labels: Record<PerfumeCategory, string> = {
+                      const count =
+                        cat === 'all'
+                          ? perfumesList.length
+                          : perfumesList.filter((p) => p.category === cat).length;
+                      const labels: Record<PerfumeCategory | 'all', string> = {
+                        all: 'Semua',
                         women: 'Women',
                         men: 'Men',
                         powdery: 'Powdery',
@@ -1597,7 +1978,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
                 {perfumesList
                   .filter((item) => {
-                    const matchCategory = perfumeSearchQuery ? true : item.category === perfumeCategoryFilter;
+                    const matchCategory =
+                      perfumeSearchQuery || perfumeCategoryFilter === 'all'
+                        ? true
+                        : item.category === perfumeCategoryFilter;
                     const matchSearch =
                       item.name.toLowerCase().includes(perfumeSearchQuery.toLowerCase()) ||
                       item.tagline.toLowerCase().includes(perfumeSearchQuery.toLowerCase()) ||
@@ -1896,104 +2280,623 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </p>
               </div>
 
-              {/* BARIS 1: FOTO HERO UTAMA & LOGO RESMI (DESKTOP: 2 KOLOM) */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Kartu Foto Utama Beranda */}
-                <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-display font-bold text-sm text-white">
-                        Foto Utama Beranda (Hero)
-                      </h3>
-                      <span className="text-[10px] text-slate-400">Foto botol panggung depan</span>
+              {/* SUB-TABS NAVIGATOR KHUSUS MEDIA (Rapi & Terstruktur) */}
+              <div className="flex items-center gap-1.5 p-1.5 bg-black/60 rounded-2xl border border-white/10 overflow-x-auto no-scrollbar scroll-smooth">
+                {[
+                  { id: 'all', label: '🌐 Semua Bagian' },
+                  { id: 'video', label: '🎬 Video Sinematik 9:16' },
+                  { id: 'identity', label: '🖼️ Cover, Logo & QRIS' },
+                  { id: 'stage', label: '✨ Panggung 3D' },
+                  { id: 'bestsellers', label: `🏆 11 Bestseller (${topPerfumesList.length})` },
+                ].map((st) => {
+                  const isCur = mediaSubTab === st.id;
+                  return (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setMediaSubTab(st.id as any)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                        isCur
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-md'
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {st.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* HIDDEN INPUTS UNTUK VIDEO & POSTER HERO */}
+              <input
+                type="file"
+                ref={heroVideoInputRef}
+                accept="video/mp4,video/webm,video/quicktime,video/*"
+                className="hidden"
+                onChange={handleVideoFileUpload}
+              />
+              <input
+                type="file"
+                ref={heroPosterInputRef}
+                accept="image/jpeg,image/png,image/*"
+                className="hidden"
+                onChange={handleCustomPosterUpload}
+              />
+
+              {/* KARTU UTAMA: VIDEO SINEMATIK BERANDA & EFEK TRANSISI MEMUDAR */}
+              {(mediaSubTab === 'all' || mediaSubTab === 'video') && (
+                <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#131625] via-[#0f121d] to-[#0a0c14] border border-amber-500/35 shadow-2xl space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(223,183,108,0.25)]">
+                      <Film size={24} />
                     </div>
-                    <label className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs cursor-pointer active:scale-95 transition-all">
-                      <span>Ganti Foto</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, 'hero')}
-                      />
-                    </label>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-bold text-base text-white">
+                          Video Sinematik Beranda & Transisi Botol
+                        </h3>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border ${
+                          heroMediaType === 'video' && heroVideoUrl
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+                        }`}>
+                          {heroMediaType === 'video' && heroVideoUrl ? 'VIDEO AKTIF' : 'GAMBAR STATIS'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 mt-0.5">
+                        Gambar botol tampil seketika saat web dimuat, lalu memudar lembut (crossfade dissolve) begitu video berputar.
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="relative h-56 rounded-2xl overflow-hidden bg-black/60 border border-white/10 flex items-center justify-center">
-                    {currentChibi ? (
-                      <img
-                        src={currentChibi}
-                        alt="Hero"
-                        className="w-full h-full object-contain filter drop-shadow-md"
-                      />
-                    ) : (
-                      <span className="text-xs text-slate-500 font-mono">Foto Utama Standar</span>
-                    )}
+                  {/* Mode Selector Toggle */}
+                  <div className="flex items-center bg-black/60 p-1 rounded-2xl border border-white/10 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleMediaType('video')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        heroMediaType === 'video'
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Video size={13} />
+                      <span>Mode Video</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleMediaType('image')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        heroMediaType === 'image'
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <ImageIcon size={13} />
+                      <span>Gambar Statis</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Kartu Logo Resmi & Barcode QRIS */}
-                <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-display font-bold text-sm text-white">
-                        Logo Resmi SINKI & QRIS
-                      </h3>
-                      <span className="text-[10px] text-slate-400">Identitas & Barcode Pembayaran</span>
+                {/* Info Card: Jawaban Pertanyaan Penggantian Video */}
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200/90 leading-relaxed flex items-start gap-2.5">
+                  <Sparkles size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-amber-300">Bagaimana Cara Kerja Gambar & Video?</span>
+                    <p className="text-slate-300 mt-0.5">
+                      Saat website dibuka, pengunjung langsung melihat gambar cover botol tanpa layar hitam. Begitu video siap, gambar botol memudar mulus masuk ke video. <strong>Ketika Anda mengganti video baru</strong>, sistem secara cerdas otomatis mengambil frame awal video baru tersebut sebagai cover! Anda juga tetap bisa mengunggah cover foto khusus jika diinginkan.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Grid 2 Kolom: Video Preview & Pengaturan */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Kolom 1: Live Video & Fade Simulation Player */}
+                  <div className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Play size={14} className="text-amber-400" />
+                        <span>Pratinjau Video & Simulasi Memudar</span>
+                      </span>
+
+                      {heroVideoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsTestingFade(true);
+                            setTimeout(() => setIsTestingFade(false), 2400);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition-all active:scale-95"
+                        >
+                          {isTestingFade ? '✨ Memudar Masuk...' : 'Uji Efek Memudar'}
+                        </button>
+                      )}
                     </div>
+
+                    {/* Switcher Ukuran Frame Pratinjau */}
+                    <div className="flex items-center justify-between gap-1 p-1.5 bg-black/60 rounded-xl border border-white/10 text-[10.5px]">
+                      <span className="text-[10px] text-slate-400 font-mono px-1.5 shrink-0 hidden sm:inline">Ukuran Frame:</span>
+                      <div className="grid grid-cols-4 gap-1 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => setAdminPreviewRatio('9:16')}
+                          className={`py-1.5 px-1.5 rounded-lg font-bold text-[10.5px] transition-all text-center ${
+                            adminPreviewRatio === '9:16'
+                              ? 'bg-amber-400 text-slate-950 shadow-sm'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                          }`}
+                        >
+                          📱 9:16 HP
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAdminPreviewRatio('full')}
+                          className={`py-1.5 px-1.5 rounded-lg font-bold text-[10.5px] transition-all text-center ${
+                            adminPreviewRatio === 'full'
+                              ? 'bg-amber-400 text-slate-950 shadow-sm'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                          }`}
+                        >
+                          📺 Live Beranda
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAdminPreviewRatio('1:1')}
+                          className={`py-1.5 px-1.5 rounded-lg font-bold text-[10.5px] transition-all text-center ${
+                            adminPreviewRatio === '1:1'
+                              ? 'bg-amber-400 text-slate-950 shadow-sm'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                          }`}
+                        >
+                          ⬜ 1:1 Kotak
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAdminPreviewRatio('16:9')}
+                          className={`py-1.5 px-1.5 rounded-lg font-bold text-[10.5px] transition-all text-center ${
+                            adminPreviewRatio === '16:9'
+                              ? 'bg-amber-400 text-slate-950 shadow-sm'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                          }`}
+                        >
+                          🖥️ 16:9 Lebar
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center items-center py-2 bg-black/40 rounded-2xl border border-white/5 min-h-[300px]">
+                      <div
+                        className={`relative rounded-2xl overflow-hidden bg-black border border-white/20 shadow-2xl transition-all duration-300 flex items-center justify-center ${
+                          adminPreviewRatio === '9:16'
+                            ? 'h-[340px] w-[190px]'
+                            : adminPreviewRatio === 'full'
+                            ? 'h-[350px] w-[195px] ring-2 ring-amber-500/30'
+                            : adminPreviewRatio === '1:1'
+                            ? 'h-[250px] w-[250px]'
+                            : 'h-[180px] w-full max-w-[320px]'
+                        }`}
+                      >
+                        {heroVideoUrl ? (
+                          <>
+                            <video
+                              src={heroVideoUrl}
+                              poster={heroVideoPoster || currentChibi || undefined}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                              className={`w-full h-full ${
+                                heroVideoFit === 'contain' ? 'object-contain' : 'object-cover'
+                              } ${
+                                heroVideoPosition === 'top'
+                                  ? 'object-top'
+                                  : heroVideoPosition === 'bottom'
+                                  ? 'object-bottom'
+                                  : 'object-center'
+                              }`}
+                            />
+
+                            {/* Simulasi Gambar Cover Memudar */}
+                            <img
+                              src={heroVideoPoster || currentChibi || ''}
+                              alt="Cover Preview"
+                              className={`absolute inset-0 w-full h-full ${
+                                heroVideoFit === 'contain' ? 'object-contain' : 'object-cover'
+                              } ${
+                                heroVideoPosition === 'top'
+                                  ? 'object-top'
+                                  : heroVideoPosition === 'bottom'
+                                  ? 'object-bottom'
+                                  : 'object-center'
+                              } transition-opacity duration-1000 ease-in-out pointer-events-none ${
+                                isTestingFade ? 'opacity-0' : 'opacity-0 hover:opacity-100'
+                              }`}
+                            />
+
+                            {/* Overlay Khusus untuk Mode 'Live Beranda' */}
+                            {adminPreviewRatio === 'full' && (
+                              <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 select-none">
+                                <div className="pt-2 text-center">
+                                  <span className="font-display text-xs font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-400 drop-shadow-md">
+                                    SINKI
+                                  </span>
+                                  <span className="block text-[7px] tracking-[0.25em] text-white/90 uppercase font-mono">
+                                    EAU DE PARFUM
+                                  </span>
+                                </div>
+                                <div className="p-1 rounded-lg bg-black/60 backdrop-blur-xs text-[8px] text-center text-amber-300/80 font-mono">
+                                  Live Preview Beranda
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-center p-4 space-y-2">
+                            <Film size={32} className="mx-auto text-slate-600" />
+                            <p className="text-xs text-slate-400">Belum ada file video yang diunggah</p>
+                            <span className="text-[10px] text-slate-500 block">
+                              Unggah video MP4 atau masukkan URL video di sebelah kanan
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {heroVideoUrl && (
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[10px] text-slate-400 truncate max-w-[220px]">
+                          URL: {heroVideoUrl}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleRemoveHeroVideo}
+                          className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1 font-bold"
+                        >
+                          <Trash2 size={12} />
+                          <span>Hapus Video</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-2 text-center">
-                      <span className="text-[10px] font-bold text-slate-300 block">Logo SINKI</span>
-                      <div className="h-28 rounded-xl bg-black/60 border border-white/5 p-2 flex items-center justify-center">
-                        {currentLogo ? (
-                          <img src={currentLogo} alt="Logo" className="w-full h-full object-contain" />
-                        ) : (
-                          <Sparkles size={24} className="text-amber-400" />
-                        )}
+                  {/* Kolom 2: Upload Video & Pengaturan Cover */}
+                  <div className="space-y-4">
+                    {/* Form Upload Video File */}
+                    <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3">
+                      <span className="text-xs font-bold text-white block">
+                        Unggah File Video (.mp4 / .webm)
+                      </span>
+
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <button
+                          type="button"
+                          disabled={isUploadingVideo}
+                          onClick={() => heroVideoInputRef.current?.click()}
+                          className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-105 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all disabled:opacity-50"
+                        >
+                          <Upload size={14} />
+                          <span>{isUploadingVideo ? 'Mengunggah Video...' : 'Pilih File Video Baru'}</span>
+                        </button>
                       </div>
-                      <label className="block py-1 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold cursor-pointer">
-                        <span>Ganti Logo</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFileUpload(e, 'logo')}
-                        />
-                      </label>
+                      <p className="text-[10px] text-slate-400">
+                        Otomatis disimpan permanen ke Supabase CDN & diekstrak frame gambarnya.
+                      </p>
                     </div>
 
-                    <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-2 text-center">
-                      <span className="text-[10px] font-bold text-slate-300 block">Barcode QRIS</span>
-                      <div className="h-28 rounded-xl bg-black/60 border border-white/5 p-2 flex items-center justify-center">
-                        {currentQris ? (
-                          <img src={currentQris} alt="QRIS" className="w-full h-full object-contain" />
-                        ) : (
-                          <span className="text-[10px] text-slate-500">QRIS Standar</span>
+                    {/* Form URL Video Langsung */}
+                    <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-2.5">
+                      <span className="text-xs font-bold text-white block">
+                        Atau Gunakan Tautan URL Video Langsung
+                      </span>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          value={videoUrlInput}
+                          onChange={(e) => setVideoUrlInput(e.target.value)}
+                          placeholder="https://.../video.mp4"
+                          className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-white/15 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                        />
+                        <button
+                          type="button"
+                          disabled={isUploadingVideo || !videoUrlInput.trim()}
+                          onClick={handleSaveVideoUrl}
+                          className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/15 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          Simpan
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Pengaturan Gambar Cover (Poster yang memudar) */}
+                    <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-xs font-bold text-white block">
+                            Gambar Cover Awal (Poster)
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            Foto botol/frame yang tampil sebelum memudar ke video
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-black border border-white/15 shrink-0">
+                          {heroVideoPoster || currentChibi ? (
+                            <img
+                              src={heroVideoPoster || currentChibi || ''}
+                              alt="Poster"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-600">
+                              <ImageIcon size={18} />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5 flex-1">
+                          <div className="flex flex-wrap gap-2">
+                            {heroVideoUrl && (
+                              <button
+                                type="button"
+                                disabled={isExtractingFrame}
+                                onClick={handleExtractFrameNow}
+                                className="py-1.5 px-2.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[10px] font-bold transition-all"
+                              >
+                                {isExtractingFrame ? 'Mengambil Frame...' : '📷 Ambil Frame dari Video Ini'}
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => heroPosterInputRef.current?.click()}
+                              className="py-1.5 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold border border-white/15 transition-all"
+                            >
+                              Ganti Foto Cover Kustom
+                            </button>
+                          </div>
+                          <span className="text-[10px] text-slate-400 block">
+                            Setiap Anda mengganti video, cover otomatis disinkronkan dari awal video baru.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BARIS KONTROL LAYOUT: POSISI FOKUS BOTOL & RASIO TAMPILAN */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-black/60 border border-amber-500/25 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <SlidersHorizontal size={16} className="text-amber-400" />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                        Pengaturan Layout & Posisi Video Beranda
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                      Live Fitting
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                    {/* 1. Mode Fitting Layar */}
+                    <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                      <span className="text-[11px] font-bold text-slate-200 block">
+                        1. Mode Tampilan Layar (Fit)
+                      </span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateLayoutSetting('heroVideoFit', 'cover')}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all ${
+                            heroVideoFit === 'cover'
+                              ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                          }`}
+                        >
+                          Cover (Penuh)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateLayoutSetting('heroVideoFit', 'contain')}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all ${
+                            heroVideoFit === 'contain'
+                              ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                          }`}
+                        >
+                          Contain (Utuh)
+                        </button>
+                      </div>
+                      <p className="text-[9.5px] text-slate-400">
+                        {heroVideoFit === 'cover'
+                          ? 'Memenuhi panggung tanpa tepi hitam.'
+                          : 'Seluruh frame video terlihat 100% utuh tanpa terpotong.'}
+                      </p>
+                    </div>
+
+                    {/* 2. Posisi Fokus Kamera (Vertical Alignment) */}
+                    <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                      <span className="text-[11px] font-bold text-slate-200 block">
+                        2. Titik Fokus Botol (Posisi)
+                      </span>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {(['top', 'center', 'bottom'] as const).map((pos) => {
+                          const labels = { top: 'Atas', center: 'Tengah', bottom: 'Bawah' };
+                          const isSel = heroVideoPosition === pos;
+                          return (
+                            <button
+                              key={pos}
+                              type="button"
+                              onClick={() => handleUpdateLayoutSetting('heroVideoPosition', pos)}
+                              className={`py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
+                                isSel
+                                  ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                                  : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                              }`}
+                            >
+                              {labels[pos]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[9.5px] text-slate-400">
+                        Geser fokus vertikal agar botol tidak menabrak teks judul.
+                      </p>
+                    </div>
+
+                    {/* 3. Ketinggian Area Panggung (Hero Height) */}
+                    <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-200 block">
+                          3. Ketinggian Panggung Beranda
+                        </span>
+                        {heroHeightMode === 'full' && (
+                          <span className="text-[9px] font-mono font-bold text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
+                            Mentok Ke Atas
+                          </span>
                         )}
                       </div>
-                      <label className="block py-1 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold cursor-pointer">
-                        <span>Ganti QRIS</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFileUpload(e, 'qris')}
-                        />
-                      </label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {(['compact', 'balanced', 'tall', 'full'] as const).map((hm) => {
+                          const labels = {
+                            compact: '60% (Sedang)',
+                            balanced: '68% (Standar)',
+                            tall: '76% (Tinggi)',
+                            full: '100% (Layar Penuh)',
+                          };
+                          const isSel = heroHeightMode === hm;
+                          return (
+                            <button
+                              key={hm}
+                              type="button"
+                              onClick={() => handleUpdateLayoutSetting('heroHeightMode', hm)}
+                              className={`py-2 px-1 rounded-xl text-[10.5px] font-bold transition-all text-center ${
+                                isSel
+                                  ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                                  : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                              }`}
+                            >
+                              {labels[hm]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[9.5px] text-slate-400">
+                        {heroHeightMode === 'full'
+                          ? '✨ Mode 100% Layar Penuh: Video mengisi seluruh panggung dari tepi atas sampai bawah tanpa terpotong!'
+                          : 'Sesuaikan proporsi panggung video dengan menu bawah.'}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
+              )}
+
+              {/* BARIS 1: FOTO HERO UTAMA & LOGO RESMI (DESKTOP: 2 KOLOM) */}
+              {(mediaSubTab === 'all' || mediaSubTab === 'identity') && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Kartu Foto Utama Beranda */}
+                  <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-display font-bold text-sm text-white">
+                          Foto Utama Beranda (Hero)
+                        </h3>
+                        <span className="text-[10px] text-slate-400">Foto botol panggung depan</span>
+                      </div>
+                      <label className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs cursor-pointer active:scale-95 transition-all">
+                        <span>Ganti Foto</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFileUpload(e, 'hero')}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="relative h-56 rounded-2xl overflow-hidden bg-black/60 border border-white/10 flex items-center justify-center">
+                      {currentChibi ? (
+                        <img
+                          src={currentChibi}
+                          alt="Hero"
+                          className="w-full h-full object-contain filter drop-shadow-md"
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-500 font-mono">Foto Utama Standar</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Kartu Logo Resmi & Barcode QRIS */}
+                  <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-display font-bold text-sm text-white">
+                          Logo Resmi SINKI & QRIS
+                        </h3>
+                        <span className="text-[10px] text-slate-400">Identitas & Barcode Pembayaran</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-2 text-center">
+                        <span className="text-[10px] font-bold text-slate-300 block">Logo SINKI</span>
+                        <div className="h-28 rounded-xl bg-black/60 border border-white/5 p-2 flex items-center justify-center">
+                          {currentLogo ? (
+                            <img src={currentLogo} alt="Logo" className="w-full h-full object-contain" />
+                          ) : (
+                            <Sparkles size={24} className="text-amber-400" />
+                          )}
+                        </div>
+                        <label className="block py-1 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold cursor-pointer">
+                          <span>Ganti Logo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(e, 'logo')}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-2 text-center">
+                        <span className="text-[10px] font-bold text-slate-300 block">Barcode QRIS</span>
+                        <div className="h-28 rounded-xl bg-black/60 border border-white/5 p-2 flex items-center justify-center">
+                          {currentQris ? (
+                            <img src={currentQris} alt="QRIS" className="w-full h-full object-contain" />
+                          ) : (
+                            <span className="text-[10px] text-slate-500">QRIS Standar</span>
+                          )}
+                        </div>
+                        <label className="block py-1 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold cursor-pointer">
+                          <span>Ganti QRIS</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(e, 'qris')}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* BARIS KHUSUS: PANGGUNG 3D BERANDA & 4 BOTOL PARFUM PNG TRANSPARAN */}
-              <input
-                type="file"
-                ref={heroBottleInputRef}
-                accept="image/png,image/*"
-                className="hidden"
-                onChange={handleHeroBottleUpload}
-              />
+              {(mediaSubTab === 'all' || mediaSubTab === 'stage') && (
+                <>
+                  <input
+                    type="file"
+                    ref={heroBottleInputRef}
+                    accept="image/png,image/*"
+                    className="hidden"
+                    onChange={handleHeroBottleUpload}
+                  />
 
               {/* MASTER TOGGLE PANGGUNG 3D */}
               <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#141724] to-[#0e1017] border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
@@ -2156,9 +3059,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   </div>
                 </div>
               </div>
+                </>
+              )}
 
               {/* BARIS 2: MANAJEMEN VARIAN TOP BESTSELLER (DINAMIS DENGAN TAMBAH & EDIT) */}
-              <div className="space-y-4 pt-2 border-t border-white/10">
+              {(mediaSubTab === 'all' || mediaSubTab === 'bestsellers') && (
+                <div className="space-y-4 pt-2 border-t border-white/10">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
@@ -2288,6 +3194,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   })}
                 </div>
               </div>
+              )}
             </div>
           )}
 

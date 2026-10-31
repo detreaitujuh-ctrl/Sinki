@@ -1,6 +1,6 @@
 import defaultHeroBottles from '../assets/images/sinki_hero_bottles_1791873562398.jpg';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ExternalLink, Menu, ArrowRight, Share2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ExternalLink, Menu, ArrowRight, Share2, Check, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 import {
   DEFAULT_CHIBI,
   HeroStageEffect,
@@ -8,6 +8,15 @@ import {
   getStoredHeroBottles,
   getStoredHeroStageEffect,
   getStoredHeroStageEnabled,
+  getStoredHeroMediaType,
+  getStoredHeroVideoUrl,
+  getStoredHeroVideoPoster,
+  getStoredHeroVideoFit,
+  getStoredHeroVideoPosition,
+  getStoredHeroHeightMode,
+  HeroVideoFit,
+  HeroVideoPosition,
+  HeroHeightMode,
 } from '../utils/assetStorage';
 import { getShortShareUrl } from '../utils/shareUtils';
 import { TickerConfig, TICKER_FONTS, getStoredTicker } from '../utils/tickerStorage';
@@ -28,6 +37,12 @@ interface HomeScreenProps {
   heroBottles?: string[];
   heroStageEffect?: HeroStageEffect;
   heroStageEnabled?: boolean;
+  heroMediaType?: 'image' | 'video';
+  heroVideoUrl?: string | null;
+  heroVideoPoster?: string | null;
+  heroVideoFit?: HeroVideoFit;
+  heroVideoPosition?: HeroVideoPosition;
+  heroHeightMode?: HeroHeightMode;
   tickerConfig?: TickerConfig;
   socialLinks?: SocialLinks;
 }
@@ -42,11 +57,55 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   heroBottles: propHeroBottles,
   heroStageEffect: propHeroStageEffect,
   heroStageEnabled: propHeroStageEnabled,
+  heroMediaType: propHeroMediaType,
+  heroVideoUrl: propHeroVideoUrl,
+  heroVideoPoster: propHeroVideoPoster,
+  heroVideoFit: propHeroVideoFit,
+  heroVideoPosition: propHeroVideoPosition,
+  heroHeightMode: propHeroHeightMode,
   tickerConfig,
   socialLinks: propSocialLinks,
 }) => {
   const currentSocial = propSocialLinks || getStoredSocialLinks();
   const [copied, setCopied] = useState(false);
+
+  // Hero Video & Poster Crossfade State
+  const activeMediaType = propHeroMediaType || getStoredHeroMediaType();
+  const activeVideoUrl = propHeroVideoUrl || getStoredHeroVideoUrl();
+  const activePoster = propHeroVideoPoster || getStoredHeroVideoPoster() || customChibi || defaultHeroBottles;
+  const isVideoMode = activeMediaType === 'video' && Boolean(activeVideoUrl);
+
+  // Layout fitting attributes
+  const activeFit = propHeroVideoFit || getStoredHeroVideoFit();
+  const activePos = propHeroVideoPosition || getStoredHeroVideoPosition();
+  const activeHeight = propHeroHeightMode || getStoredHeroHeightMode();
+
+  const heightClass =
+    activeHeight === 'compact'
+      ? 'h-[60%]'
+      : activeHeight === 'tall'
+      ? 'h-[76%]'
+      : activeHeight === 'full'
+      ? 'inset-0 h-full w-full'
+      : 'h-[68%]';
+  const fitClass = activeFit === 'contain' ? 'object-contain' : 'object-cover';
+  const posClass =
+    activePos === 'top' ? 'object-top' : activePos === 'bottom' ? 'object-bottom' : 'object-center';
+
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    setVideoPlaying(false);
+    setVideoFailed(false);
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {
+        // Autoplay may need user interaction on some mobile browsers
+      });
+    }
+  }, [activeVideoUrl, isVideoMode]);
 
   // 3D Stage Bottle State - Hanya aktif jika Owner menyalakan sakelar & mengunggah PNG botol kustom
   const isStageEnabled = propHeroStageEnabled !== undefined
@@ -203,77 +262,87 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   return (
     <div className="relative w-full h-full flex flex-col justify-between p-3.5 pb-20 bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] text-slate-100 overflow-y-auto no-scrollbar">
-      {/* LAYER 2: HERO BACKDROP BOTOL PARFUM (Panggung Tengah di bawah Teks Judul) */}
-      <div className="absolute inset-x-0 top-0 h-[68%] pointer-events-none overflow-hidden z-0">
+      {/* LAYER 2: HERO BACKDROP BOTOL PARFUM & VIDEO SINEMATIK (Panggung Tengah di bawah Teks Judul) */}
+      <div className={`absolute inset-x-0 top-0 ${heightClass} pointer-events-none overflow-hidden z-0`}>
         {/* Base dark canvas */}
         <div className="absolute inset-0 bg-[#0e1017]" />
 
-        {/* Gambar Botol Parfum Hero / Chibi: Diposisikan pas di panggung tengah tanpa menabrak judul */}
+        {/* 1. Video Layer: Diputar autoplay, loop, muted di latar belakang */}
+        {isVideoMode && activeVideoUrl && (
+          <video
+            ref={videoRef}
+            src={activeVideoUrl}
+            poster={activePoster}
+            autoPlay
+            loop
+            muted={isMuted}
+            playsInline
+            onCanPlay={() => {
+              if (videoRef.current) {
+                videoRef.current.play().catch(() => {});
+              }
+            }}
+            onPlaying={() => {
+              setVideoPlaying(true);
+              setVideoFailed(false);
+            }}
+            onError={() => {
+              setVideoFailed(true);
+              setVideoPlaying(false);
+            }}
+            className={`absolute inset-0 w-full h-full ${fitClass} ${posClass} filter contrast-[1.04] brightness-[0.98]`}
+          />
+        )}
+
+        {/* 2. Gambar Botol Parfum Hero / Poster:
+            Awalnya tampil 100% langsung (zero delay, zero layar hitam).
+            Ketika video mulai berputar, gambar memudar (dissolve fade-out) secara halus
+            sehingga video masuk dengan mulus & elegan. */}
         <img
-          src={customChibi || defaultHeroBottles}
+          src={activePoster}
           alt="SINKI Luxury Perfume Bottles Backdrop"
           loading="eager"
           decoding="async"
           fetchPriority="high"
-          className="w-full h-full object-cover object-center filter contrast-[1.04] brightness-[0.98]"
+          className={`absolute inset-0 w-full h-full ${fitClass} ${posClass} filter contrast-[1.04] brightness-[0.98] transition-opacity duration-1000 ease-in-out ${
+            isVideoMode && videoPlaying && !videoFailed ? 'opacity-0' : 'opacity-100'
+          }`}
         />
 
         {/* Ambient Top Glow from top-right corner like soft champagne dawn light */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-[#c5a059]/[0.05] rounded-full blur-[120px]" />
 
-        {/* Pelindung Area Judul & Menu (Gradasi gelap lembut agar tulisan SINKI selalu berkilau tajam & tidak tertutup foto) */}
-        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[#0d0f18] via-[#0d0f18]/85 to-transparent" />
+        {/* Pelindung Area Judul & Menu (Gradasi gelap lembut agar tulisan SINKI selalu berkilau tajam & tidak tertutup foto/video) */}
+        <div className={`absolute inset-x-0 top-0 ${activeHeight === 'full' ? 'h-36 bg-gradient-to-b from-[#0d0f18]/95 via-[#0d0f18]/70 to-transparent' : 'h-28 bg-gradient-to-b from-[#0d0f18] via-[#0d0f18]/85 to-transparent'}`} />
 
         {/* Bottom Water Ripple Exposure Fade */}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0d0f18] via-[#0d0f18]/70 to-transparent" />
+        <div className={`absolute inset-x-0 bottom-0 ${activeHeight === 'full' ? 'h-32 bg-gradient-to-t from-[#0d0f18] via-[#0d0f18]/80 to-transparent' : 'h-16 bg-gradient-to-t from-[#0d0f18] via-[#0d0f18]/70 to-transparent'}`} />
+
+        {/* Tombol Mute / Unmute Interaktif saat video aktif & berputar */}
+        {isVideoMode && videoPlaying && !videoFailed && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMuted((prev) => !prev);
+              onShowToast(!isMuted ? 'Suara video dinonaktifkan (hening)' : 'Suara video sinematik aktif 🔊');
+            }}
+            className="pointer-events-auto absolute bottom-4 right-4 z-10 p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white/80 hover:text-white transition-all shadow-md active:scale-95"
+            title={isMuted ? 'Nyalakan Suara Video' : 'Matikan Suara Video'}
+          >
+            {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} className="text-amber-400" />}
+          </button>
+        )}
       </div>
 
       {/* LAYER 1 (TERDEPAN / Z-20): TOP BAR MELAYANG ELEGAN */}
       <header className="relative z-20 flex items-center justify-between pt-0 pb-1 shrink-0">
-        {/* Top-Left: Clean Floating Brand Emblem (Murni Identitas Visual Elegan) */}
+        {/* Top-Left: Pure Typography "SINKI" (Logo dihapus, tersisa teks elegan) */}
         <div
-          className="flex items-center gap-2 select-none py-0.5 px-0.5"
+          className="flex items-center select-none py-1 px-1"
           title="SINKI Parfums"
         >
-          <div className="relative w-8 h-8 flex items-center justify-center">
-            {customLogo ? (
-              <img
-                src={customLogo}
-                alt="Lambang Logo SINKI"
-                className="w-full h-full object-contain filter drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] drop-shadow-[0_0_8px_rgba(197,160,89,0.2)]"
-              />
-            ) : (
-              <svg
-                viewBox="0 0 100 100"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-full h-full filter drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] drop-shadow-[0_0_8px_rgba(197,160,89,0.25)]"
-              >
-                <defs>
-                  <linearGradient id="emblemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#F0DFB6" />
-                    <stop offset="45%" stopColor="#C5A059" />
-                    <stop offset="100%" stopColor="#8C6826" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M50 15C50 15 62 30 62 44C62 56 50 62 42 70C34 78 40 88 50 90C62 92 72 80 72 80C72 80 62 96 48 96C34 96 26 82 28 70C30 58 44 50 50 42C56 34 54 22 50 15Z"
-                  fill="url(#emblemGrad)"
-                />
-                <path
-                  d="M44 30C44 30 30 38 25 50C20 62 25 76 38 84C28 78 18 66 18 52C18 40 30 32 44 30Z"
-                  fill="url(#emblemGrad)"
-                  opacity="0.9"
-                />
-                <path
-                  d="M56 30C56 30 70 38 75 50C80 62 75 76 62 84C72 78 82 66 82 52C82 40 70 32 56 30Z"
-                  fill="url(#emblemGrad)"
-                  opacity="0.9"
-                />
-              </svg>
-            )}
-          </div>
-          <span className="text-[10.5px] font-mono tracking-widest text-slate-200 font-bold uppercase drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+          <span className="font-display text-[15px] sm:text-base font-bold tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-[#FBF2D5] via-[#E4C373] to-[#C5A059] uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
             SINKI
           </span>
         </div>
@@ -288,58 +357,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <Menu size={16} />
         </button>
       </header>
-
-      {/* LAYER 1 (TERDEPAN / Z-20): HAUTE PARFUMERIE EDITORIAL TITLE (TIDAK BOLEH MENABRAK ATAU TERTUTUP BOTOL) */}
-      <div className="text-center pt-1 pb-0 shrink-0 relative z-20 flex flex-col items-center justify-center select-none">
-        {/* Brand Container with Diamond Flare Alignment */}
-        <div className="relative inline-flex flex-col items-center">
-          {/* Moving Diamond Glint & Optical Lens Flare - Pure Linear Horizontal (Y=0) & Ultra-Soft */}
-          <div
-            aria-hidden="true"
-            className="diamond-glint-flare absolute top-[18px] left-3 pointer-events-none z-30 flex items-center justify-center w-0 h-0"
-          >
-            {/* Soft Ambient Core Halo */}
-            <div className="absolute w-8 h-8 rounded-full bg-white/60 blur-[8px]" />
-            <div className="absolute w-14 h-14 rounded-full bg-[#E4C373]/25 blur-[12px]" />
-            {/* Horizontal & Vertical Optical Light Needles (Soft Satin) */}
-            <div className="absolute w-16 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent blur-[0.3px]" />
-            <div className="absolute h-10 w-[1px] bg-gradient-to-b from-transparent via-white/70 to-transparent blur-[0.3px]" />
-            {/* Diagonal Anamorphic Flare */}
-            <div className="absolute w-8 h-[1px] rotate-45 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-            <div className="absolute w-8 h-[1px] -rotate-45 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-            {/* 4-Point Diamond Star Core */}
-            <svg
-              viewBox="0 0 24 24"
-              fill="white"
-              className="relative w-3.5 h-3.5 filter drop-shadow-[0_0_5px_rgba(251,242,213,0.9)]"
-            >
-              <path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z" />
-            </svg>
-          </div>
-
-          {/* SINKI in Soft 24K Royal Gold Typography */}
-          <h1 className="sinki-white-diamond font-display text-[34px] md:text-4xl font-black tracking-[0.05em] text-transparent bg-clip-text bg-gradient-to-b from-[#FBF2D5] via-[#E4C373] to-[#A3772C] drop-shadow-[0_4px_18px_rgba(0,0,0,0.95)] px-3 leading-tight inline-block">
-            SINKI
-          </h1>
-
-          {/* EAU DE PARFUM in Pure Crystal White with 24K Gold Glowing Aura */}
-          <div className="relative inline-flex items-center justify-center -mt-0.5">
-            <span className="gold-eaudeparfum-pulse font-display text-[9.5px] md:text-[10.5px] font-bold tracking-[0.32em] -mr-[0.32em] uppercase text-white drop-shadow-[0_1.5px_6px_rgba(0,0,0,0.9)]">
-              EAU DE PARFUM
-            </span>
-
-            {/* Micro Gold Sparkle on Eau De Parfum */}
-            <div
-              aria-hidden="true"
-              className="gold-micro-sparkle absolute -right-3 top-0 pointer-events-none"
-            >
-              <svg viewBox="0 0 24 24" fill="#FFE5A3" className="w-2.5 h-2.5 filter drop-shadow-[0_0_4px_#DFB76C]">
-                <path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* CENTER STAGE: Jika belum ada botol PNG kustom yang diunggah, tetap bersih seperti semula */}
       {!hasCustomHeroBottles ? (
