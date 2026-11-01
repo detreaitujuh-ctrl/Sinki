@@ -144,7 +144,7 @@ async function persistTopPerfumes(items: any[]) {
 }
 
 const DEFAULT_SOCIAL_DATA = {
-  tiktok: 'https://www.tiktok.com/@sinki_official',
+  tiktok: 'https://www.tiktok.com/@sinkiofficial',
   instagram: 'https://www.instagram.com/sinki_official',
   shopee: 'https://shopee.co.id',
   tokopedia: 'https://tokopedia.com',

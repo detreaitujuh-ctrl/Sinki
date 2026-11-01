@@ -78,8 +78,7 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({ onShowToast }) => 
               </svg>
             </div>
             <div className="text-left min-w-0">
-              <span className="block font-body text-xs text-pink-300/85 font-medium leading-tight">Instagram</span>
-              <span className="block font-body text-sm font-semibold text-white leading-snug truncate">
+              <span className="block font-body text-xs sm:text-[13px] font-semibold text-white leading-tight truncate">
                 {extractInstagramHandle(socialLinks.instagram)}
               </span>
             </div>
@@ -103,8 +102,7 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({ onShowToast }) => 
               </svg>
             </div>
             <div className="text-left min-w-0">
-              <span className="block font-body text-xs text-cyan-300/85 font-medium leading-tight">TikTok</span>
-              <span className="block font-body text-sm font-semibold text-white leading-snug truncate">
+              <span className="block font-body text-xs sm:text-[13px] font-semibold text-white leading-tight truncate">
                 {extractTikTokHandle(socialLinks.tiktok)}
               </span>
             </div>

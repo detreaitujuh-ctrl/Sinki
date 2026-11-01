@@ -477,8 +477,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <span className="font-body block text-[10.5px] text-pink-300 font-medium leading-tight">Instagram</span>
-                  <span className="font-body block text-xs font-semibold text-white leading-snug truncate">
+                  <span className="font-body block text-xs sm:text-[13px] font-semibold text-white leading-tight truncate">
                     {extractInstagramHandle(currentSocial.instagram)}
                   </span>
                 </div>
@@ -503,8 +502,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <span className="font-body block text-[10.5px] text-cyan-300 font-medium leading-tight">TikTok</span>
-                  <span className="font-body block text-xs font-semibold text-white leading-snug truncate">
+                  <span className="font-body block text-xs sm:text-[13px] font-semibold text-white leading-tight truncate">
                     {extractTikTokHandle(currentSocial.tiktok)}
                   </span>
                 </div>

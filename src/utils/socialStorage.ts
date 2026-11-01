@@ -10,7 +10,7 @@ export interface SocialLinks {
 }
 
 export const DEFAULT_SOCIAL_LINKS: SocialLinks = {
-  tiktok: 'https://www.tiktok.com/@sinki_official',
+  tiktok: 'https://www.tiktok.com/@sinkiofficial',
   instagram: 'https://www.instagram.com/sinki_official',
   shopee: 'https://shopee.co.id',
   tokopedia: 'https://tokopedia.com',
@@ -38,19 +38,20 @@ export const formatTikTokUrl = (input: string): string => {
 };
 
 /**
- * Ambil display handle TikTok: contoh "https://www.tiktok.com/@sinki_official" -> "@sinki_official"
+ * Ambil display handle TikTok: contoh "https://www.tiktok.com/@sinkiofficial" -> "sinkiofficial"
  */
 export const extractTikTokHandle = (url: string): string => {
-  if (!url) return '@sinki_official';
+  if (!url) return 'sinkiofficial';
   const match = url.match(/@([a-zA-Z0-9_.-]+)/);
-  if (match) return `@${match[1]}`;
+  if (match) return match[1];
   const clean = url
     .replace('https://www.tiktok.com/', '')
     .replace('http://www.tiktok.com/', '')
     .replace('https://tiktok.com/', '')
     .replace('http://tiktok.com/', '')
-    .replace('/', '');
-  return clean ? (clean.startsWith('@') ? clean : `@${clean}`) : '@sinki_official';
+    .replace('/', '')
+    .replace('@', '');
+  return clean || 'sinkiofficial';
 };
 
 /**

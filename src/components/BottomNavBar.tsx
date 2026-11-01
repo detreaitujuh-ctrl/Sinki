@@ -152,7 +152,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
                 {/* Label: Top 11 */}
                 <span
-                  className={`font-body text-[10.5px] sm:text-[11px] leading-tight tracking-[0.01em] mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
+                  className={`font-body text-[11px] sm:text-[11.5px] leading-tight tracking-[0.01em] mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
                     isPulsing
                       ? 'font-semibold text-[#F8EBCB]'
                       : isActive
@@ -215,7 +215,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
               {/* Label */}
               <span
-                className={`font-body text-[10.5px] sm:text-[11px] leading-tight tracking-[0.01em] mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
+                className={`font-body text-[11px] sm:text-[11.5px] leading-tight tracking-[0.01em] mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
                   isPulsing
                     ? 'font-semibold text-[#F8EBCB]'
                     : isActive

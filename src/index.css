@@ -74,12 +74,16 @@
 
 .font-heading,
 .font-display,
+.font-urbanist,
+.font-manrope,
 .font-cinzel,
 .font-playfair {
   font-family: var(--font-heading);
 }
 
 .font-body,
+.font-figtree,
+.font-inter,
 .font-jakarta,
 .font-cormorant {
   font-family: var(--font-body);
@@ -581,4 +585,118 @@
 .sinki-amber-dot {
   animation: sinkiAmberBlink 1.8s ease-in-out infinite;
   will-change: opacity, transform;
+}
+
+/* SINKI Collection Ultra-Silky Smooth Transitions (Fluid Deceleration + Crystal Lens Focus) */
+@keyframes sinkiCardCascade {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 9px, 0) scale(0.985);
+    filter: blur(3.5px);
+  }
+  65% {
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+.sinki-cascade-row-0 {
+  animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity, filter;
+}
+
+.sinki-cascade-row-1 {
+  animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 75ms both;
+  will-change: transform, opacity, filter;
+}
+
+.sinki-cascade-row-2 {
+  animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 150ms both;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes sinkiHeadingFade {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -5px, 0);
+    filter: blur(2.5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0px);
+  }
+}
+
+.sinki-heading-anim {
+  animation: sinkiHeadingFade 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes sinkiVariantSlideUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0px);
+  }
+}
+
+.sinki-variant-anim {
+  animation: sinkiVariantSlideUp 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes sinkiSheetElevation {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 32px, 0) scale(0.988);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.sinki-sheet-elevation {
+  animation: sinkiSheetElevation 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes sinkiBackdropIn {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(3px);
+  }
+}
+
+.sinki-backdrop-in {
+  animation: sinkiBackdropIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, backdrop-filter;
+}
+
+@keyframes sinkiScreenSoftFade {
+  0% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.sinki-screen-soft-fade {
+  animation: sinkiScreenSoftFade 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity;
 }

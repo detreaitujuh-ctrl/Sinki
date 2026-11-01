@@ -240,6 +240,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
   const [selectedBottleSize, setSelectedBottleSize] = useState<CollectionBottleSize | null>(null);
   const [bottleQty, setBottleQty] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewTransitionKey, setViewTransitionKey] = useState<number>(0);
 
   const [catalogPerfumes, setCatalogPerfumes] = useState<PerfumeItem[]>(() =>
     perfumes && perfumes.length > 0 ? perfumes : getStoredPerfumes()
@@ -367,6 +368,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
   const handleBackToCategories = () => {
     setSelectedCategory(null);
     setSearchQuery('');
+    setViewTransitionKey((prev) => prev + 1);
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -406,7 +408,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] text-slate-100 overflow-hidden">
+    <div className="relative w-full h-full flex flex-col bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] text-slate-100 overflow-hidden sinki-screen-soft-fade">
       {/* Pendar Cahaya Emas Halus & Tipis (Original SINKI Ambient Glow) */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/[0.03] rounded-full blur-[140px] pointer-events-none" />
 
@@ -491,14 +493,14 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
       >
         {/* VIEW A: HEADING + 6 COMPACT CATEGORY CARDS (Option A: Frameless Inline Icon + Uniform 3-Row Layout) */}
         {!selectedCategory && !isSearching && (
-          <div className="pt-3 pb-4">
-            <div className="flex items-center justify-center gap-2 mb-2.5 px-1 text-center">
+          <div key={`categories-view-${viewTransitionKey}`} className="pt-3 pb-4">
+            <div className="sinki-heading-anim flex items-center justify-center gap-2 mb-4 px-1 text-center">
               <span
                 aria-hidden="true"
                 className="sinki-amber-dot inline-block w-1.5 h-1.5 rounded-full bg-[#FBBF24] shrink-0"
               />
-              <h1 className="font-heading text-base sm:text-[17px] font-semibold text-white tracking-[-0.015em] leading-[1.22]">
-                Temukan Karakter Aromamu
+              <h1 className="font-heading text-[15px] sm:text-base font-semibold text-white tracking-[-0.015em] leading-[1.2]">
+                Temukan Aroma Karaktermu
               </h1>
               <span
                 aria-hidden="true"
@@ -506,8 +508,8 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {COLLECTION_CATEGORIES.map((cat) => {
+            <div className="grid grid-cols-2 gap-x-2.5 gap-y-3.5">
+              {COLLECTION_CATEGORIES.map((cat, idx) => {
                 const count = categoryCounts[cat.id];
                 const rateNote =
                   cat.id === 'viral_hits'
@@ -516,11 +518,19 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                     ? 'Rp4.000/ml'
                     : null;
 
+                const rowIdx = Math.floor(idx / 2); // 0, 1, 2
+                const cascadeClass =
+                  rowIdx === 0
+                    ? 'sinki-cascade-row-0'
+                    : rowIdx === 1
+                    ? 'sinki-cascade-row-1'
+                    : 'sinki-cascade-row-2';
+
                 return (
                   <button
                     key={cat.id}
                     onClick={() => handleSelectCategory(cat.id)}
-                    className="group relative text-left p-2.5 rounded-lg bg-gradient-to-b from-[#1e2235]/95 to-[#141722]/95 hover:from-[#24283f] hover:to-[#181c29] border border-white/10 hover:border-[#C5A059]/45 shadow-[0_6px_18px_rgba(0,0,0,0.4)] transition-all duration-200 active:scale-[0.98] flex flex-col justify-between min-h-[80px] overflow-hidden"
+                    className={`${cascadeClass} group relative text-left p-3 rounded-lg bg-gradient-to-b from-[#1e2235]/95 to-[#141722]/95 hover:from-[#24283f] hover:to-[#181c29] border border-white/10 hover:border-[#C5A059]/50 shadow-[0_6px_18px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_24px_rgba(223,183,108,0.14)] transition-all duration-200 active:scale-[0.96] flex flex-col justify-between min-h-[86px] overflow-hidden`}
                   >
                     <div>
                       {/* Row 1: Frameless 3D Icon + Category Name Inline + Arrow */}
@@ -538,13 +548,13 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                       </div>
 
                       {/* Row 2: Concise 1-Line Description */}
-                      <p className="font-body text-[11px] text-slate-300/95 font-normal leading-[1.35] mt-1 line-clamp-1">
+                      <p className="font-body text-[11px] text-slate-300/95 font-normal leading-[1.35] mt-1.5 line-clamp-1">
                         {cat.subtitle}
                       </p>
                     </div>
 
                     {/* Row 3: Single-Line Footer (Variant Count on Left, Rate Note on Right — 100% Equal Card Height) */}
-                    <div className="mt-2 pt-1.5 border-t border-white/[0.07] flex items-center justify-between gap-1.5 w-full">
+                    <div className="mt-2.5 pt-2 border-t border-white/[0.07] flex items-center justify-between gap-1.5 w-full">
                       <span className="font-body text-[10.5px] sm:text-[11px] font-medium leading-none tabular-nums text-slate-300 group-hover:text-[#F3E6C8] transition-colors">
                         {count} varian
                       </span>
@@ -563,7 +573,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
 
         {/* VIEW B: COMPACT VARIANT LIST (Original SINKI Colors, No Price on Card, No Gender/EDP Label) */}
         {(selectedCategory || isSearching) && (
-          <div className="pt-2.5 space-y-2">
+          <div className="pt-2.5 space-y-2 sinki-variant-anim">
             {/* Category Contextual Subheader */}
             {selectedCategory && activeCategoryMeta && !isSearching && (
               <div className="pb-2 mb-1 border-b border-white/10 flex items-center justify-between gap-2.5">
@@ -625,7 +635,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                     <div
                       key={perfume.id}
                       onClick={() => handleOpenDetail(perfume)}
-                      className="group p-2.5 sm:p-3 rounded-lg bg-[#141722] hover:bg-[#181c29] border border-white/10 hover:border-[#C5A059]/45 transition-all cursor-pointer"
+                      className="group p-2.5 sm:p-3 rounded-lg bg-[#141722] hover:bg-[#181c29] border border-white/10 hover:border-[#C5A059]/45 shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-all duration-200 active:scale-[0.98] cursor-pointer"
                     >
                       {/* Compact Header Row: Clear Perfume Name + Favorite Button */}
                       <div className="flex items-start justify-between gap-2">
@@ -679,7 +689,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                             e.stopPropagation();
                             handleOpenDetail(perfume);
                           }}
-                          className="font-body py-1.5 px-2.5 rounded-md bg-white/[0.05] hover:bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#E2C27F] hover:text-[#F3E6C8] text-[11.5px] font-semibold leading-none flex items-center gap-1 transition-all active:scale-95 shrink-0"
+                          className="font-body py-1.5 px-2.5 rounded-md bg-white/[0.05] hover:bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#E2C27F] hover:text-[#F3E6C8] text-[11.5px] font-semibold leading-none flex items-center gap-1 transition-all duration-150 active:scale-90 shrink-0"
                         >
                           <span>Ambil Aroma Ini</span>
                           <ChevronRight size={12} className="text-[#C5A059]" />
@@ -697,11 +707,11 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
       {/* PERFUME DETAIL SHEET (Positioned Cleanly Above BottomNavBar with Sticky Bottom Action Bar — Opsi A) */}
       {detailPerfume && (
         <div
-          className="fixed inset-0 z-40 bg-black/75 backdrop-blur-xs flex items-end justify-center px-0 sm:px-3 pt-3 pb-[calc(80px+env(safe-area-inset-bottom,0px))]"
+          className="fixed inset-0 z-40 bg-black/75 backdrop-blur-xs flex items-end justify-center px-0 sm:px-3 pt-3 pb-[calc(80px+env(safe-area-inset-bottom,0px))] sinki-backdrop-in"
           onClick={handleCloseDetail}
         >
           <div
-            className="w-full max-w-md max-h-[calc(100dvh-96px)] md:max-h-[calc(92dvh-96px)] bg-[#121520] border-t border-b sm:border border-white/15 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="w-full max-w-md max-h-[calc(100dvh-96px)] md:max-h-[calc(92dvh-96px)] bg-[#121520] border-t border-b sm:border border-white/15 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden sinki-sheet-elevation"
             onClick={(e) => e.stopPropagation()}
           >
             {/* ZONE 1: Fixed Top Header */}
