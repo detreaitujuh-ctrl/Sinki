@@ -3,7 +3,7 @@ import { DimensiSinkiScreen } from './components/DimensiSinkiScreen';
 import { BottomNavBar, TabType } from './components/BottomNavBar';
 import { HomeScreen } from './components/HomeScreen';
 import { CollectionScreen } from './components/CollectionScreen';
-import { Top11Screen } from './components/Top11Screen';
+import { AromaMatchScreen } from './components/AromaMatchScreen';
 import { OrderScreen } from './components/OrderScreen';
 import { ReviewScreen } from './components/ReviewScreen';
 import { PinModal } from './components/PinModal';
@@ -41,7 +41,7 @@ import {
 import { fetchTopPerfumesFromServer } from './utils/topPerfumesStorage';
 import { CartItem, getStoredCart, getCartTotalCount } from './utils/cartStorage';
 
-const TABS: TabType[] = ['home', 'collection', 'top11', 'order', 'review'];
+const TABS: TabType[] = ['home', 'collection', 'match', 'order', 'review'];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -215,7 +215,7 @@ export default function App() {
       const pageNames: Record<TabType, string> = {
         home: 'Beranda',
         collection: 'Katalog Koleksi',
-        top11: 'Top Bestseller',
+        match: 'Aroma Match',
         order: 'Order VIP',
         review: 'Review Pembeli',
       };
@@ -357,6 +357,7 @@ export default function App() {
           <div className={`w-full h-full ${activeTab === 'collection' ? 'block' : 'hidden'}`}>
             <CollectionScreen
               onBackToHome={() => setActiveTab('home')}
+              onNavigateToReview={() => setActiveTab('review')}
               onShowToast={showToast}
               scrollToTopTrigger={collectionScrollTrigger}
               perfumes={catalogPerfumes}
@@ -364,14 +365,21 @@ export default function App() {
             />
           </div>
 
-          {/* View 3: Top 11 (Clean showcase with NO owner mode badge or camera icons) */}
-          <div className={`w-full h-full ${activeTab === 'top11' ? 'block' : 'hidden'}`}>
-            <Top11Screen
-              isActive={activeTab === 'top11'}
-              top11Photos={top11Photos}
+          {/* View 3: Aroma Match (Personalized Haute Scent Profiler) */}
+          <div className={`w-full h-full ${activeTab === 'match' ? 'block' : 'hidden'}`}>
+            <AromaMatchScreen
               onBackToHome={() => setActiveTab('home')}
+              onNavigateToOrder={(perfume) => {
+                setSelectedPerfumeForOrder({
+                  name: perfume.name,
+                  category: perfume.category,
+                  pricePerMl: perfume.pricePerMl,
+                });
+                setActiveTab('order');
+              }}
               onShowToast={showToast}
-              pricing={pricing}
+              perfumes={catalogPerfumes}
+              top11Photos={top11Photos}
             />
           </div>
 

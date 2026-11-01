@@ -45,6 +45,13 @@ export const openWhatsAppDirect = (phone: string = SINKI_OFFICIAL_WA, text: stri
   } else {
     // 2. Di Desktop/Laptop: Buka api.whatsapp.com (jauh lebih cepat dari wa.me karena tanpa perantara)
     const desktopUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedText}`;
-    window.open(desktopUrl, '_blank', 'noopener,noreferrer');
+    try {
+      const win = window.open(desktopUrl, '_blank', 'noopener,noreferrer');
+      if (!win) {
+        window.location.href = desktopUrl;
+      }
+    } catch {
+      window.location.href = desktopUrl;
+    }
   }
 };

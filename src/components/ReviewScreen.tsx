@@ -14,6 +14,10 @@ import {
   Search,
 } from 'lucide-react';
 import { TOP_11_DATA } from '../data/top11';
+import {
+  CollectionCategoryKey,
+  COLLECTION_CATEGORIES,
+} from '../data/perfumes';
 import { getStoredPerfumes, fetchPerfumesFromServer, PerfumeItem } from '../utils/perfumeStorage';
 import {
   ReviewItem,
@@ -127,7 +131,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
 
   // Modal Tulis Ulasan
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
-  const [variantCategoryTab, setVariantCategoryTab] = useState<'top11' | 'women' | 'men' | 'unisex' | 'powdery'>('top11');
+  const [variantCategoryTab, setVariantCategoryTab] = useState<CollectionCategoryKey>('daily_fresh');
   const [formName, setFormName] = useState('');
   const [formEmoji, setFormEmoji] = useState('😍');
   const [formEmojiLabel, setFormEmojiLabel] = useState('Puas');
@@ -326,7 +330,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
   const displayedReviews = filteredReviews.slice(0, MAX_REVIEWS_LIMIT);
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] text-slate-100 overflow-hidden">
+    <div className="relative w-full h-full flex flex-col bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] text-slate-100 overflow-hidden sinki-screen-soft-fade">
       {/* Pendar Cahaya Emas Halus & Tipis */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/[0.07] rounded-full blur-[110px] pointer-events-none" />
 
@@ -410,9 +414,6 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
             <h3 className="font-heading font-semibold text-[15px] leading-[1.22] text-white tracking-[-0.015em]">
               Testimoni Pembeli
             </h3>
-            <span className="font-body text-[11px] tabular-nums text-[#DFB76C] font-medium bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
-              {reviews.length}/10 Slot
-            </span>
           </div>
 
           <span className="font-body text-[11px] text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30 font-medium flex items-center gap-1 shadow-sm">
@@ -508,12 +509,16 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
               <div
                 key={rev.id}
                 onClick={() => setActiveBeamId((prev) => (prev === rev.id ? null : rev.id))}
-                className={`group relative p-2.5 rounded-2xl transition-all cursor-pointer backdrop-blur-md overflow-hidden ${
+                style={{
+                  animation: `sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) ${Math.min(idx * 50, 300)}ms both`,
+                  willChange: 'transform, opacity, filter',
+                }}
+                className={`group relative p-2.5 rounded-2xl cursor-pointer backdrop-blur-md overflow-hidden sinki-cushion-press ${
                   isActiveBeam
                     ? 'border-beam-active shadow-[0_4px_20px_rgba(223,183,108,0.22)]'
                     : isAdminMode
                     ? 'bg-gradient-to-b from-[#181a28]/95 to-[#12141e]/95 border border-red-500/50 shadow-lg shadow-red-950/20'
-                    : 'bg-gradient-to-b from-[#181a28]/95 to-[#12141e]/95 border border-white/10 hover:border-[#DFB76C]/40 shadow-[0_2px_8px_rgba(0,0,0,0.35)] active:scale-[0.99]'
+                    : 'bg-gradient-to-b from-[#181a28]/95 to-[#12141e]/95 border border-white/10 hover:border-[#DFB76C]/40 shadow-[0_2px_8px_rgba(0,0,0,0.35)]'
                 }`}
               >
                 {/* Layer Konten (Di atas animasi border cahaya) */}
@@ -707,106 +712,65 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                     </span>
                   </div>
 
-                  {/* LANGKAH 1: Pilih Koleksi (5 Tab Ramping Tanpa Icon) */}
+                  {/* LANGKAH 1: Pilih Koleksi (6 Kategori SINKI) */}
                   <div>
-                    <span className="text-[11px] text-slate-400 font-normal block mb-1">
-                      1. Pilih Kategori Koleksi:
+                    <span className="text-[11px] text-slate-400 font-normal block mb-1.5">
+                      1. Pilih Kategori Koleksi SINKI:
                     </span>
-                    <div className="grid grid-cols-5 gap-1">
-                      {[
-                        { id: 'top11' as const, label: 'Bestseller' },
-                        { id: 'women' as const, label: 'Women' },
-                        { id: 'men' as const, label: 'Men' },
-                        { id: 'unisex' as const, label: 'Unisex' },
-                        { id: 'powdery' as const, label: 'Powdery' },
-                      ].map((tab) => {
-                        const isActive = variantCategoryTab === tab.id;
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {COLLECTION_CATEGORIES.map((cat) => {
+                        const isActive = variantCategoryTab === cat.id;
                         return (
                           <button
-                            key={tab.id}
+                            key={cat.id}
                             type="button"
                             onClick={() => {
-                              setVariantCategoryTab(tab.id);
-                              if (tab.id === 'top11') {
-                                if (!TOP_11_DATA.some((p) => p.name === formVariant)) setFormVariant(TOP_11_DATA[0].name);
-                              } else {
-                                const first = perfumesCatalog.find((p) => p.category === tab.id && p.isActive !== false);
-                                if (first && !perfumesCatalog.some((p) => p.category === tab.id && p.name === formVariant)) {
-                                  setFormVariant(first.name);
-                                }
+                              setVariantCategoryTab(cat.id);
+                              const matching = perfumesCatalog.filter(
+                                (p) =>
+                                  Array.isArray(p.collectionCategories) &&
+                                  p.collectionCategories.includes(cat.id) &&
+                                  p.isActive !== false
+                              );
+                              if (matching.length > 0 && !matching.some((p) => p.name === formVariant)) {
+                                setFormVariant(matching[0].name);
                               }
                             }}
-                            className={`py-1.5 px-0.5 rounded-xl text-center flex items-center justify-center border transition-all ${
+                            className={`py-1.5 px-1 rounded-xl text-center flex items-center justify-center border transition-all ${
                               isActive
                                 ? 'bg-[#C5A059]/30 border-[#DFB76C] text-white font-semibold shadow-sm'
                                 : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 font-medium'
                             }`}
                           >
-                            <span className="text-[11px] truncate leading-tight">{tab.label}</span>
+                            <span className="text-[11px] truncate leading-tight">{cat.title}</span>
                           </button>
                         );
                       })}
                     </div>
                   </div>
 
-                  {/* LANGKAH 2: Pilih Nama Varian (Daftar Menjadi Pendek & Ringkas) */}
+                  {/* LANGKAH 2: Pilih Nama Varian (Daftar Ringkas Sesuai Kategori Pilihan) */}
                   <div>
                     <span className="text-[11px] text-slate-400 font-normal block mb-1">
-                      2. Pilih Nama Parfum (
-                      {variantCategoryTab === 'top11' && '11 Varian Bestseller'}
-                      {variantCategoryTab === 'women' && 'Varian Women'}
-                      {variantCategoryTab === 'men' && 'Varian Men'}
-                      {variantCategoryTab === 'unisex' && 'Varian Unisex'}
-                      {variantCategoryTab === 'powdery' && '8 Varian Powdery'}
-                      ):
+                      2. Pilih Nama Parfum (Kategori {COLLECTION_CATEGORIES.find((c) => c.id === variantCategoryTab)?.title || 'Pilihan'}):
                     </span>
                     <select
                       value={formVariant}
                       onChange={(e) => setFormVariant(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl bg-[#171926] border border-white/15 font-body text-base sm:text-sm leading-normal font-medium text-white focus:outline-none focus:border-[#DFB76C]"
                     >
-                      {variantCategoryTab === 'top11' &&
-                        TOP_11_DATA.map((p) => (
-                          <option key={`top-${p.id}`} value={p.name}>
+                      {perfumesCatalog
+                        .filter(
+                          (p) =>
+                            Array.isArray(p.collectionCategories) &&
+                            p.collectionCategories.includes(variantCategoryTab) &&
+                            p.isActive !== false
+                        )
+                        .map((p) => (
+                          <option key={p.id} value={p.name}>
                             {p.name}
                           </option>
                         ))}
-
-                      {variantCategoryTab === 'women' &&
-                        perfumesCatalog
-                          .filter((p) => p.category === 'women' && p.isActive !== false)
-                          .map((p) => (
-                            <option key={p.id} value={p.name}>
-                              {p.name}
-                            </option>
-                          ))}
-
-                      {variantCategoryTab === 'men' &&
-                        perfumesCatalog
-                          .filter((p) => p.category === 'men' && p.isActive !== false)
-                          .map((p) => (
-                            <option key={p.id} value={p.name}>
-                              {p.name}
-                            </option>
-                          ))}
-
-                      {variantCategoryTab === 'unisex' &&
-                        perfumesCatalog
-                          .filter((p) => p.category === 'unisex' && p.isActive !== false)
-                          .map((p) => (
-                            <option key={p.id} value={p.name}>
-                              {p.name}
-                            </option>
-                          ))}
-
-                      {variantCategoryTab === 'powdery' &&
-                        perfumesCatalog
-                          .filter((p) => p.category === 'powdery' && p.isActive !== false)
-                          .map((p) => (
-                            <option key={p.id} value={p.name}>
-                              {p.name}
-                            </option>
-                          ))}
                     </select>
                   </div>
                 </div>

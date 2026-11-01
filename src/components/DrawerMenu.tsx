@@ -52,11 +52,11 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-[280px] max-w-[85vw] h-full bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] border-l border-white/10 p-5 flex flex-col justify-between shadow-[0_0_50px_rgba(0,0,0,0.85)] animate-in slide-in-from-right duration-300 overflow-y-auto no-scrollbar font-body">
+    <div className="fixed inset-0 z-40 flex justify-end bg-black/80 backdrop-blur-xs sinki-backdrop-in">
+      <div className="w-[280px] max-w-[85vw] h-full bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] border-l border-white/10 p-5 flex flex-col justify-between shadow-[0_0_50px_rgba(0,0,0,0.85)] sinki-drawer-slide-in overflow-y-auto no-scrollbar font-body">
         {/* Top Header */}
         <div>
-          <div className="flex items-center justify-between pb-3.5 border-b border-white/15">
+          <div className="flex items-center justify-between pb-3.5 border-b border-white/15 sinki-heading-anim">
             <div>
               <span className="font-heading font-bold text-base tracking-[0.16em] block text-transparent bg-clip-text bg-gradient-to-r from-[#F0DFB6] via-[#C5A059] to-[#8C6826] drop-shadow-sm select-none">
                 SINKI
@@ -67,7 +67,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-200 hover:text-white transition-colors"
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-200 hover:text-white transition-colors sinki-cushion-press-sm"
             >
               <X size={16} />
             </button>
@@ -85,7 +85,11 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                 onClose();
                 onNavigateToCollection();
               }}
-              className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.06] hover:bg-[#C5A059]/15 border border-white/10 hover:border-[#DFB76C]/40 text-left transition-all group shadow-sm"
+              style={{
+                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both',
+                willChange: 'transform, opacity, filter',
+              }}
+              className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.06] hover:bg-[#C5A059]/15 border border-white/10 hover:border-[#DFB76C]/40 text-left transition-all group shadow-sm sinki-cushion-press cursor-pointer"
             >
               <div className="flex items-center gap-2.5">
                 <LayoutGrid size={15} className="text-[#DFB76C]" />
@@ -99,7 +103,11 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
             {/* Panduan Aroma & Jurnal SINKI (Terhubung ke Konten Dimensi-Sinki) */}
             <button
               onClick={() => setIsJournalOpen(true)}
-              className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.06] hover:bg-[#C5A059]/15 border border-white/10 hover:border-[#DFB76C]/40 text-left transition-all group shadow-sm"
+              style={{
+                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 110ms both',
+                willChange: 'transform, opacity, filter',
+              }}
+              className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.06] hover:bg-[#C5A059]/15 border border-white/10 hover:border-[#DFB76C]/40 text-left transition-all group shadow-sm sinki-cushion-press cursor-pointer"
             >
               <div className="flex items-center gap-2.5">
                 <BookOpen size={15} className="text-[#DFB76C]" />
@@ -119,10 +127,14 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                 onClose();
                 openWhatsAppDirect(
                   '6289636824552',
-                  'Halo SINKI Parfums, saya tertarik dengan koleksi parfumnya'
+                  'Halo SINKI Parfum, saya tertarik dengan koleksi parfumnya'
                 );
               }}
-              className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.06] hover:bg-emerald-500/20 border border-white/10 hover:border-emerald-400/50 text-left transition-all group shadow-sm cursor-pointer"
+              style={{
+                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both',
+                willChange: 'transform, opacity, filter',
+              }}
+              className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.06] hover:bg-emerald-500/20 border border-white/10 hover:border-emerald-400/50 text-left transition-all group shadow-sm cursor-pointer sinki-cushion-press"
             >
               <div className="flex items-center gap-2.5">
                 <MessageCircle size={15} className="text-emerald-400" />
@@ -138,7 +150,11 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               href={currentSocial.shopee || 'https://shopee.co.id'}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.06] hover:bg-orange-500/20 border border-white/10 hover:border-orange-400/50 text-left transition-all group shadow-sm"
+              style={{
+                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both',
+                willChange: 'transform, opacity, filter',
+              }}
+              className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.06] hover:bg-orange-500/20 border border-white/10 hover:border-orange-400/50 text-left transition-all group shadow-sm sinki-cushion-press cursor-pointer"
             >
               <div className="flex items-center gap-2.5">
                 <ShoppingBag size={15} className="text-orange-400" />
@@ -160,7 +176,11 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               href={currentSocial.instagram}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.05] hover:bg-pink-500/15 border border-white/10 text-[13px] text-white hover:text-pink-300 transition-colors font-medium"
+              style={{
+                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 260ms both',
+                willChange: 'transform, opacity, filter',
+              }}
+              className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.05] hover:bg-pink-500/15 border border-white/10 text-[13px] text-white hover:text-pink-300 transition-colors font-medium sinki-cushion-press cursor-pointer"
             >
               <span className="truncate pr-2">Instagram {extractInstagramHandle(currentSocial.instagram)}</span>
               <ExternalLink size={12} className="shrink-0" />
@@ -170,7 +190,11 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               href={currentSocial.tiktok}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.03] hover:bg-cyan-500/10 border border-white/10 text-[13px] text-slate-300 hover:text-cyan-300 transition-colors font-medium"
+              style={{
+                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 310ms both',
+                willChange: 'transform, opacity, filter',
+              }}
+              className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/[0.03] hover:bg-cyan-500/10 border border-white/10 text-[13px] text-slate-300 hover:text-cyan-300 transition-colors font-medium sinki-cushion-press cursor-pointer"
             >
               <span className="truncate pr-2">TikTok {extractTikTokHandle(currentSocial.tiktok)}</span>
               <ExternalLink size={12} className="shrink-0" />
@@ -186,7 +210,11 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                 onClose();
                 onOpenDimensiSinki();
               }}
-              className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[13px] font-semibold transition-all group active:scale-95 shadow-sm"
+              style={{
+                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 360ms both',
+                willChange: 'transform, opacity, filter',
+              }}
+              className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[13px] font-semibold transition-all group shadow-sm sinki-cushion-press cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <Shield size={14} className="text-amber-400" />
@@ -203,10 +231,10 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
 
         {/* JOURNAL & ARTICLES MODAL (BACAAN TIPS & ARTIKEL) */}
         {isJournalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="w-full max-w-md max-h-[85vh] bg-[#10121d] border border-amber-500/40 rounded-3xl p-5 flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.9)] overflow-hidden font-body">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs sinki-backdrop-in">
+            <div className="w-full max-w-md max-h-[85vh] bg-[#10121d] border border-amber-500/40 rounded-3xl p-5 flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.9)] overflow-hidden font-body sinki-sheet-elevation">
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+              <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0 sinki-heading-anim">
                 <div className="flex items-center gap-2">
                   <BookOpen size={16} className="text-amber-400" />
                   <span className="font-heading text-[15px] sm:text-base font-bold tracking-[-0.015em] leading-[1.25] text-amber-300">
@@ -218,7 +246,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                     setIsJournalOpen(false);
                     setSelectedArticle(null);
                   }}
-                  className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-slate-300 hover:text-white"
+                  className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-slate-300 hover:text-white sinki-cushion-press-sm"
                 >
                   <X size={15} />
                 </button>
@@ -228,7 +256,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               <div className="flex-1 overflow-y-auto no-scrollbar py-3 space-y-2.5">
                 {selectedArticle ? (
                   // Article Detail View
-                  <div className="space-y-3">
+                  <div className="space-y-3 sinki-heading-anim">
                     <button
                       onClick={() => setSelectedArticle(null)}
                       className="text-xs text-amber-400 font-medium hover:underline flex items-center gap-1"
@@ -257,7 +285,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                         onClose();
                         onNavigateToCollection();
                       }}
-                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-xs sm:text-[13px] shadow-md"
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-xs sm:text-[13px] shadow-md sinki-cushion-press cursor-pointer"
                     >
                       Jelajahi Koleksi Parfum
                     </button>
@@ -265,11 +293,15 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                 ) : (
                   // Article List View
                   <div className="space-y-2">
-                    {articles.map((art) => (
+                    {articles.map((art, idx) => (
                       <div
                         key={art.id}
                         onClick={() => setSelectedArticle(art)}
-                        className="p-3 rounded-2xl bg-white/[0.04] hover:bg-amber-500/10 border border-white/10 hover:border-amber-400/40 cursor-pointer transition-all active:scale-98 space-y-1 group"
+                        style={{
+                          animation: `sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) ${Math.min(idx * 60, 300)}ms both`,
+                          willChange: 'transform, opacity, filter',
+                        }}
+                        className="p-3 rounded-2xl bg-white/[0.04] hover:bg-amber-500/10 border border-white/10 hover:border-amber-400/40 cursor-pointer space-y-1 group sinki-cushion-press"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-medium text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full leading-tight">

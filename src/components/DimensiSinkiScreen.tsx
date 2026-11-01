@@ -86,17 +86,7 @@ import {
   saveArticlesToStorage,
   INITIAL_ARTICLES,
 } from '../utils/articleStorage';
-import {
-  Top11Item,
-  getStoredTopPerfumes,
-  saveTopPerfumesToStorage,
-  fetchTopPerfumesFromServer,
-  saveTopPerfumesToServer,
-  addTopPerfume,
-  updateTopPerfume,
-  deleteTopPerfume,
-  resetTopPerfumesToDefault,
-} from '../utils/topPerfumesStorage';
+
 import {
   ReviewItem,
   getCachedReviews,
@@ -235,7 +225,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   const [heroHeightMode, setHeroHeightMode] = useState<HeroHeightMode>(() => propHeroHeightMode || getStoredHeroHeightMode());
   const [adminPreviewRatio, setAdminPreviewRatio] = useState<'9:16' | 'full' | '1:1' | '16:9'>('9:16');
   const [videoUrlInput, setVideoUrlInput] = useState<string>(() => propHeroVideoUrl || getStoredHeroVideoUrl() || '');
-  const [mediaSubTab, setMediaSubTab] = useState<'all' | 'video' | 'identity' | 'stage' | 'bestsellers'>('all');
+  const [mediaSubTab, setMediaSubTab] = useState<'all' | 'video' | 'identity' | 'stage'>('all');
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [isExtractingFrame, setIsExtractingFrame] = useState(false);
   const [isTestingFade, setIsTestingFade] = useState(false);
@@ -887,173 +877,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     }
   };
 
-  // Top Bestseller Management State & Handlers
-  const [topPerfumesList, setTopPerfumesList] = useState<Top11Item[]>(getStoredTopPerfumes);
-  const [isTopModalOpen, setIsTopModalOpen] = useState(false);
-  const [editingTopItem, setEditingTopItem] = useState<Top11Item | null>(null);
-  const [topFormName, setTopFormName] = useState('');
-  const [topFormType, setTopFormType] = useState('Eau De Parfum');
-  const [topFormSubtitle, setTopFormSubtitle] = useState('');
-  const [topFormDescription, setTopFormDescription] = useState('');
-  const [topFormTopNotes, setTopFormTopNotes] = useState('');
-  const [topFormMiddleNotes, setTopFormMiddleNotes] = useState('');
-  const [topFormBaseNotes, setTopFormBaseNotes] = useState('');
-  const [topFormPhoto, setTopFormPhoto] = useState('');
-  const [isUploadingTopPhoto, setIsUploadingTopPhoto] = useState(false);
 
-  // Sinkronisasi data Top Bestseller dari server & cloud saat dibuka
-  useEffect(() => {
-    fetchTopPerfumesFromServer().then((items) => {
-      if (items && Array.isArray(items) && items.length > 0) {
-        setTopPerfumesList(items);
-      }
-    });
-
-    const handleUpdate = (e: any) => {
-      if (e.detail && Array.isArray(e.detail)) {
-        setTopPerfumesList(e.detail);
-      }
-    };
-    window.addEventListener('sinki_top_perfumes_updated', handleUpdate);
-    return () => window.removeEventListener('sinki_top_perfumes_updated', handleUpdate);
-  }, []);
-
-  const handleOpenAddTopItem = () => {
-    setEditingTopItem(null);
-    setTopFormName('');
-    setTopFormType('Eau De Parfum');
-    setTopFormSubtitle('');
-    setTopFormDescription('');
-    setTopFormTopNotes('');
-    setTopFormMiddleNotes('');
-    setTopFormBaseNotes('');
-    setTopFormPhoto('');
-    setIsTopModalOpen(true);
-  };
-
-  const handleOpenEditTopItem = (item: Top11Item) => {
-    setEditingTopItem(item);
-    setTopFormName(item.name);
-    setTopFormType(item.type || 'Eau De Parfum');
-    setTopFormSubtitle(item.subtitle || '');
-    setTopFormDescription(item.description || '');
-    setTopFormTopNotes(item.topNotes || '');
-    setTopFormMiddleNotes(item.middleNotes || '');
-    setTopFormBaseNotes(item.baseNotes || '');
-    const currentPhoto =
-      top11Photos[item.id] ||
-      top11Photos[`top-${item.rank}`] ||
-      top11Photos[String(item.rank)] ||
-      item.photo ||
-      '';
-    setTopFormPhoto(currentPhoto);
-    setIsTopModalOpen(true);
-  };
-
-  const handleModalBottleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const rawBase64 = event.target?.result as string;
-      setTopFormPhoto(rawBase64);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
-  const handleSaveTopItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!topFormName.trim()) {
-      onShowToast('Nama varian tidak boleh kosong');
-      return;
-    }
-
-    setIsUploadingTopPhoto(true);
-
-    try {
-      if (editingTopItem) {
-        let photoUrlToUse = topFormPhoto;
-        if (topFormPhoto && topFormPhoto.startsWith('data:')) {
-          onShowToast(`Menyimpan foto botol Top ${editingTopItem.rank} ke CDN...`);
-          const uploaded = await saveTop11PhotoToServer(editingTopItem.id, topFormPhoto, '1995');
-          if (uploaded) {
-            photoUrlToUse = uploaded;
-            onTop11PhotoUpdated(editingTopItem.id, uploaded);
-          }
-        }
-
-        const updated = updateTopPerfume(editingTopItem.id, {
-          name: topFormName.trim(),
-          type: topFormType.trim(),
-          subtitle: topFormSubtitle.trim(),
-          description: topFormDescription.trim(),
-          topNotes: topFormTopNotes.trim(),
-          middleNotes: topFormMiddleNotes.trim(),
-          baseNotes: topFormBaseNotes.trim(),
-          ...(photoUrlToUse ? { photo: photoUrlToUse } : {}),
-        });
-        setTopPerfumesList(updated);
-        onShowToast(`Varian Top ${editingTopItem.rank} (${topFormName}) berhasil diperbarui & disimpan ke cloud! ✨`);
-        await saveTopPerfumesToServer(updated);
-      } else {
-        const nextRank = topPerfumesList.length + 1;
-        const targetId = `top-${nextRank}`;
-        let photoUrlToUse = topFormPhoto;
-
-        if (topFormPhoto && topFormPhoto.startsWith('data:')) {
-          onShowToast(`Mengunggah foto botol Top ${nextRank} ke Supabase CDN...`);
-          const uploaded = await saveTop11PhotoToServer(targetId, topFormPhoto, '1995');
-          if (uploaded) {
-            photoUrlToUse = uploaded;
-            onTop11PhotoUpdated(targetId, uploaded);
-          }
-        }
-
-        const updated = addTopPerfume({
-          name: topFormName.trim(),
-          type: topFormType.trim(),
-          subtitle: topFormSubtitle.trim(),
-          description: topFormDescription.trim(),
-          topNotes: topFormTopNotes.trim(),
-          middleNotes: topFormMiddleNotes.trim(),
-          baseNotes: topFormBaseNotes.trim(),
-          ...(photoUrlToUse ? { photo: photoUrlToUse } : {}),
-        });
-        setTopPerfumesList(updated);
-        onShowToast(`Varian Top ${nextRank} (${topFormName}) berhasil ditambahkan & terbit ke publik! 🌟`);
-        await saveTopPerfumesToServer(updated);
-      }
-      setIsTopModalOpen(false);
-    } catch (err) {
-      console.error('Error saving top item:', err);
-      onShowToast('Gagal menyimpan varian. Silakan coba lagi.');
-    } finally {
-      setIsUploadingTopPhoto(false);
-    }
-  };
-
-  const handleDeleteTopItem = async (id: string, name: string, rank: number) => {
-    if (topPerfumesList.length <= 1) {
-      onShowToast('Minimal harus ada 1 varian terdaftar di Top Bestseller');
-      return;
-    }
-    if (confirm(`Hapus varian Top ${rank} (${name}) dari daftar Bestseller?`)) {
-      const updated = deleteTopPerfume(id);
-      setTopPerfumesList(updated);
-      onShowToast(`Varian ${name} telah dihapus & sinkron ke publik`);
-      await saveTopPerfumesToServer(updated);
-    }
-  };
-
-  const handleResetTopPerfumes = async () => {
-    if (confirm('Kembalikan daftar Top Bestseller ke 11 varian bawaan standar?')) {
-      onShowToast('Mereset Top Bestseller ke 11 varian awal...');
-      const reset = await resetTopPerfumesToDefault();
-      setTopPerfumesList(reset);
-      onShowToast('Daftar Top Bestseller berhasil di-reset ke 11 varian awal & tersinkron ke publik! ✨');
-    }
-  };
 
   // Real-time Pricing State
   const [pricingForm, setPricingForm] = useState<PricingConfig>(pricing || DEFAULT_PRICING);
@@ -1115,10 +939,6 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     onShowToast('Membersihkan seluruh cache & menyinkronkan data cloud...');
     try {
       await purgeSinkiBrowserCache();
-      const freshTop = await fetchTopPerfumesFromServer();
-      if (freshTop && Array.isArray(freshTop)) {
-        setTopPerfumesList(freshTop);
-      }
       const freshPerfumes = await fetchPerfumesFromServer();
       if (freshPerfumes && Array.isArray(freshPerfumes)) {
         setPerfumesList(freshPerfumes);
@@ -1230,23 +1050,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         onShowToast(`Menyimpan foto botol ${cleanNumber} ke server...`);
         const savedUrl = await saveTop11PhotoToServer(target, adjustedBase64, '1995');
         const photoToUse = savedUrl || adjustedBase64;
-        onTop11PhotoUpdated(target, photoToUse);
-
-        // Sekaligus perbarui dan simpan objek varian ke top_perfumes.json di Supabase Cloud CDN
-        const updatedList = topPerfumesList.map((item) => {
-          if (
-            item.id === target ||
-            item.id === `top-${cleanNumber}` ||
-            String(item.rank) === cleanNumber
-          ) {
-            return { ...item, photo: photoToUse };
-          }
-          return item;
-        });
-        setTopPerfumesList(updatedList);
-        await saveTopPerfumesToServer(updatedList);
-
-        onShowToast(`Foto botol ${cleanNumber} berhasil disimpan permanen & terbit ke publik! ✅`);
+        onTop11PhotoUpdated?.(target, photoToUse);
+        onShowToast(`Foto botol ${cleanNumber} berhasil disimpan permanen! ✅`);
       }
     } catch (err) {
       console.error('Error saving asset:', err);
@@ -2858,7 +2663,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             <div className="space-y-6 font-body">
               <div>
                 <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
-                  Media, Foto Utama & 11 Botol Bestseller
+                  Media, Video & Visual Identitas
                 </h2>
                 <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
                   Unggah dan sesuaikan gambar resmi dengan alat pemotong dan zoom terintegrasi.
@@ -2872,7 +2677,6 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   { id: 'video', label: '🎬 Video Sinematik 9:16' },
                   { id: 'identity', label: '🖼️ Cover, Logo & QRIS' },
                   { id: 'stage', label: '✨ Panggung 3D' },
-                  { id: 'bestsellers', label: `🏆 11 Bestseller (${topPerfumesList.length})` },
                 ].map((st) => {
                   const isCur = mediaSubTab === st.id;
                   return (
@@ -3647,139 +3451,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </>
               )}
 
-              {/* BARIS 2: MANAJEMEN VARIAN TOP BESTSELLER (DINAMIS DENGAN TAMBAH & EDIT) */}
-              {(mediaSubTab === 'all' || mediaSubTab === 'bestsellers') && (
-                <div className="space-y-4 pt-2 border-t border-white/10">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-heading font-semibold text-base sm:text-lg text-white tracking-[-0.015em] leading-[1.25]">
-                        Varian Botol Bestseller ({topPerfumesList.length} Varian)
-                      </h3>
-                      <span className="text-xs tabular-nums px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">
-                        Top {topPerfumesList.length}
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-                      Kelola nama, deskripsi aroma, foto botol, dan tambahkan varian baru kapan saja.
-                    </p>
-                  </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={handleOpenAddTopItem}
-                      className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#DFB76C] to-[#C5A059] hover:brightness-105 text-slate-950 font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-all active:scale-95 shadow-md"
-                    >
-                      <Plus size={14} />
-                      <span>Tambah Varian Baru</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleResetTopPerfumes}
-                      className="py-1.5 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs sm:text-sm font-medium flex items-center gap-1 transition-all"
-                      title="Kembalikan ke 11 varian awal"
-                    >
-                      <RotateCcw size={13} />
-                      <span>Reset</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {topPerfumesList.map((p, index) => {
-                    const variantId = p.id.startsWith('top-') ? p.id : `top-${p.id}`;
-                    const photo =
-                      top11Photos[variantId] ||
-                      top11Photos[p.id] ||
-                      top11Photos[`top-${variantId}`] ||
-                      top11Photos[`top-${p.rank}`] ||
-                      top11Photos[String(p.rank)] ||
-                      p.photo;
-
-                    return (
-                      <div
-                        key={p.id}
-                        className="p-3.5 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/30 transition-all flex flex-col justify-between space-y-2.5"
-                      >
-                        {/* Header: Clean Number 1, 2, 3 (No #) & Type */}
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 tabular-nums font-semibold">
-                            {p.rank || index + 1}
-                          </span>
-                          <span className="text-slate-400 truncate max-w-[110px]">
-                            {p.type || 'Eau De Parfum'}
-                          </span>
-                        </div>
-
-                        {/* Photo Box */}
-                        <div className="relative h-40 rounded-xl bg-black/60 border border-white/5 p-2 flex items-center justify-center overflow-hidden">
-                          {photo ? (
-                            <img
-                              src={photo}
-                              alt={p.name}
-                              className="w-full h-full object-contain filter drop-shadow-sm"
-                            />
-                          ) : (
-                            <div className="text-center p-2">
-                              <span className="text-xs text-amber-300/90 tabular-nums block font-semibold">
-                                Botol {p.rank || index + 1}
-                              </span>
-                              <span className="text-xs text-slate-500 block mt-0.5">
-                                Belum ada foto
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Title & Subtitle */}
-                        <div>
-                          <h4 className="font-heading font-semibold text-sm text-white truncate tracking-[-0.01em]" title={p.name}>
-                            {p.name}
-                          </h4>
-                          <span className="text-xs text-slate-400 block truncate mt-0.5" title={p.subtitle}>
-                            {p.subtitle || 'Aroma khas SINKI'}
-                          </span>
-                        </div>
-
-                        {/* Action Buttons: Ganti Foto, Edit Info, Hapus */}
-                        <div className="space-y-1.5 pt-1.5 border-t border-white/5">
-                          <label className="w-full py-1.5 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/30 text-amber-300 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all">
-                            <Upload size={12} />
-                            <span>Ganti Foto</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => handleFileUpload(e, variantId)}
-                            />
-                          </label>
-
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEditTopItem(p)}
-                              className="py-1.5 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 text-xs font-medium flex items-center justify-center gap-1 transition-all"
-                            >
-                              <Edit size={12} />
-                              <span>Edit</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteTopItem(p.id, p.name, p.rank || index + 1)}
-                              className="py-1.5 px-2 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-400 hover:text-red-300 border border-red-500/20 text-xs font-medium flex items-center justify-center gap-1 transition-all"
-                            >
-                              <Trash2 size={12} />
-                              <span>Hapus</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              )}
             </div>
           )}
 
@@ -4510,198 +4182,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           })}
         </nav>
 
-        {/* MODAL TAMBAH & EDIT VARIAN TOP BESTSELLER */}
-        {isTopModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-body">
-            <div className="w-full max-w-md rounded-3xl bg-[#121524] border border-amber-500/30 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-semibold tabular-nums text-sm">
-                    {editingTopItem ? editingTopItem.rank : topPerfumesList.length + 1}
-                  </div>
-                  <div>
-                    <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
-                      {editingTopItem ? `Edit Varian Top ${editingTopItem.rank}` : 'Tambah Varian Top Baru'}
-                    </h3>
-                    <span className="text-xs text-slate-400">
-                      {editingTopItem ? 'Perbarui nama & karakter aroma' : 'Masukkan parfum baru ke daftar Bestseller'}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsTopModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
 
-              <form onSubmit={handleSaveTopItem} className="space-y-3">
-                {/* Upload & Pratinjau Foto Botol */}
-                <div>
-                  <label className="text-xs font-medium text-slate-300 block mb-1">
-                    Foto Botol Parfum (PNG Transparan / Foto Asli)
-                  </label>
-                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-black/40 border border-white/10">
-                    <div className="w-16 h-20 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                      {topFormPhoto ? (
-                        <img
-                          src={topFormPhoto}
-                          alt="Pratinjau Botol"
-                          className="w-full h-full object-contain filter drop-shadow-sm"
-                        />
-                      ) : (
-                        <div className="text-center p-1">
-                          <span className="text-[11px] text-slate-500 block leading-tight">Belum ada foto</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-1.5">
-                      <label className="py-2 px-3 rounded-xl bg-white/10 hover:bg-amber-500/20 text-amber-300 border border-white/10 hover:border-amber-500/30 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95">
-                        <Upload size={13} />
-                        <span>{topFormPhoto ? 'Ganti Foto Botol' : 'Pilih Foto Botol'}</span>
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp,image/*"
-                          className="hidden"
-                          onChange={handleModalBottleFile}
-                        />
-                      </label>
-                      {topFormPhoto && (
-                        <button
-                          type="button"
-                          onClick={() => setTopFormPhoto('')}
-                          className="text-xs text-red-400 hover:text-red-300 underline block text-center w-full"
-                        >
-                          Hapus foto pilihan
-                        </button>
-                      )}
-                      <span className="text-xs text-slate-400 block leading-[1.4]">
-                        PNG transparan direkomendasikan agar menyatu elegan di layar publik.
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-slate-300 block mb-1">
-                    Nama Parfum *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={topFormName}
-                    onChange={(e) => setTopFormName(e.target.value)}
-                    placeholder="Contoh: Mykonos Vanilla Clouds"
-                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-slate-300 block mb-1">
-                    Tipe Konsentrasi
-                  </label>
-                  <select
-                    value={topFormType}
-                    onChange={(e) => setTopFormType(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#0f111d] border border-white/10 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
-                  >
-                    <option value="Extrait De Parfum">Extrait De Parfum</option>
-                    <option value="Eau De Parfum">Eau De Parfum</option>
-                    <option value="Eau De Toilette Intense">Eau De Toilette Intense</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-slate-300 block mb-1">
-                    Tagline / Karakter Singkat
-                  </label>
-                  <input
-                    type="text"
-                    value={topFormSubtitle}
-                    onChange={(e) => setTopFormSubtitle(e.target.value)}
-                    placeholder="Contoh: Rich Amber, French Cognac & Royal Vanilla"
-                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-slate-300 block mb-1">
-                    Deskripsi Lengkap Aroma
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={topFormDescription}
-                    onChange={(e) => setTopFormDescription(e.target.value)}
-                    placeholder="Penjelasan detail aroma, kesan pertama, dan ketahanan wangi..."
-                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 resize-none leading-[1.5]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-xs font-medium text-slate-400 block mb-1">
-                      Top Notes
-                    </label>
-                    <input
-                      type="text"
-                      value={topFormTopNotes}
-                      onChange={(e) => setTopFormTopNotes(e.target.value)}
-                      placeholder="e.g. Cognac, Bergamot"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-400 block mb-1">
-                      Middle Notes
-                    </label>
-                    <input
-                      type="text"
-                      value={topFormMiddleNotes}
-                      onChange={(e) => setTopFormMiddleNotes(e.target.value)}
-                      placeholder="e.g. Amber, Tonka"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-400 block mb-1">
-                      Base Notes
-                    </label>
-                    <input
-                      type="text"
-                      value={topFormBaseNotes}
-                      onChange={(e) => setTopFormBaseNotes(e.target.value)}
-                      placeholder="e.g. Vanilla, Cedar"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setIsTopModalOpen(false)}
-                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-medium text-sm transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isUploadingTopPhoto}
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 font-semibold text-sm shadow-md hover:brightness-105 active:scale-95 transition-all disabled:opacity-50"
-                  >
-                    {isUploadingTopPhoto
-                      ? 'Menyimpan ke Cloud...'
-                      : editingTopItem
-                      ? 'Simpan Perubahan'
-                      : 'Tambahkan Varian'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
 
         {/* MODAL FITTING & ADJUST FOTO DENGAN ZOOM / PAN */}
         {adjusterState.isOpen && (

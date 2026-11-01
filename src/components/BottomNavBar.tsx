@@ -1,41 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Home, LayoutGrid, ShoppingBag, MessageSquareText } from 'lucide-react';
-import { getStoredTopPerfumes, fetchTopPerfumesFromServer } from '../utils/topPerfumesStorage';
+import React, { useState, useRef } from 'react';
+import { Home, LayoutGrid, Sparkles, ShoppingBag, MessageSquareText } from 'lucide-react';
 
-export type TabType = 'home' | 'collection' | 'top11' | 'order' | 'review';
-
-// HAUTE PARFUMERIE: The Golden Nectar Drop (Goutte d'Or - Tetesan Esens Parfum Emas)
-const GoldenNectarDropIcon: React.FC<{ isPulsing: boolean; isActive: boolean }> = ({
-  isPulsing,
-  isActive,
-}) => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={`transition-all duration-700 ease-out ${
-      isPulsing
-        ? 'text-[#F8EBCB]'
-        : isActive
-        ? 'text-white drop-shadow-[0_1px_4px_rgba(255,255,255,0.2)]'
-        : 'text-slate-400 group-hover:text-slate-200'
-    }`}
-    aria-hidden="true"
-  >
-    {/* Clean Golden Nectar Droplet Contour */}
-    <path
-      d="M12 2.8C11.3 3.9 5.8 12.2 5.8 15.8C5.8 19.2 8.6 22 12 22C15.4 22 18.2 19.2 18.2 15.8C18.2 12.2 12.7 3.9 12 2.8Z"
-      stroke="currentColor"
-      strokeWidth={isPulsing || isActive ? 2.3 : 1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill={isPulsing ? 'currentColor' : isActive ? 'currentColor' : 'none'}
-      fillOpacity={isPulsing ? '0.2' : isActive ? '0.12' : '0'}
-    />
-  </svg>
-);
+export type TabType = 'home' | 'collection' | 'match' | 'order' | 'review';
 
 interface BottomNavBarProps {
   activeTab: TabType;
@@ -48,35 +14,9 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   onTabChange,
   orderCount = 0,
 }) => {
-  // CARA 1: Efek Sentuhan/Klik Saja (Smooth Fade-Out 750ms + Gradasi Hitam-Emas)
+  // Efek Sentuhan/Klik Saja (Smooth Fade-Out 750ms + Gradasi Hitam-Emas)
   const [pulsingTab, setPulsingTab] = useState<TabType | null>(null);
   const pulseTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const [topCount, setTopCount] = useState<number>(() => getStoredTopPerfumes().length);
-
-  useEffect(() => {
-    // Sinkronisasi jumlah varian Top dari server / cloud
-    fetchTopPerfumesFromServer().then((items) => {
-      if (items && Array.isArray(items)) {
-        setTopCount(items.length);
-      }
-    });
-
-    const handleTopUpdate = (e: any) => {
-      if (e.detail && Array.isArray(e.detail)) {
-        setTopCount(e.detail.length);
-      } else {
-        setTopCount(getStoredTopPerfumes().length);
-      }
-    };
-    window.addEventListener('sinki_top_perfumes_updated', handleTopUpdate);
-    return () => {
-      window.removeEventListener('sinki_top_perfumes_updated', handleTopUpdate);
-      if (pulseTimerRef.current) {
-        clearTimeout(pulseTimerRef.current);
-      }
-    };
-  }, []);
 
   const handleTabClick = (tabId: TabType) => {
     // Picu animasi kapsul emas menyala seketika
@@ -104,8 +44,9 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       icon: LayoutGrid,
     },
     {
-      id: 'top11' as TabType,
-      label: `Top ${topCount}`,
+      id: 'match' as TabType,
+      label: 'Match',
+      icon: Sparkles,
     },
     {
       id: 'order' as TabType,
@@ -130,42 +71,52 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           const isPulsing = pulsingTab === item.id;
-          const isCenterpiece = item.id === 'top11';
+          const isCenterpiece = item.id === 'match';
 
-          // CENTERPIECE: Top 11
+          // CENTERPIECE: Aroma Match
           if (isCenterpiece) {
             return (
               <button
                 key={item.id}
                 onClick={() => handleTabClick(item.id)}
-                className={`relative flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-700 ease-out group active:scale-95 focus:outline-none border ${
+                className={`relative flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-700 ease-out group sinki-cushion-press focus:outline-none border ${
                   isPulsing
                     ? 'bg-gradient-to-r from-[#382c16] via-[#8c6b29] to-[#D4AF57] text-[#F8EBCB] border-[#D4AF57]/60 shadow-[0_2px_12px_rgba(212,175,87,0.3)] scale-[0.98]'
                     : 'bg-transparent hover:bg-white/5 border-transparent'
                 }`}
-                aria-label={`Koleksi Top ${topCount} SINKI`}
+                aria-label="Aroma Match - Rekomendasi Parfum Personal SINKI"
               >
-                {/* Icon Container with Golden Nectar Droplet */}
+                {/* Icon Container with Sparkles */}
                 <div className="relative">
-                  <GoldenNectarDropIcon isPulsing={isPulsing} isActive={isActive} />
+                  <Sparkles
+                    size={18}
+                    className={`transition-all duration-700 ease-out ${
+                      isPulsing
+                        ? 'text-[#F8EBCB]'
+                        : isActive
+                        ? 'text-[#E8C574] drop-shadow-[0_1px_6px_rgba(232,197,116,0.4)]'
+                        : 'text-amber-400/80 group-hover:text-amber-300'
+                    }`}
+                    strokeWidth={isPulsing || isActive ? 2.3 : 1.8}
+                  />
                 </div>
 
-                {/* Label: Top 11 */}
+                {/* Label: Match */}
                 <span
                   className={`font-body text-[11px] sm:text-[11.5px] leading-tight tracking-[0.01em] mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
                     isPulsing
                       ? 'font-semibold text-[#F8EBCB]'
                       : isActive
-                      ? 'font-semibold text-white drop-shadow-sm'
-                      : 'font-medium text-slate-400 group-hover:text-slate-200'
+                      ? 'font-semibold text-[#E8C574] drop-shadow-sm'
+                      : 'font-medium text-amber-300/85 group-hover:text-amber-200'
                   }`}
                 >
                   {item.label}
                 </span>
 
-                {/* Indikator Halus Tenang Tab Aktif (Hanya titik tipis, tanpa kapsul emas tebal) */}
+                {/* Indikator Halus Tenang Tab Aktif */}
                 {isActive && !isPulsing && (
-                  <span className="w-1.5 h-0.5 rounded-full bg-white/70 mt-0.5" />
+                  <span className="w-1.5 h-0.5 rounded-full bg-[#E8C574] mt-0.5 shadow-[0_0_4px_rgba(232,197,116,0.6)]" />
                 )}
               </button>
             );

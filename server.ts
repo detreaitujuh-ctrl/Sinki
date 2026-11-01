@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = 3000;
 const DEFAULT_OWNER_PIN = (process.env.OWNER_PIN || '').trim() || '1995';
 const PIN_FILE = path.join(path.resolve(__dirname, 'data'), 'owner_pin.json');
 
