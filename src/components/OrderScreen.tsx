@@ -14,6 +14,8 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 import { TOP_11_DATA, Top11Item } from '../data/top11';
 import { getStoredTopPerfumes } from '../utils/topPerfumesStorage';
@@ -24,14 +26,25 @@ import {
   DEFAULT_PRICING,
 } from '../utils/pricingStorage';
 import { openWhatsAppDirect } from '../utils/whatsappHelper';
+import {
+  CartItem,
+  getStoredCart,
+  updateCartItemQuantity,
+  removeFromCart,
+  clearCart,
+  getCartSubtotal,
+  getCartTotalCount,
+} from '../utils/cartStorage';
 
 interface OrderScreenProps {
   onBackToHome: () => void;
+  onNavigateToCollection?: () => void;
   onShowToast: (msg: string) => void;
   pricing?: PricingConfig;
   customQris?: string | null;
   topPerfumes?: Top11Item[];
-  selectedPerfumeFromCollection?: { name: string; category?: string } | null;
+  cartItems?: CartItem[];
+  selectedPerfumeFromCollection?: { name: string; category?: string; pricePerMl?: number } | null;
 }
 
 // TIER DEFINITIONS
@@ -45,13 +58,40 @@ const DISPLAY_WHATSAPP = '0896-3682-4552';
 
 export const OrderScreen: React.FC<OrderScreenProps> = ({
   onBackToHome,
+  onNavigateToCollection,
   onShowToast,
   pricing,
   customQris,
   topPerfumes,
+  cartItems: cartItemsProp,
   selectedPerfumeFromCollection,
 }) => {
   const activeTopList = topPerfumes && topPerfumes.length > 0 ? topPerfumes : getStoredTopPerfumes();
+
+  // Persistent Shopping Cart State (Synced with CollectionScreen)
+  const [cartItems, setCartItems] = useState<CartItem[]>(() =>
+    cartItemsProp ? cartItemsProp : getStoredCart()
+  );
+  const [confirmClearCart, setConfirmClearCart] = useState(false);
+  const [showManualFormWhenCartActive, setShowManualFormWhenCartActive] = useState(false);
+
+  useEffect(() => {
+    if (cartItemsProp) {
+      setCartItems(cartItemsProp);
+    }
+  }, [cartItemsProp]);
+
+  useEffect(() => {
+    const syncCart = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setCartItems(e.detail);
+      } else {
+        setCartItems(getStoredCart());
+      }
+    };
+    window.addEventListener('sinki_cart_updated', syncCart);
+    return () => window.removeEventListener('sinki_cart_updated', syncCart);
+  }, []);
 
   // Order Selection State
   const [tier, setTier] = useState<PerfumeTier>('non_premium');
@@ -71,7 +111,14 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
         setCustomVariantName(perfName);
       }
 
-      if (selectedPerfumeFromCollection.category === 'mykonos' || perfName.toLowerCase().includes('mykonos')) {
+      if (selectedPerfumeFromCollection.pricePerMl === 4000) {
+        setTier('premium');
+      } else if (selectedPerfumeFromCollection.pricePerMl === 3000) {
+        setTier('mykonos');
+      } else if (
+        selectedPerfumeFromCollection.category === 'mykonos' ||
+        perfName.toLowerCase().includes('mykonos')
+      ) {
         setTier('mykonos');
       }
     }
@@ -117,12 +164,43 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
   };
 
   const unitPrice = getPriceForSize(selectedSize);
-  const totalAmount = unitPrice * quantity;
+  const manualTotalAmount = unitPrice * quantity;
+
+  const hasCartItems = cartItems.length > 0;
+  const cartTotalBottles = getCartTotalCount(cartItems);
+  const cartSubtotal = getCartSubtotal(cartItems);
+  const totalAmount = hasCartItems ? cartSubtotal : manualTotalAmount;
 
   const currentVariantDisplay =
     customVariantName.trim() ? customVariantName.trim() : selectedVariant;
 
   const handleCheckoutWhatsApp = () => {
+    if (hasCartItems) {
+      const itemLines = cartItems.map(
+        (item, idx) =>
+          `${idx + 1}. *${item.name}* — ${item.size} ml × ${item.quantity} btl (Rp ${(
+            item.unitPrice * item.quantity
+          ).toLocaleString('id-ID')})`
+      );
+
+      const message = [
+        `*PESANAN KERANJANG PARFUM SINKI*`,
+        `------------------------------------------`,
+        ...itemLines,
+        `------------------------------------------`,
+        `• Total Botol: *${cartTotalBottles} botol*`,
+        `• Pengiriman: *Gratis Ongkir Se-Jabodetabek (Min. Order Rp ${minFreeShipping.toLocaleString('id-ID')})*`,
+        `------------------------------------------`,
+        `*TOTAL PEMBAYARAN:* *Rp ${totalAmount.toLocaleString('id-ID')}*`,
+        `------------------------------------------`,
+        `Halo Admin SINKI Parfums, saya ingin memesan daftar parfum di keranjang atas. Mohon info ketersediaan dan pengirimannya ya. Terima kasih!`,
+      ].join('\n');
+
+      onShowToast(`Menghubungkan keranjang belanja ke WhatsApp SINKI...`);
+      openWhatsAppDirect(OFFICIAL_WHATSAPP_RAW, message);
+      return;
+    }
+
     const tierName =
       tier === 'non_premium'
         ? 'Classic EDP (Ketahanan 6-8 Jam)'
@@ -155,18 +233,18 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
       <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/[0.03] rounded-full blur-[140px] pointer-events-none" />
 
       {/* Top Header */}
-      <div className="relative z-10 px-4 pt-3 pb-2.5 shrink-0 bg-[#12141a]/95 border-b border-white/10 backdrop-blur-md flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-2">
+      <div className="relative z-10 px-4 pt-3 pb-2.5 shrink-0 bg-[#12141a]/95 border-b border-white/10 backdrop-blur-md flex items-center justify-between gap-2 shadow-sm">
+        <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={onBackToHome}
-            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-200 hover:text-white transition-colors active:scale-95"
+            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-200 hover:text-white transition-colors active:scale-95 shrink-0"
             title="Kembali ke Beranda"
           >
             <ArrowLeft size={16} />
           </button>
-          <div className="flex items-center gap-1.5">
-            <ShoppingBag size={16} className="text-[#DFB76C]" />
-            <h2 className="font-display text-sm font-extrabold text-white tracking-wider uppercase">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <ShoppingBag size={15} className="text-[#DFB76C] shrink-0" />
+            <h2 className="font-heading text-[15px] sm:text-base font-semibold text-white tracking-[-0.015em] leading-[1.2] truncate">
               Pemesanan SINKI
             </h2>
           </div>
@@ -175,7 +253,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
         {/* View / Hide Full Price List Button */}
         <button
           onClick={() => setShowPriceList((prev) => !prev)}
-          className="flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 text-[11px] font-bold transition-all active:scale-95 shadow-sm"
+          className="flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 font-body text-[11.5px] font-semibold leading-tight transition-all active:scale-95 shadow-sm shrink-0"
         >
           <Tag size={12} className="text-[#DFB76C]" />
           <span>Daftar Harga</span>
@@ -184,33 +262,33 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
       </div>
 
       {/* Main Scrollable Content */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-3.5 pb-36 space-y-3.5">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-3.5 pb-32 space-y-3">
         {/* PROMINENT BADGE: GRATIS ONGKIR SE-JABODETABEK MIN ORDER 150 RIBU */}
-        <div className="p-3 rounded-2xl bg-[#141626] border border-white/10 hover:border-emerald-500/40 flex items-center justify-between shadow-md transition-colors">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#DFB76C] to-[#A07C3A] text-slate-950 flex items-center justify-center shadow-md shrink-0">
-              <Truck size={17} />
+        <div className="p-2.5 rounded-2xl bg-[#141626] border border-white/10 hover:border-emerald-500/40 flex items-center justify-between gap-2 shadow-md transition-colors">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7.5 h-7.5 rounded-xl bg-gradient-to-br from-[#DFB76C] to-[#A07C3A] text-slate-950 flex items-center justify-center shadow-md shrink-0">
+              <Truck size={15} />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-body text-[11px] text-emerald-400 font-medium leading-tight">
                   Promo Spesial
                 </span>
-                <span className="text-[9.5px] font-mono text-zinc-300 font-medium bg-white/10 px-1.5 py-0.2 rounded border border-white/15">
+                <span className="font-body text-[10.5px] tabular-nums text-zinc-300 font-medium bg-white/10 px-1.5 py-0.5 rounded border border-white/15 leading-none">
                   Min. Rp {minFreeShipping.toLocaleString('id-ID')}
                 </span>
               </div>
-              <span className="text-xs font-display font-black text-white block drop-shadow-sm">
+              <span className="font-heading text-[13px] sm:text-[13.5px] font-semibold text-white tracking-[-0.015em] block leading-[1.22] mt-0.5 drop-shadow-sm">
                 Gratis Ongkir Se-Jabodetabek
               </span>
             </div>
           </div>
           {totalAmount >= minFreeShipping ? (
-            <span className="text-[9.5px] font-mono text-emerald-300 bg-emerald-500/25 border border-emerald-500/40 px-2 py-0.5 rounded-full font-black">
+            <span className="font-body text-[11px] tabular-nums text-emerald-300 bg-emerald-500/25 border border-emerald-500/40 px-2 py-0.5 rounded-full font-semibold leading-tight shrink-0">
               ✓ Tercapai
             </span>
           ) : (
-            <span className="text-[9.5px] font-mono text-zinc-300 bg-white/10 border border-white/15 px-2 py-0.5 rounded-full font-medium">
+            <span className="font-body text-[11px] tabular-nums text-zinc-300 bg-white/10 border border-white/15 px-2 py-0.5 rounded-full font-medium leading-tight shrink-0">
               Min. {(minFreeShipping / 1000).toFixed(0)}rb
             </span>
           )}
@@ -218,39 +296,39 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
 
         {/* INLINE EXPANDABLE DAFTAR HARGA TABLE */}
         {showPriceList && (
-          <div className="p-4 rounded-3xl bg-[#141626] border border-white/15 space-y-3 shadow-2xl animate-in fade-in duration-200">
+          <div className="p-3 rounded-3xl bg-[#141626] border border-white/15 space-y-2.5 shadow-2xl animate-in fade-in duration-200">
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <div>
-                <h3 className="font-display font-extrabold text-xs text-[#DFB76C] uppercase tracking-wider">
+                <h3 className="font-heading font-semibold text-[14px] sm:text-[15px] text-[#DFB76C] tracking-[-0.015em] leading-[1.25]">
                   Daftar Harga Lengkap SINKI
                 </h3>
-                <p className="text-[9.5px] text-slate-300 font-medium">
+                <p className="font-body text-[11px] text-slate-300 font-normal mt-0.5 leading-[1.4]">
                   Pilih ukuran & kategori sesuai selera Anda
                 </p>
               </div>
               <button
                 onClick={() => setShowPriceList(false)}
-                className="text-[10px] text-slate-200 hover:text-white bg-white/10 px-2 py-1 rounded-lg border border-white/10"
+                className="font-body text-[11.5px] font-medium text-slate-200 hover:text-white bg-white/10 px-2.5 py-1 rounded-lg border border-white/10 leading-tight"
               >
                 Tutup
               </button>
             </div>
 
             {/* Price Table 1: Classic EDP */}
-            <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-white flex items-center gap-1">
+            <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-heading text-[13px] font-semibold text-white flex items-center gap-1 leading-[1.25]">
                   Classic EDP
                 </span>
-                <span className="text-[9px] font-mono text-emerald-400 font-bold bg-emerald-500/15 px-1.5 py-0.5 rounded">
+                <span className="font-body text-[11px] tabular-nums text-emerald-400 font-medium bg-emerald-500/15 px-2 py-0.5 rounded leading-tight">
                   ⏱️ Awet 6–8 Jam
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-1 text-[10px]">
+              <div className="grid grid-cols-3 gap-1.5 font-body text-[11.5px] tabular-nums">
                 {BOTTLE_SIZES.map((s) => (
-                  <div key={s} className="p-1 rounded bg-white/[0.04] text-center border border-white/10">
-                    <span className="text-slate-400 block">{s}ml</span>
-                    <span className="font-mono font-bold text-zinc-200">
+                  <div key={s} className="p-1.5 rounded-lg bg-white/[0.04] text-center border border-white/10">
+                    <span className="text-slate-400 block leading-tight">{s}ml</span>
+                    <span className="font-semibold text-zinc-200 leading-snug">
                       Rp {((currentNonPremium[s] || 0) / 1000).toFixed(0)}k
                     </span>
                   </div>
@@ -259,20 +337,20 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
             </div>
 
             {/* Price Table 2: Premium */}
-            <div className="p-2.5 rounded-xl bg-black/40 border border-[#C5A059]/25 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#DFB76C] flex items-center gap-1">
+            <div className="p-2.5 rounded-xl bg-black/40 border border-[#C5A059]/25 space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="font-heading text-[13px] font-semibold text-[#DFB76C] flex items-center gap-1 leading-[1.25]">
                   <Crown size={12} /> Premium
                 </span>
-                <span className="text-[9px] font-mono font-medium text-zinc-200 bg-white/10 px-1.5 py-0.5 rounded">
+                <span className="font-body text-[11px] tabular-nums font-medium text-zinc-200 bg-white/10 px-2 py-0.5 rounded leading-tight">
                   ⏱️ Awet 8–12 Jam • Rp {currentPremiumRate.toLocaleString('id-ID')} / ml
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-1 text-[10px]">
+              <div className="grid grid-cols-3 gap-1.5 font-body text-[11.5px] tabular-nums">
                 {BOTTLE_SIZES.map((s) => (
-                  <div key={s} className="p-1 rounded bg-white/[0.04] text-center border border-white/10">
-                    <span className="text-slate-400 block">{s}ml</span>
-                    <span className="font-mono font-bold text-[#DFB76C]">
+                  <div key={s} className="p-1.5 rounded-lg bg-white/[0.04] text-center border border-white/10">
+                    <span className="text-slate-400 block leading-tight">{s}ml</span>
+                    <span className="font-semibold text-[#DFB76C] leading-snug">
                       Rp {((s * currentPremiumRate) / 1000).toFixed(0)}k
                     </span>
                   </div>
@@ -281,20 +359,20 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
             </div>
 
             {/* Price Table 3: Mykonos */}
-            <div className="p-2.5 rounded-xl bg-black/40 border border-rose-500/25 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-rose-300 flex items-center gap-1">
+            <div className="p-2.5 rounded-xl bg-black/40 border border-rose-500/25 space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="font-heading text-[13px] font-semibold text-rose-300 flex items-center gap-1 leading-[1.25]">
                   <Flame size={12} /> Mykonos Series
                 </span>
-                <span className="text-[9px] font-mono font-medium text-rose-200 bg-rose-500/15 px-1.5 py-0.5 rounded">
+                <span className="font-body text-[11px] tabular-nums font-medium text-rose-200 bg-rose-500/15 px-2 py-0.5 rounded leading-tight">
                   ⏱️ Awet Seharian • Rp {currentMykonosRate.toLocaleString('id-ID')} / ml
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-1 text-[10px]">
+              <div className="grid grid-cols-3 gap-1.5 font-body text-[11.5px] tabular-nums">
                 {BOTTLE_SIZES.map((s) => (
-                  <div key={s} className="p-1 rounded bg-white/[0.04] text-center border border-white/10">
-                    <span className="text-slate-400 block">{s}ml</span>
-                    <span className="font-mono font-bold text-rose-300">
+                  <div key={s} className="p-1.5 rounded-lg bg-white/[0.04] text-center border border-white/10">
+                    <span className="text-slate-400 block leading-tight">{s}ml</span>
+                    <span className="font-semibold text-rose-300 leading-snug">
                       Rp {((s * currentMykonosRate) / 1000).toFixed(0)}k
                     </span>
                   </div>
@@ -304,22 +382,152 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
           </div>
         )}
 
+        {/* KERANJANG BELANJA DARI HALAMAN COLLECTION */}
+        {hasCartItems && (
+          <div className="p-3 rounded-3xl bg-[#141724]/95 border border-white/12 space-y-2.5 shadow-lg backdrop-blur-md">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <ShoppingBag size={15} className="text-[#DFB76C]" />
+                <div>
+                  <h3 className="font-heading font-semibold text-[14px] sm:text-[15px] text-white tracking-[-0.015em] leading-[1.25]">
+                    Keranjang Belanja
+                  </h3>
+                  <span className="font-body text-[11px] font-medium tabular-nums text-[#DFB76C] leading-tight">
+                    {cartItems.length} item · {cartTotalBottles} botol
+                  </span>
+                </div>
+              </div>
+
+              {!confirmClearCart ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmClearCart(true)}
+                  className="font-body text-[11.5px] font-medium text-rose-300/90 hover:text-rose-200 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/25 leading-tight transition-colors"
+                >
+                  Kosongkan
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClearCart(false)}
+                    className="font-body text-[11.5px] font-medium text-slate-300 px-2 py-1 rounded-lg bg-white/10 leading-tight"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCartItems(clearCart());
+                      setConfirmClearCart(false);
+                      onShowToast('Keranjang belanja dikosongkan');
+                    }}
+                    className="font-body text-[11.5px] font-semibold text-white px-2 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 leading-tight"
+                  >
+                    Ya, Hapus
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              {cartItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-2.5 rounded-xl bg-[#141626] border border-white/10 flex items-center justify-between gap-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-heading text-[13.5px] sm:text-sm font-semibold text-white tracking-[-0.015em] leading-[1.25] truncate">
+                      {item.name}
+                    </h4>
+                    <div className="flex items-center gap-1.5 font-body text-xs tabular-nums mt-0.5 leading-tight">
+                      <span className="text-slate-300 font-normal">{item.size} ml</span>
+                      <span className="text-slate-600">·</span>
+                      <span className="text-[#DFB76C] font-semibold">
+                        Rp {(item.unitPrice * item.quantity).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1.5 bg-[#121422] px-1.5 py-1 rounded-lg border border-white/15">
+                      <button
+                        type="button"
+                        onClick={() => setCartItems(updateCartItemQuantity(item.id, -1))}
+                        className="w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white font-body text-xs font-semibold flex items-center justify-center"
+                      >
+                        -
+                      </button>
+                      <span className="font-body text-xs font-semibold tabular-nums text-white min-w-4 text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCartItems(updateCartItemQuantity(item.id, 1))}
+                        className="w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white font-body text-xs font-semibold flex items-center justify-center"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCartItems(removeFromCart(item.id));
+                        onShowToast(`${item.name} (${item.size} ml) dihapus dari keranjang`);
+                      }}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 border border-white/10 text-slate-300 hover:text-rose-300 transition-colors"
+                      title="Hapus dari keranjang"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {onNavigateToCollection && (
+              <button
+                type="button"
+                onClick={onNavigateToCollection}
+                className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-[#DFB76C] font-body text-xs sm:text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Plus size={13} className="text-[#DFB76C]" />
+                <span>Tambah Varian Lain dari Collection</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* TOGGLE FORM MANUAL BILA KERANJANG SEDANG TERISI */}
+        {hasCartItems && (
+          <button
+            type="button"
+            onClick={() => setShowManualFormWhenCartActive((prev) => !prev)}
+            className="w-full py-2 px-3 rounded-xl bg-[#141724]/80 border border-white/10 text-slate-300 hover:text-white font-body text-xs font-medium flex items-center justify-between transition-colors"
+          >
+            <span>Pesan Varian Tunggal Tanpa Keranjang (Opsional)</span>
+            {showManualFormWhenCartActive ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        )}
+
         {/* STEP 1: PILIH KATEGORI PARFUM */}
-        <div className="p-4 rounded-3xl bg-[#141724]/95 border border-white/12 space-y-3 shadow-lg backdrop-blur-md">
-          <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-black uppercase tracking-widest text-[#DFB76C] flex items-center gap-1.5">
-              <Layers size={13} /> 1. Kategori Parfum & Ketahanan
-            </span>
-            <span className="text-[9.5px] text-zinc-300 font-medium flex items-center gap-1">
-              <ShieldCheck size={11} className="text-emerald-400" /> Bibit Import Eropa
+        {(!hasCartItems || showManualFormWhenCartActive) && (
+        <div className="p-3 rounded-3xl bg-[#141724]/95 border border-white/12 space-y-2.5 shadow-lg backdrop-blur-md">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h3 className="font-heading text-[14px] sm:text-[15px] font-semibold text-[#DFB76C] tracking-[-0.015em] leading-[1.25] flex items-center gap-1.5">
+              <Layers size={14} className="shrink-0" /> 1. Kategori Parfum & Ketahanan
+            </h3>
+            <span className="font-body text-[11px] text-zinc-300 font-medium flex items-center gap-1 leading-tight">
+              <ShieldCheck size={12} className="text-emerald-400 shrink-0" /> Bibit Import Eropa
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {/* Classic EDP (dulu Non Premium) */}
             <button
               onClick={() => setTier('non_premium')}
-              className={`p-2.5 rounded-2xl border text-left transition-all relative overflow-hidden ${
+              className={`p-2 rounded-2xl border text-left transition-all relative overflow-hidden ${
                 tier === 'non_premium'
                   ? 'bg-[#C5A059]/15 border-[#DFB76C]/80 shadow-[0_2px_12px_rgba(197,160,89,0.15)]'
                   : 'bg-white/5 border-white/12 hover:border-white/25'
@@ -327,17 +535,17 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
             >
               {/* Longevity Badge */}
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] font-bold font-mono text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-0.5">
+                <span className="font-body text-[10px] font-medium leading-none tabular-nums text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-0.5">
                   <Clock size={9} /> 6–8 Jam
                 </span>
               </div>
-              <span className="font-display font-black text-xs text-white block leading-tight">
+              <span className="font-heading font-semibold text-[12.5px] text-white block leading-[1.22] truncate">
                 Classic EDP
               </span>
-              <span className="text-[9px] text-zinc-300 block font-medium mt-0.5">
+              <span className="font-body text-[10.5px] text-zinc-300 block font-normal mt-0.5 leading-[1.3] truncate">
                 Daily Fresh
               </span>
-              <span className="text-[10px] font-mono text-zinc-100 font-bold block mt-1.5">
+              <span className="font-body text-[11px] tabular-nums text-zinc-100 font-semibold block mt-1 leading-tight">
                 Mulai 17rb
               </span>
             </button>
@@ -345,7 +553,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
             {/* Premium */}
             <button
               onClick={() => setTier('premium')}
-              className={`p-2.5 rounded-2xl border text-left transition-all relative overflow-hidden ${
+              className={`p-2 rounded-2xl border text-left transition-all relative overflow-hidden ${
                 tier === 'premium'
                   ? 'bg-[#C5A059]/15 border-[#DFB76C]/80 shadow-[0_2px_12px_rgba(197,160,89,0.15)]'
                   : 'bg-white/5 border-white/12 hover:border-white/25'
@@ -353,25 +561,25 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
             >
               {/* Longevity Badge */}
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] font-bold font-mono text-[#DFB76C] bg-white/10 px-1.5 py-0.5 rounded-full border border-white/15 flex items-center gap-0.5">
+                <span className="font-body text-[10px] font-medium leading-none tabular-nums text-[#DFB76C] bg-white/10 px-1.5 py-0.5 rounded-full border border-white/15 flex items-center gap-0.5">
                   <Clock size={9} /> 8–12 Jam
                 </span>
               </div>
-              <span className="font-display font-black text-xs text-white block leading-tight">
+              <span className="font-heading font-semibold text-[12.5px] text-white block leading-[1.22] truncate">
                 Premium
               </span>
-              <span className="text-[9px] text-zinc-300 block font-medium mt-0.5">
+              <span className="font-body text-[10.5px] text-zinc-300 block font-normal mt-0.5 leading-[1.3] truncate">
                 Konsentrasi Tinggi
               </span>
-              <span className="text-[10px] font-mono text-[#DFB76C] font-bold block mt-1.5">
-                Rp {currentPremiumRate.toLocaleString('id-ID')} / ml
+              <span className="font-body text-[11px] tabular-nums text-[#DFB76C] font-semibold block mt-1 leading-tight">
+                Rp {currentPremiumRate.toLocaleString('id-ID')}/ml
               </span>
             </button>
 
             {/* Mykonos */}
             <button
               onClick={() => setTier('mykonos')}
-              className={`p-2.5 rounded-2xl border text-left transition-all relative overflow-hidden ${
+              className={`p-2 rounded-2xl border text-left transition-all relative overflow-hidden ${
                 tier === 'mykonos'
                   ? 'bg-rose-500/15 border-rose-400/80 shadow-[0_2px_12px_rgba(244,63,94,0.15)]'
                   : 'bg-white/5 border-white/12 hover:border-white/25'
@@ -379,63 +587,63 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
             >
               {/* Longevity Badge */}
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[8.5px] font-bold font-mono text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded-full border border-rose-500/30 flex items-center gap-0.5">
+                <span className="font-body text-[10px] font-medium leading-none tabular-nums text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded-full border border-rose-500/30 flex items-center gap-0.5">
                   <Clock size={9} /> Seharian
                 </span>
               </div>
-              <span className="font-display font-black text-xs text-white block leading-tight">
+              <span className="font-heading font-semibold text-[12.5px] text-white block leading-[1.22] truncate">
                 Mykonos
               </span>
-              <span className="text-[9px] text-rose-200/90 block font-medium mt-0.5">
+              <span className="font-body text-[10.5px] text-rose-200/90 block font-normal mt-0.5 leading-[1.3] truncate">
                 Aroma Viral Mewah
               </span>
-              <span className="text-[10px] font-mono text-rose-300 font-bold block mt-1.5">
-                Rp {currentMykonosRate.toLocaleString('id-ID')} / ml
+              <span className="font-body text-[11px] tabular-nums text-rose-300 font-semibold block mt-1 leading-tight">
+                Rp {currentMykonosRate.toLocaleString('id-ID')}/ml
               </span>
             </button>
           </div>
 
           {/* Edukasi Keunggulan & Ketahanan (Membangun Kepercayaan Pembeli) */}
-          <div className="p-3 rounded-2xl bg-black/40 border border-white/10 flex items-start gap-2.5 shadow-inner">
-            <div className="w-7 h-7 rounded-lg bg-white/10 text-[#DFB76C] flex items-center justify-center shrink-0 mt-0.5">
-              <Clock size={15} />
+          <div className="p-2.5 rounded-2xl bg-black/40 border border-white/10 flex items-start gap-2.5 shadow-inner font-body">
+            <div className="w-6.5 h-6.5 rounded-lg bg-white/10 text-[#DFB76C] flex items-center justify-center shrink-0 mt-0.5">
+              <Clock size={14} />
             </div>
-            <div className="text-[11px] space-y-0.5 flex-1">
+            <div className="space-y-1 flex-1 min-w-0">
               {tier === 'non_premium' && (
                 <>
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-white">Pilihan Terpilih: Classic EDP</span>
-                    <span className="text-[9.5px] font-mono font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-white leading-tight">Pilihan Terpilih: Classic EDP</span>
+                    <span className="text-[11px] font-medium tabular-nums text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/30 leading-none">
                       Awet 6–8 Jam
                     </span>
                   </div>
-                  <p className="text-zinc-300 text-[10.5px] leading-relaxed pt-0.5">
+                  <p className="text-zinc-300 text-xs font-normal leading-[1.45]">
                     Racikan harian beraroma segar dan bersih. Sangat pas untuk kuliah, nongkrong, dan rutinitas santai harian tanpa khawatir kantong bolong.
                   </p>
                 </>
               )}
               {tier === 'premium' && (
                 <>
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-white">Pilihan Terpilih: Premium Extrait</span>
-                    <span className="text-[9.5px] font-mono font-bold text-[#DFB76C] bg-white/10 px-1.5 py-0.2 rounded border border-white/15">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-white leading-tight">Pilihan Terpilih: Premium Extrait</span>
+                    <span className="text-[11px] font-medium tabular-nums text-[#DFB76C] bg-white/10 px-1.5 py-0.5 rounded border border-white/15 leading-none">
                       Awet 8–12 Jam
                     </span>
                   </div>
-                  <p className="text-zinc-300 text-[10.5px] leading-relaxed pt-0.5">
+                  <p className="text-zinc-300 text-xs font-normal leading-[1.45]">
                     Konsentrasi bibit murni ekstrak grade A eropa. Jejak aroma kuat dan mewah, tahan banting untuk kerja di ruangan AC maupun aktivitas padat seharian.
                   </p>
                 </>
               )}
               {tier === 'mykonos' && (
                 <>
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-white">Pilihan Terpilih: Mykonos Series</span>
-                    <span className="text-[9.5px] font-mono font-bold text-rose-300 bg-rose-500/20 px-1.5 py-0.2 rounded border border-rose-500/30">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-white leading-tight">Pilihan Terpilih: Mykonos Series</span>
+                    <span className="text-[11px] font-medium tabular-nums text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/30 leading-none">
                       Awet Seharian Penuh
                     </span>
                   </div>
-                  <p className="text-zinc-300 text-[10.5px] leading-relaxed pt-0.5">
+                  <p className="text-zinc-300 text-xs font-normal leading-[1.45]">
                     Aroma viral berkelas mewah dengan formula pekat ekstra awet. Semerbak menempel kuat di serat pakaian dari pagi hingga malam hari.
                   </p>
                 </>
@@ -444,12 +652,12 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
           </div>
 
           {/* STEP 2: PILIH UKURAN BOTOL */}
-          <div className="pt-2">
-            <span className="text-[10.5px] font-black uppercase tracking-widest text-[#DFB76C] block mb-2">
+          <div className="pt-0.5">
+            <h3 className="font-heading text-[14px] sm:text-[15px] font-semibold text-[#DFB76C] tracking-[-0.015em] leading-[1.25] block mb-2">
               2. Pilih Ukuran Botol
-            </span>
+            </h3>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5">
               {BOTTLE_SIZES.map((size) => {
                 const isSelected = selectedSize === size;
                 const price = getPriceForSize(size);
@@ -458,16 +666,16 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                   <button
                     key={size}
                     onClick={() => setSelectedSize(size)}
-                    className={`p-2 rounded-2xl border text-center transition-all ${
+                    className={`p-2 rounded-2xl border text-center font-body transition-all ${
                       isSelected
                         ? 'bg-[#C5A059]/15 border-[#DFB76C]/80 shadow-[0_2px_12px_rgba(197,160,89,0.15)]'
                         : 'bg-white/5 border-white/12 hover:border-white/25'
                     }`}
                   >
-                    <span className="font-display text-sm font-black text-white block">
+                    <span className="text-xs sm:text-[13px] font-semibold tabular-nums text-white block leading-tight">
                       {size} ml
                     </span>
-                    <span className="text-[11px] font-mono font-bold text-[#DFB76C] block mt-0.5">
+                    <span className="text-[11.5px] font-medium tabular-nums text-[#DFB76C] block mt-0.5 leading-tight">
                       Rp {price.toLocaleString('id-ID')}
                     </span>
                   </button>
@@ -477,10 +685,10 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
           </div>
 
           {/* STEP 3: PILIH VARIAN AROMA & JUMLAH */}
-          <div className="pt-2 space-y-2">
-            <span className="text-[10.5px] font-black uppercase tracking-widest text-[#DFB76C] block">
+          <div className="pt-0.5 space-y-2">
+            <h3 className="font-heading text-[14px] sm:text-[15px] font-semibold text-[#DFB76C] tracking-[-0.015em] leading-[1.25] block">
               3. Varian Aroma
-            </span>
+            </h3>
 
             <div className="relative">
               <select
@@ -489,7 +697,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                   setSelectedVariant(e.target.value);
                   setCustomVariantName('');
                 }}
-                className="w-full py-2.5 px-3 rounded-xl bg-[#141626] border border-white/15 text-white font-semibold text-xs focus:outline-none focus:border-[#DFB76C] appearance-none pr-8 cursor-pointer shadow-inner"
+                className="w-full py-2 px-3 rounded-xl bg-[#141626] border border-white/15 text-white font-body font-medium text-base sm:text-sm leading-normal focus:outline-none focus:border-[#DFB76C] appearance-none pr-8 cursor-pointer shadow-inner"
               >
                 {activeTopList.map((item) => (
                   <option key={item.id} value={item.name} className="bg-[#141626] text-white">
@@ -498,7 +706,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                 ))}
               </select>
               <ChevronDown
-                size={15}
+                size={16}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
               />
             </div>
@@ -508,25 +716,25 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
               placeholder="Atau ketik nama parfum pilihan Anda..."
               value={customVariantName}
               onChange={(e) => setCustomVariantName(e.target.value)}
-              className="w-full py-2 px-3 rounded-xl bg-[#141626] border border-white/15 text-white font-medium text-xs focus:outline-none focus:border-[#DFB76C] placeholder:text-slate-400 shadow-inner"
+              className="w-full py-2 px-3 rounded-xl bg-[#141626] border border-white/15 text-white font-body font-normal text-base sm:text-sm leading-normal focus:outline-none focus:border-[#DFB76C] placeholder:text-slate-400 shadow-inner"
             />
 
             {/* Quantity */}
-            <div className="pt-2 flex items-center justify-between border-t border-white/12">
-              <span className="text-xs text-white font-bold">Jumlah Botol:</span>
-              <div className="flex items-center gap-3 bg-[#121422] p-1 rounded-xl border border-white/15">
+            <div className="pt-2 flex items-center justify-between border-t border-white/12 font-body">
+              <span className="text-xs sm:text-[13px] text-white font-medium">Jumlah Botol:</span>
+              <div className="flex items-center gap-2.5 bg-[#121422] p-1 rounded-xl border border-white/15">
                 <button
                   onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                  className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center active:scale-90"
+                  className="w-6.5 h-6.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center justify-center active:scale-90"
                 >
                   -
                 </button>
-                <span className="font-mono text-xs font-bold text-white min-w-5 text-center">
+                <span className="text-xs sm:text-[13px] font-semibold tabular-nums text-white min-w-5 text-center">
                   {quantity}
                 </span>
                 <button
                   onClick={() => setQuantity((prev) => prev + 1)}
-                  className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center active:scale-90"
+                  className="w-6.5 h-6.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center justify-center active:scale-90"
                 >
                   +
                 </button>
@@ -534,30 +742,31 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
             </div>
           </div>
         </div>
+        )}
 
         {/* STEP 4: PEMBAYARAN QRIS RESMI (SEMBUNYIKAN BY DEFAULT, BUKA KETIKA MAU BAYAR) */}
-        <div className="p-4 rounded-3xl bg-[#141724]/95 border border-white/12 space-y-3 shadow-md backdrop-blur-md">
-          <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-black uppercase tracking-widest text-[#DFB76C] flex items-center gap-1.5">
-              <QrCode size={13} /> 4. Pembayaran QRIS SINKI
-            </span>
-            <span className="text-[9.5px] font-mono text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+        <div className="p-3 rounded-3xl bg-[#141724]/95 border border-white/12 space-y-2.5 shadow-md backdrop-blur-md">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h3 className="font-heading text-[14px] sm:text-[15px] font-semibold text-[#DFB76C] tracking-[-0.015em] leading-[1.25] flex items-center gap-1.5">
+              <QrCode size={14} className="shrink-0" /> 4. Pembayaran QRIS SINKI
+            </h3>
+            <span className="font-body text-[11px] text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full font-medium leading-tight">
               BCA • Mandiri • E-Wallet
             </span>
           </div>
 
           {!showQris ? (
             /* Tampilan Ringkas Saat QRIS Disembunyikan */
-            <div className="p-3.5 rounded-2xl bg-black/35 border border-white/10 text-center space-y-3 transition-all duration-300">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-[#DFB76C] mx-auto shadow-inner">
-                <QrCode size={24} />
+            <div className="p-3 rounded-2xl bg-black/35 border border-white/10 text-center space-y-2 transition-all duration-300">
+              <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-[#DFB76C] mx-auto shadow-inner">
+                <QrCode size={20} />
               </div>
 
               <div>
-                <span className="font-display font-extrabold text-xs text-white block">
+                <span className="font-heading font-semibold text-[14px] sm:text-[15px] text-white tracking-[-0.015em] leading-[1.25] block">
                   Mau Bayar Langsung Pakai QRIS?
                 </span>
-                <span className="text-[10px] text-slate-300 block mt-0.5 leading-snug">
+                <span className="font-body text-xs text-slate-300 font-normal block mt-1 leading-[1.45]">
                   Mendukung semua Bank (BCA, Mandiri, BRI, BNI) & E-Wallet (GoPay, OVO, Dana, ShopeePay)
                 </span>
               </div>
@@ -566,35 +775,35 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                 <button
                   type="button"
                   onClick={handleOpenQris}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:scale-98 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-black/40 transition-all duration-300"
+                  className="w-full py-2 px-3.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:scale-98 text-slate-950 font-body font-semibold text-xs sm:text-[13px] tabular-nums flex items-center justify-center gap-2 shadow-lg shadow-black/40 transition-all duration-300"
                 >
-                  <Eye size={15} />
+                  <Eye size={15} className="shrink-0" />
                   <span>Tampilkan Kode QRIS (Rp {totalAmount.toLocaleString('id-ID')})</span>
                 </button>
               </div>
 
-              <p className="text-[9.5px] text-slate-400 font-mono">
+              <p className="font-body text-[11px] text-slate-400 font-normal leading-[1.4]">
                 Atau Anda juga bisa langsung chat WhatsApp di bawah tanpa buka QRIS sekarang.
               </p>
             </div>
           ) : (
             /* Tampilan QRIS Terbuka - Pure Crystal Smooth (Zero Blur - 100% Tajam & Ramah di Mata) */
             <div
-              className={`space-y-3 relative overflow-hidden transition-all duration-400 ease-out ${
+              className={`space-y-2.5 relative overflow-hidden transition-all duration-400 ease-out ${
                 isClosingQris
                   ? 'opacity-0 translate-y-2 transition-all duration-300 ease-in'
                   : 'animate-qris-unveil'
               }`}
             >
 
-              <div className="relative z-10 flex items-center justify-between px-1">
-                <span className="text-[10.5px] font-bold text-zinc-200 flex items-center gap-1.5">
-                  <QrCode size={13} className="text-[#DFB76C]" /> Silakan Scan Barcode di Bawah:
+              <div className="relative z-10 flex items-center justify-between gap-2 px-1">
+                <span className="font-body text-xs font-medium text-zinc-200 flex items-center gap-1.5">
+                  <QrCode size={13} className="text-[#DFB76C] shrink-0" /> Silakan Scan Barcode di Bawah:
                 </span>
                 <button
                   type="button"
                   onClick={handleCloseQris}
-                  className="text-[10px] text-slate-300 hover:text-white bg-white/10 hover:bg-white/15 px-2.5 py-1 rounded-lg border border-white/10 font-bold flex items-center gap-1 transition-all duration-300 active:scale-95"
+                  className="font-body text-[11px] text-slate-300 hover:text-white bg-white/10 hover:bg-white/15 px-2 py-1 rounded-lg border border-white/10 font-medium leading-tight flex items-center gap-1 transition-all duration-300 active:scale-95 shrink-0"
                 >
                   <EyeOff size={11} />
                   <span>Sembunyikan QRIS</span>
@@ -613,23 +822,25 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
         </div>
 
         {/* STEP 5: TOTAL RINCIAN & TOMBOL WHATSAPP RESMI */}
-        <div className="p-4 rounded-3xl bg-[#141724]/95 border border-white/12 space-y-3 shadow-lg backdrop-blur-md">
+        <div className="p-3 rounded-3xl bg-[#141724]/95 border border-white/12 space-y-2.5 shadow-lg backdrop-blur-md">
           {/* Summary */}
-          <div className="space-y-1.5 text-xs text-white">
-            <div className="flex justify-between font-semibold">
+          <div className="space-y-1.5 font-body text-xs sm:text-[13px] text-white">
+            <div className="flex justify-between gap-2 font-medium">
               <span>
-                Subtotal ({quantity}x {selectedSize}ml):
+                {hasCartItems
+                  ? `Subtotal Keranjang (${cartTotalBottles} botol):`
+                  : `Subtotal (${quantity}x ${selectedSize}ml):`}
               </span>
-              <span className="font-mono font-black text-white">
+              <span className="font-semibold tabular-nums text-white shrink-0">
                 Rp {totalAmount.toLocaleString('id-ID')}
               </span>
             </div>
 
-            <div className="flex justify-between text-zinc-300 font-medium">
+            <div className="flex justify-between gap-2 text-zinc-300 font-normal">
               <span>Pengiriman:</span>
-              <span className="font-bold text-[10.5px] uppercase">
+              <span className="font-medium text-[11.5px] text-right tabular-nums">
                 {totalAmount >= minFreeShipping ? (
-                  <span className="text-emerald-400 font-black">Gratis Ongkir (Order ≥ Rp {minFreeShipping.toLocaleString('id-ID')})</span>
+                  <span className="text-emerald-400 font-semibold">Gratis Ongkir (Order ≥ Rp {minFreeShipping.toLocaleString('id-ID')})</span>
                 ) : (
                   <span className="text-zinc-300">
                     Gratis Ongkir (Min. Rp {minFreeShipping.toLocaleString('id-ID')})
@@ -638,29 +849,29 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
               </span>
             </div>
 
-            <div className="pt-2 border-t border-white/12 flex items-center justify-between">
+            <div className="pt-2 border-t border-white/12 flex items-center justify-between gap-2">
               <div>
-                <span className="text-[10.5px] text-zinc-300 font-medium block">Total Akhir:</span>
-                <span className="font-display text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#F0DFB6] via-[#DFB76C] to-[#C5A059] drop-shadow-sm">
+                <span className="text-[11px] text-zinc-300 font-normal block leading-tight">Total Akhir:</span>
+                <span className="font-body text-lg sm:text-xl font-bold tabular-nums tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-r from-[#F0DFB6] via-[#DFB76C] to-[#C5A059] drop-shadow-sm">
                   Rp {totalAmount.toLocaleString('id-ID')}
                 </span>
               </div>
 
-              <span className="text-[9.5px] font-mono text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/40 font-bold">
+              <span className="font-body text-[11px] text-emerald-300 bg-emerald-500/20 px-2 py-1 rounded-lg border border-emerald-500/40 font-semibold leading-tight shrink-0">
                 Pesan Cepat WA
               </span>
             </div>
           </div>
 
             {/* Guarantee Trust Badges */}
-            <div className="pt-2 border-t border-white/10 grid grid-cols-2 gap-2 text-[10px] text-zinc-300">
+            <div className="pt-2 border-t border-white/10 grid grid-cols-2 gap-2 font-body text-[11px] text-zinc-300">
               <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/30 border border-white/10">
-                <ShieldCheck size={14} className="text-emerald-400 shrink-0" />
-                <span className="leading-tight font-medium">Garansi Pecah Diganti 100%</span>
+                <ShieldCheck size={13} className="text-emerald-400 shrink-0" />
+                <span className="leading-[1.32] font-normal">Garansi Pecah Diganti 100%</span>
               </div>
               <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/30 border border-white/10">
-                <Crown size={14} className="text-[#DFB76C] shrink-0" />
-                <span className="leading-tight font-medium">Bibit Murni Import Eropa Grade A</span>
+                <Crown size={13} className="text-[#DFB76C] shrink-0" />
+                <span className="leading-[1.32] font-normal">Bibit Murni Import Eropa Grade A</span>
               </div>
             </div>
           </div>
@@ -670,7 +881,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
       <div className="absolute bottom-[82px] inset-x-0 z-40 flex justify-center pointer-events-none px-4">
         <button
           onClick={handleCheckoutWhatsApp}
-          className="pointer-events-auto inline-flex items-center gap-2 py-1.5 px-3.5 rounded-full bg-gradient-to-r from-[#20c359] via-[#25D366] to-[#1ebe5d] hover:brightness-105 active:scale-95 text-slate-950 font-black text-[10.5px] transition-all shadow-[0_6px_20px_rgba(37,211,102,0.38),0_2px_8px_rgba(0,0,0,0.6)] border border-white/30 select-none cursor-pointer"
+          className="pointer-events-auto inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-full bg-gradient-to-r from-[#20c359] via-[#25D366] to-[#1ebe5d] hover:brightness-105 active:scale-95 text-slate-950 font-body font-semibold text-xs sm:text-[13px] leading-none tabular-nums transition-all shadow-[0_6px_20px_rgba(37,211,102,0.38),0_2px_8px_rgba(0,0,0,0.6)] border border-white/30 select-none cursor-pointer max-w-full"
           title="Pesan via WhatsApp Resmi SINKI"
           aria-label="Pesan via WhatsApp"
         >
@@ -682,15 +893,15 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
           </div>
 
           {/* Teks Tombol */}
-          <span className="font-extrabold uppercase tracking-wider text-[10.5px] leading-none whitespace-nowrap">
+          <span className="font-semibold leading-none whitespace-nowrap">
             Pesan via WhatsApp
           </span>
 
           {/* Pemisah Dot */}
-          <span className="text-slate-950/40 text-[9px] font-bold">•</span>
+          <span className="text-slate-950/40 text-xs font-semibold leading-none">•</span>
 
           {/* Nominal Harga Ringkas */}
-          <span className="font-mono text-[10.5px] font-black text-slate-950 whitespace-nowrap bg-black/15 py-0.5 px-1.5 rounded-md">
+          <span className="font-body text-xs font-semibold leading-none tabular-nums text-slate-950 whitespace-nowrap bg-black/15 py-0.5 px-1.5 rounded-md">
             Rp {totalAmount.toLocaleString('id-ID')}
           </span>
         </button>

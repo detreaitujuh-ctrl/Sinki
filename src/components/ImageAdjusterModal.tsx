@@ -148,14 +148,14 @@ export const ImageAdjusterModal: React.FC<ImageAdjusterModalProps> = ({
             className="relative w-full max-w-sm rounded-3xl bg-[#12141f] border border-amber-500/40 p-4 shadow-2xl space-y-3.5 text-center cursor-default max-h-[92vh] overflow-y-auto no-scrollbar"
           >
             {/* Header Modal */}
-            <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+            <div className="flex items-center justify-between pb-2.5 border-b border-white/10 font-body">
               <div className="flex items-center gap-2 text-left">
-                <Crop size={16} className="text-amber-400" />
+                <Crop size={16} className="text-amber-400 shrink-0" />
                 <div>
-                  <h3 className="font-display font-bold text-xs text-white">
+                  <h3 className="font-heading font-semibold text-base leading-[1.25] text-white tracking-[-0.015em]">
                     {title}
                   </h3>
-                  <span className="text-[9px] text-slate-400 block">
+                  <span className="text-xs text-slate-400 font-normal block">
                     Geser foto & atur zoom agar pas di layar
                   </span>
                 </div>
@@ -214,16 +214,16 @@ export const ImageAdjusterModal: React.FC<ImageAdjusterModalProps> = ({
                 />
 
                 {/* Subtle Drag Hint Overlay */}
-                <div className="absolute bottom-2 left-2 z-20 flex items-center gap-1 bg-black/70 px-2 py-0.5 rounded-md text-[8px] text-amber-300 font-mono pointer-events-none">
-                  <Move size={9} />
+                <div className="absolute bottom-2 left-2 z-20 flex items-center gap-1 bg-black/75 px-2 py-0.5 rounded-md font-body text-xs text-amber-300 font-medium pointer-events-none">
+                  <Move size={11} />
                   <span>Geser untuk atur posisi</span>
                 </div>
               </div>
             </div>
 
             {/* Preset Buttons & Zoom Controls */}
-            <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 space-y-2">
-              <div className="flex items-center justify-between text-[10px] font-mono font-bold text-slate-300">
+            <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 space-y-2 font-body">
+              <div className="flex items-center justify-between text-xs font-medium text-slate-300">
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
@@ -232,7 +232,7 @@ export const ImageAdjusterModal: React.FC<ImageAdjusterModalProps> = ({
                       setPanX(0);
                       setPanY(0);
                     }}
-                    className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-[9px] font-bold border border-amber-500/40"
+                    className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs font-medium border border-amber-500/40"
                   >
                     Isi Penuh Kotak
                   </button>
@@ -243,12 +243,12 @@ export const ImageAdjusterModal: React.FC<ImageAdjusterModalProps> = ({
                       setPanX(0);
                       setPanY(0);
                     }}
-                    className="px-2 py-0.5 rounded-md bg-white/5 text-slate-300 hover:bg-white/10 text-[9px] border border-white/10"
+                    className="px-2.5 py-1 rounded-md bg-white/5 text-slate-300 hover:bg-white/10 text-xs font-medium border border-white/10"
                   >
                     Pas di Tengah
                   </button>
                 </div>
-                <span className="text-amber-400">{Math.round(zoom * 100)}%</span>
+                <span className="text-amber-400 font-semibold tabular-nums">{Math.round(zoom * 100)}%</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -292,11 +292,11 @@ export const ImageAdjusterModal: React.FC<ImageAdjusterModalProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-1 font-body">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs transition-colors"
+                className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-medium text-sm transition-colors"
               >
                 Batal
               </button>
@@ -304,9 +304,9 @@ export const ImageAdjusterModal: React.FC<ImageAdjusterModalProps> = ({
               <button
                 type="button"
                 onClick={handleApply}
-                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-lg shadow-amber-500/20"
+                className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-semibold text-sm flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-lg shadow-amber-500/20"
               >
-                <Check size={14} />
+                <Check size={15} />
                 <span>Terapkan & Simpan</span>
               </button>
             </div>

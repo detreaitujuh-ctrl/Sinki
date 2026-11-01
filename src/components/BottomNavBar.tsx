@@ -138,7 +138,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
               <button
                 key={item.id}
                 onClick={() => handleTabClick(item.id)}
-                className={`relative flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-700 ease-out group active:scale-95 focus:outline-none border ${
+                className={`relative flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-700 ease-out group active:scale-95 focus:outline-none border ${
                   isPulsing
                     ? 'bg-gradient-to-r from-[#382c16] via-[#8c6b29] to-[#D4AF57] text-[#F8EBCB] border-[#D4AF57]/60 shadow-[0_2px_12px_rgba(212,175,87,0.3)] scale-[0.98]'
                     : 'bg-transparent hover:bg-white/5 border-transparent'
@@ -150,14 +150,14 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                   <GoldenNectarDropIcon isPulsing={isPulsing} isActive={isActive} />
                 </div>
 
-                {/* Label: TOP 11 */}
+                {/* Label: Top 11 */}
                 <span
-                  className={`text-[9.5px] font-display tracking-wider uppercase mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
+                  className={`font-body text-[10.5px] sm:text-[11px] leading-tight tracking-[0.01em] mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
                     isPulsing
-                      ? 'font-black text-[#F8EBCB]'
+                      ? 'font-semibold text-[#F8EBCB]'
                       : isActive
-                      ? 'font-extrabold text-white drop-shadow-sm'
-                      : 'font-semibold text-slate-400 group-hover:text-slate-200'
+                      ? 'font-semibold text-white drop-shadow-sm'
+                      : 'font-medium text-slate-400 group-hover:text-slate-200'
                   }`}
                 >
                   {item.label}
@@ -179,7 +179,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
             <button
               key={item.id}
               onClick={() => handleTabClick(item.id)}
-              className={`relative flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-700 ease-out group active:scale-95 focus:outline-none border ${
+              className={`relative flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-700 ease-out group active:scale-95 focus:outline-none border ${
                 isPulsing
                   ? 'bg-gradient-to-r from-[#382c16] via-[#8c6b29] to-[#D4AF57] text-[#F8EBCB] border-[#D4AF57]/60 shadow-[0_2px_12px_rgba(212,175,87,0.3)] scale-[0.98]'
                   : 'bg-transparent hover:bg-white/5 border-transparent'
@@ -196,13 +196,13 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                       ? 'text-white drop-shadow-[0_1px_4px_rgba(255,255,255,0.2)]'
                       : 'text-slate-400 group-hover:text-slate-200'
                   }`}
-                  strokeWidth={isPulsing || isActive ? 2.3 : 1.8}
+                  strokeWidth={isPulsing || isActive ? 2.2 : 1.8}
                 />
 
                 {/* Order Count Badge */}
                 {typeof item.count === 'number' && item.count > 0 && (
                   <span
-                    className={`absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-0.5 flex items-center justify-center text-[9px] font-black rounded-full leading-none shadow-sm ${
+                    className={`font-body tabular-nums absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-1 flex items-center justify-center text-[10px] font-semibold rounded-full leading-none shadow-sm ${
                       isPulsing
                         ? 'bg-[#D4AF57] text-slate-950'
                         : 'bg-[#D4AF57] text-slate-950'
@@ -215,12 +215,12 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
               {/* Label */}
               <span
-                className={`text-[9.5px] font-display tracking-wider uppercase mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
+                className={`font-body text-[10.5px] sm:text-[11px] leading-tight tracking-[0.01em] mt-0.5 transition-colors duration-700 ease-out whitespace-nowrap ${
                   isPulsing
-                    ? 'font-black text-[#F8EBCB]'
+                    ? 'font-semibold text-[#F8EBCB]'
                     : isActive
-                    ? 'font-extrabold text-white drop-shadow-sm'
-                    : 'font-semibold text-slate-400 group-hover:text-slate-200'
+                    ? 'font-semibold text-white drop-shadow-sm'
+                    : 'font-medium text-slate-400 group-hover:text-slate-200'
                 }`}
               >
                 {item.label}

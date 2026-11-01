@@ -212,26 +212,26 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const desktopPercent = Math.round(((data.devices.desktop || 0) / totalDevices) * 100);
 
   return (
-    <div className={`space-y-4 text-slate-100 ${isCompact ? 'p-1' : 'p-2 sm:p-4'}`}>
+    <div className={`space-y-4 font-body text-slate-100 ${isCompact ? 'p-1' : 'p-2 sm:p-4'}`}>
       {/* Top Banner Status Real-Time */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-[#171926] via-[#1b1e30] to-[#141624] border border-amber-500/35 shadow-lg">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#171926] via-[#1b1e30] to-[#141624] border border-amber-500/35 shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="relative flex items-center justify-center">
+          <div className="relative flex items-center justify-center shrink-0">
             <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 animate-ping absolute opacity-75" />
             <span className="w-3 h-3 rounded-full bg-emerald-400 relative z-10" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-xs sm:text-sm font-extrabold text-white tracking-wide">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="font-heading text-base sm:text-lg font-semibold leading-[1.25] text-white tracking-[-0.015em]">
                 Tracking Pengunjung Real-Time
               </h4>
-              <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/30">
-                LIVE
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30 leading-tight">
+                Live
               </span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5 font-medium">
-              <Clock size={11} className="text-amber-400 shrink-0" />
-              <span>Mulai merekam sejak: <strong className="text-slate-200">{startedDateFormatted}</strong></span>
+            <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5 font-normal">
+              <Clock size={12} className="text-amber-400 shrink-0" />
+              <span>Mulai merekam sejak: <strong className="text-slate-200 font-semibold">{startedDateFormatted}</strong></span>
             </p>
           </div>
         </div>
@@ -241,19 +241,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           <button
             onClick={refreshData}
             disabled={isRefreshing}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-200 hover:text-white transition-all active:scale-95"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs sm:text-sm font-semibold text-slate-200 hover:text-white transition-all active:scale-95"
             title="Perbarui angka terbaru detik ini"
           >
-            <RefreshCw size={12} className={isRefreshing ? 'animate-spin text-amber-400' : ''} />
+            <RefreshCw size={13} className={isRefreshing ? 'animate-spin text-amber-400' : ''} />
             <span>Perbarui</span>
           </button>
 
           <button
             onClick={() => setShowResetConfirm(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-xs font-bold text-rose-300 hover:text-rose-200 transition-all active:scale-95"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-xs sm:text-sm font-semibold text-rose-300 hover:text-rose-200 transition-all active:scale-95"
             title="Kosongkan hitungan kembali ke nol (0)"
           >
-            <RotateCcw size={12} />
+            <RotateCcw size={13} />
             <span>Reset ke 0</span>
           </button>
         </div>
@@ -265,24 +265,24 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           <div className="flex items-start gap-2.5">
             <AlertCircle size={20} className="text-rose-400 shrink-0 mt-0.5" />
             <div>
-              <h5 className="text-xs font-bold text-rose-200">
+              <h5 className="font-heading text-base font-semibold leading-[1.25] text-rose-200">
                 Konfirmasi Kosongkan Grafik (Mulai dari Nol)?
               </h5>
-              <p className="text-[11px] text-rose-300/80 mt-1">
-                Semua angka kunjungan, grafik sumber media sosial, dan riwayat pengunjung akan dikosongkan menjadi <strong>0</strong>. Penghitungan baru akan dimulai detik ini juga.
+              <p className="text-xs sm:text-sm text-rose-200/90 mt-1 leading-[1.5]">
+                Semua angka kunjungan, grafik sumber media sosial, dan riwayat pengunjung akan dikosongkan menjadi <strong className="font-semibold">0</strong>. Penghitungan baru akan dimulai detik ini juga.
               </p>
             </div>
           </div>
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               onClick={() => setShowResetConfirm(false)}
-              className="py-1 px-3 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-slate-300"
+              className="py-1.5 px-3.5 rounded-lg text-xs sm:text-sm font-medium bg-white/10 hover:bg-white/20 text-slate-200"
             >
               Batal
             </button>
             <button
               onClick={handleReset}
-              className="py-1 px-3.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-md active:scale-95 transition-all"
+              className="py-1.5 px-4 rounded-lg text-xs sm:text-sm font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-md active:scale-95 transition-all"
             >
               Ya, Kosongkan Jadi 0
             </button>
@@ -291,82 +291,82 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       )}
 
       {/* 4 KPI Cards (Ringkasan Kunci) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: Total Kunjungan */}
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-[#11131f] border border-amber-500/25 shadow-md flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-300 font-mono">
+        <div className="p-3.5 rounded-2xl bg-[#11131f] border border-amber-500/25 shadow-md flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-400 gap-2">
+            <span className="text-xs font-medium text-slate-300">
               Total Tayangan
             </span>
-            <div className="w-6 h-6 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400">
-              <Eye size={13} />
+            <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 shrink-0">
+              <Eye size={14} />
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono tracking-tight">
+            <div className="text-2xl sm:text-[28px] font-bold text-white tabular-nums tracking-tight leading-[1.15]">
               {data.totalVisits.toLocaleString('id-ID')}
             </div>
-            <span className="text-[9.5px] text-slate-400 mt-0.5 block">
+            <span className="text-xs text-slate-400 mt-1 block">
               Kali web dibuka pengunjung
             </span>
           </div>
         </div>
 
         {/* Card 2: Pengunjung Unik */}
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-[#11131f] border border-amber-500/25 shadow-md flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-300 font-mono">
+        <div className="p-3.5 rounded-2xl bg-[#11131f] border border-amber-500/25 shadow-md flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-400 gap-2">
+            <span className="text-xs font-medium text-slate-300">
               Pengunjung Unik
             </span>
-            <div className="w-6 h-6 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400">
-              <Users size={13} />
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
+              <Users size={14} />
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-300 font-mono tracking-tight">
+            <div className="text-2xl sm:text-[28px] font-bold text-emerald-300 tabular-nums tracking-tight leading-[1.15]">
               {data.uniqueVisitors.toLocaleString('id-ID')}
             </div>
-            <span className="text-[9.5px] text-slate-400 mt-0.5 block">
+            <span className="text-xs text-slate-400 mt-1 block">
               Individu / Perangkat asli
             </span>
           </div>
         </div>
 
         {/* Card 3: Sumber Terbanyak */}
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-[#11131f] border border-amber-500/25 shadow-md flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-300 font-mono">
+        <div className="p-3.5 rounded-2xl bg-[#11131f] border border-amber-500/25 shadow-md flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-400 gap-2">
+            <span className="text-xs font-medium text-slate-300">
               Asal Terbanyak
             </span>
-            <div className="w-6 h-6 rounded-lg bg-rose-500/15 flex items-center justify-center text-rose-400">
-              <TrendingUp size={13} />
+            <div className="w-7 h-7 rounded-lg bg-rose-500/15 flex items-center justify-center text-rose-400 shrink-0">
+              <TrendingUp size={14} />
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-lg sm:text-xl font-extrabold text-amber-200 truncate">
+            <div className="font-heading text-lg sm:text-xl font-bold text-amber-200 truncate leading-[1.2]">
               {topSource ? topSource.name : 'Belum Ada'}
             </div>
-            <span className="text-[9.5px] text-slate-400 mt-0.5 block">
+            <span className="text-xs text-slate-400 mt-1 block tabular-nums">
               {topSource ? `${topSource.count} pengunjung (${topSource.percent}%)` : 'Menunggu kunjungan pertama'}
             </span>
           </div>
         </div>
 
         {/* Card 4: Hari Ini */}
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-[#11131f] border border-amber-500/25 shadow-md flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-300 font-mono">
+        <div className="p-3.5 rounded-2xl bg-[#11131f] border border-amber-500/25 shadow-md flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-400 gap-2">
+            <span className="text-xs font-medium text-slate-300">
               Trafik Hari Ini
             </span>
-            <div className="w-6 h-6 rounded-lg bg-blue-500/15 flex items-center justify-center text-blue-400">
-              <Sparkles size={13} />
+            <div className="w-7 h-7 rounded-lg bg-blue-500/15 flex items-center justify-center text-blue-400 shrink-0">
+              <Sparkles size={14} />
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-sky-300 font-mono tracking-tight">
+            <div className="text-2xl sm:text-[28px] font-bold text-sky-300 tabular-nums tracking-tight leading-[1.15]">
               {todayVisits.toLocaleString('id-ID')}
             </div>
-            <span className="text-[9.5px] text-slate-400 mt-0.5 block">
+            <span className="text-xs text-slate-400 mt-1 block">
               Kunjungan masuk hari ini
             </span>
           </div>
@@ -377,7 +377,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       <div className="flex items-center bg-[#0d0f17] p-1 rounded-xl border border-white/10 gap-1">
         <button
           onClick={() => setActiveView('overview')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+          className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
             activeView === 'overview'
               ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm'
               : 'text-slate-400 hover:text-white'
@@ -387,7 +387,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         </button>
         <button
           onClick={() => setActiveView('live')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
             activeView === 'live'
               ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm'
               : 'text-slate-400 hover:text-white'
@@ -395,7 +395,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         >
           <span>Feed Pengunjung</span>
           {data.recentVisitors.length > 0 && (
-            <span className="text-[9.5px] px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 font-mono">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-300 tabular-nums leading-none">
               {data.recentVisitors.length}
             </span>
           )}
@@ -407,31 +407,31 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         <div className="space-y-4 animate-in fade-in duration-150">
           {/* Main Visual Source Breakdown */}
           <div className="p-4 rounded-2xl bg-[#11131f] border border-white/10 space-y-3.5">
-            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+            <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-white/10">
               <div>
-                <h5 className="text-xs sm:text-sm font-extrabold text-white flex items-center gap-2">
-                  <Compass size={15} className="text-amber-400" />
+                <h5 className="font-heading text-base sm:text-lg font-semibold leading-[1.25] text-white tracking-[-0.015em] flex items-center gap-2">
+                  <Compass size={16} className="text-amber-400 shrink-0" />
                   <span>Pengunjung SINKI Kebanyakan Masuk dari Mana?</span>
                 </h5>
-                <p className="text-[10px] text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-400 mt-0.5 leading-[1.45]">
                   Distribusi asal klik: Instagram, TikTok, WhatsApp, Google, Facebook, atau Ketik Langsung
                 </p>
               </div>
-              <span className="text-[10px] font-mono text-amber-400 font-bold hidden sm:block">
+              <span className="text-xs text-amber-400 font-semibold tabular-nums hidden sm:block shrink-0">
                 Total: {totalSourcesCount} Klik Masuk
               </span>
             </div>
 
             {/* Jika masih benar-benar nol (0) */}
             {data.totalVisits === 0 ? (
-              <div className="py-8 px-4 text-center rounded-xl bg-black/30 border border-white/5 space-y-2">
+              <div className="py-7 px-4 text-center rounded-xl bg-black/30 border border-white/5 space-y-2">
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-400">
                   <Sparkles size={22} />
                 </div>
-                <h6 className="text-xs font-bold text-slate-200">
+                <h6 className="font-heading text-base font-semibold text-slate-200 leading-[1.25]">
                   Grafik Bersih & Siap Merekam dari Angka 0
                 </h6>
-                <p className="text-[11px] text-slate-400 max-w-md mx-auto">
+                <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-[1.5]">
                   Belum ada kunjungan yang tercatat sejak di-reset. Begitu pembeli membuka link Sinki dari Instagram, TikTok, WhatsApp, atau Google, grafik warna-warni di bawah akan otomatis terisi secara real-time!
                 </p>
               </div>
@@ -442,16 +442,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               {sourceConfigs.map((src) => {
                 return (
                   <div key={src.name} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-200">{src.name}</span>
-                        <span className={`text-[9.5px] px-2 py-0.5 rounded-md font-medium border ${src.bgColor}`}>
+                    <div className="flex items-center justify-between text-xs sm:text-sm gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-slate-100">{src.name}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-md font-medium border ${src.bgColor}`}>
                           {src.badge}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 font-mono">
-                        <span className="text-white font-extrabold">{src.count} orang</span>
-                        <span className="text-slate-400 text-[10.5px]">({src.percent}%)</span>
+                      <div className="flex items-center gap-1.5 tabular-nums shrink-0">
+                        <span className="text-white font-semibold">{src.count} orang</span>
+                        <span className="text-slate-400 text-xs">({src.percent}%)</span>
                       </div>
                     </div>
 
@@ -471,20 +471,20 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           </div>
 
           {/* Section 2: Perangkat & Halaman Populer */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             {/* Box Perangkat */}
-            <div className="p-3.5 rounded-2xl bg-[#11131f] border border-white/10 space-y-3">
-              <h6 className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                <Smartphone size={14} className="text-amber-400" />
+            <div className="p-4 rounded-2xl bg-[#11131f] border border-white/10 space-y-3">
+              <h6 className="font-heading text-base font-semibold leading-[1.25] text-white tracking-[-0.015em] flex items-center gap-2">
+                <Smartphone size={15} className="text-amber-400 shrink-0" />
                 <span>Perangkat Pengunjung (HP vs Komputer)</span>
               </h6>
-              <div className="space-y-2.5 pt-1">
+              <div className="space-y-3 pt-1">
                 <div>
-                  <div className="flex items-center justify-between text-[11px] mb-1 font-medium">
+                  <div className="flex items-center justify-between text-xs sm:text-sm mb-1 font-medium">
                     <span className="flex items-center gap-1.5 text-slate-300">
-                      <Smartphone size={12} className="text-sky-400" /> Ponsel (Smartphone HP)
+                      <Smartphone size={13} className="text-sky-400" /> Ponsel (Smartphone HP)
                     </span>
-                    <span className="font-mono font-bold text-sky-300">
+                    <span className="tabular-nums font-semibold text-sky-300">
                       {data.devices.mobile || 0} ({mobilePercent}%)
                     </span>
                   </div>
@@ -497,11 +497,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between text-[11px] mb-1 font-medium">
+                  <div className="flex items-center justify-between text-xs sm:text-sm mb-1 font-medium">
                     <span className="flex items-center gap-1.5 text-slate-300">
-                      <Monitor size={12} className="text-amber-400" /> Laptop / Komputer
+                      <Monitor size={13} className="text-amber-400" /> Laptop / Komputer
                     </span>
-                    <span className="font-mono font-bold text-amber-300">
+                    <span className="tabular-nums font-semibold text-amber-300">
                       {data.devices.desktop || 0} ({desktopPercent}%)
                     </span>
                   </div>
@@ -514,17 +514,17 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 </div>
 
                 {/* Sistem Operasi Badges */}
-                <div className="pt-2 border-t border-white/5 flex flex-wrap gap-1.5 text-[10px]">
-                  <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-mono">
+                <div className="pt-2.5 border-t border-white/5 flex flex-wrap gap-1.5 text-xs tabular-nums">
+                  <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-medium">
                     Android: {data.os.android || 0}
                   </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-500/10 text-slate-300 border border-slate-500/20 font-mono">
+                  <span className="px-2.5 py-0.5 rounded-lg bg-slate-500/10 text-slate-300 border border-slate-500/20 font-medium">
                     iPhone (iOS): {data.os.ios || 0}
                   </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/20 font-mono">
+                  <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/20 font-medium">
                     Windows: {data.os.windows || 0}
                   </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/20 font-mono">
+                  <span className="px-2.5 py-0.5 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium">
                     Mac: {data.os.mac || 0}
                   </span>
                 </div>
@@ -532,12 +532,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             </div>
 
             {/* Box Halaman Populer */}
-            <div className="p-3.5 rounded-2xl bg-[#11131f] border border-white/10 space-y-3">
-              <h6 className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                <ArrowUpRight size={14} className="text-amber-400" />
+            <div className="p-4 rounded-2xl bg-[#11131f] border border-white/10 space-y-3">
+              <h6 className="font-heading text-base font-semibold leading-[1.25] text-white tracking-[-0.015em] flex items-center gap-2">
+                <ArrowUpRight size={15} className="text-amber-400 shrink-0" />
                 <span>Halaman Paling Banyak Dibuka</span>
               </h6>
-              <div className="space-y-2 pt-1">
+              <div className="space-y-2.5 pt-1">
                 {Object.entries(data.pages)
                   .sort(([, a], [, b]) => b - a)
                   .map(([pName, pCount]) => {
@@ -545,9 +545,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                     const pct = Math.round((pCount / maxPage) * 100);
                     return (
                       <div key={pName} className="space-y-1">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-300 font-medium">{pName}</span>
-                          <span className="font-mono font-bold text-amber-300">{pCount} views</span>
+                        <div className="flex items-center justify-between text-xs sm:text-sm">
+                          <span className="text-slate-200 font-medium">{pName}</span>
+                          <span className="tabular-nums font-semibold text-amber-300">{pCount} views</span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-black/60 overflow-hidden border border-white/5">
                           <div
@@ -567,25 +567,25 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       {/* VIEW 2: FEED PENGUNJUNG TERBARU (LIVE STREAM LOG) */}
       {activeView === 'live' && (
         <div className="p-4 rounded-2xl bg-[#11131f] border border-white/10 space-y-3 animate-in fade-in duration-150">
-          <div className="flex items-center justify-between pb-2 border-b border-white/10">
+          <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/10">
             <div>
-              <h5 className="text-xs sm:text-sm font-extrabold text-white flex items-center gap-2">
-                <Sparkles size={14} className="text-emerald-400" />
+              <h5 className="font-heading text-base sm:text-lg font-semibold leading-[1.25] text-white tracking-[-0.015em] flex items-center gap-2">
+                <Sparkles size={15} className="text-emerald-400 shrink-0" />
                 <span>Aktivitas Pengunjung Terbaru (Live Feed)</span>
               </h5>
-              <p className="text-[10px] text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-400 mt-0.5">
                 Mencatat tiap pengguna yang masuk secara berurutan waktu
               </p>
             </div>
-            <span className="text-[10px] font-mono text-emerald-400 font-bold">
+            <span className="text-xs text-emerald-400 font-semibold tabular-nums shrink-0">
               {data.recentVisitors.length} Log Terakhir
             </span>
           </div>
 
           {data.recentVisitors.length === 0 ? (
             <div className="py-8 text-center rounded-xl bg-black/20 border border-white/5 space-y-1">
-              <p className="text-xs font-semibold text-slate-300">Belum ada riwayat aktivitas pengunjung.</p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-sm font-semibold text-slate-300">Belum ada riwayat aktivitas pengunjung.</p>
+              <p className="text-xs text-slate-400">
                 Akan otomatis bertambah ketika ada orang yang membuka link SINKI.
               </p>
             </div>
@@ -595,7 +595,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 return (
                   <div
                     key={v.id}
-                    className="p-2.5 rounded-xl bg-[#0c0e16] border border-white/5 hover:border-amber-500/30 transition-colors flex items-center justify-between gap-3 text-xs"
+                    className="p-2.5 sm:p-3 rounded-xl bg-[#0c0e16] border border-white/5 hover:border-amber-500/30 transition-colors flex items-center justify-between gap-3 text-xs sm:text-sm"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center shrink-0">
@@ -611,22 +611,22 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-extrabold text-white truncate">{v.source}</span>
-                          <span className="text-[9.5px] px-1.5 py-0.2 rounded bg-white/5 text-slate-300 font-medium">
+                          <span className="font-semibold text-white truncate">{v.source}</span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-white/5 text-slate-300 font-medium leading-tight">
                             {v.page}
                           </span>
                         </div>
-                        <span className="text-[9.5px] text-slate-400 block truncate mt-0.5">
+                        <span className="text-xs text-slate-400 block truncate mt-0.5">
                           {v.sourceDetail} • {v.os} ({v.device})
                         </span>
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <span className="text-[10px] font-mono text-amber-400 font-bold block">
+                    <div className="text-right shrink-0 tabular-nums">
+                      <span className="text-xs text-amber-400 font-semibold block">
                         {formatTimeAgo(v.timestamp)}
                       </span>
-                      <span className="text-[8.5px] text-slate-400 font-mono">
+                      <span className="text-xs text-slate-400">
                         {new Date(v.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -639,12 +639,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       )}
 
       {/* Info Tips Promosi */}
-      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-[11px] text-amber-200/90">
+      <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs sm:text-sm text-amber-200/90 leading-[1.5]">
         <Sparkles size={16} className="text-amber-400 shrink-0 mt-0.5" />
         <div>
-          <strong className="text-amber-300 font-bold">Tips Promosi Sinki:</strong>
-          <p className="text-[10.5px] text-slate-300 mt-0.5">
-            Saat menaruh link di bio Instagram atau TikTok, Anda bisa gunakan link dengan tag seperti <code className="bg-black/50 px-1 py-0.5 rounded text-amber-300 font-mono">sinkiparfum.my.id?utm_source=instagram</code> agar 100% tercatat akurat sebagai pengunjung Instagram meskipun pengguna membuka dari aplikasi pihak ketiga.
+          <strong className="text-amber-300 font-semibold">Tips Promosi Sinki:</strong>
+          <p className="text-xs sm:text-sm text-slate-300 mt-0.5 leading-[1.5]">
+            Saat menaruh link di bio Instagram atau TikTok, Anda bisa gunakan link dengan tag seperti <span className="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-body font-medium text-xs">sinkiparfum.my.id?utm_source=instagram</span> agar 100% tercatat akurat sebagai pengunjung Instagram meskipun pengguna membuka dari aplikasi pihak ketiga.
           </p>
         </div>
       </div>

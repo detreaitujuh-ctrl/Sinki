@@ -112,7 +112,13 @@ import {
   saveTickerToServer,
   resetTickerToDefault,
 } from '../utils/tickerStorage';
-import { PerfumeCategory, PerfumeItem } from '../data/perfumes';
+import {
+  PerfumeCategory,
+  PerfumeItem,
+  CollectionCategoryKey,
+  PricePerMlRate,
+  COLLECTION_CATEGORIES,
+} from '../data/perfumes';
 import {
   getStoredPerfumes,
   fetchPerfumesFromServer,
@@ -669,26 +675,72 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   // Perfumes Catalog State & Handlers
   const [perfumesList, setPerfumesList] = useState<PerfumeItem[]>(() => perfumes || getStoredPerfumes());
   const [perfumeSearchQuery, setPerfumeSearchQuery] = useState('');
-  const [perfumeCategoryFilter, setPerfumeCategoryFilter] = useState<PerfumeCategory | 'all'>('all');
+  const [perfumeCategoryFilter, setPerfumeCategoryFilter] = useState<
+    CollectionCategoryKey | PerfumeCategory | 'all'
+  >('all');
   const [isAddingPerfume, setIsAddingPerfume] = useState(false);
   const [editingPerfume, setEditingPerfume] = useState<PerfumeItem | null>(null);
+  const [editingAccordsStr, setEditingAccordsStr] = useState('');
   const [newPerfumeForm, setNewPerfumeForm] = useState<{
     name: string;
     category: PerfumeCategory;
     tagline: string;
     accordsStr: string;
+    collectionCategories: CollectionCategoryKey[];
+    pricePerMl: PricePerMlRate;
+    usageRecommendation: string;
   }>({
     name: '',
     category: 'unisex',
     tagline: '',
     accordsStr: 'Warm, Floral, Woody',
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: '',
   });
+  const [deleteConfirmPerfume, setDeleteConfirmPerfume] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isResetPerfumesConfirmOpen, setIsResetPerfumesConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (perfumes) {
       setPerfumesList(perfumes);
     }
   }, [perfumes]);
+
+  // Also fetch latest from server when Admin opens
+  useEffect(() => {
+    fetchPerfumesFromServer()
+      .then((list) => {
+        if (Array.isArray(list) && list.length > 0) {
+          setPerfumesList(list);
+          onPerfumesUpdated?.(list);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleCollectionCategoryInList = (
+    current: CollectionCategoryKey[] | undefined,
+    key: CollectionCategoryKey
+  ): CollectionCategoryKey[] => {
+    const arr = Array.isArray(current) ? [...current] : [];
+    return arr.includes(key) ? arr.filter((k) => k !== key) : [...arr, key];
+  };
+
+  const handleOpenEditPerfume = (item: PerfumeItem) => {
+    setEditingPerfume({
+      ...item,
+      collectionCategories: Array.isArray(item.collectionCategories)
+        ? [...item.collectionCategories]
+        : [],
+      pricePerMl: item.pricePerMl === 4000 ? 4000 : 3000,
+      usageRecommendation: item.usageRecommendation || '',
+    });
+    setEditingAccordsStr((item.accords || []).join(', '));
+  };
 
   const handleTogglePerfumeStatus = async (id: string) => {
     const target = perfumesList.find((p) => p.id === id);
@@ -700,7 +752,25 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     onShowToast(
       nextStatus
         ? `"${target.name}" diaktifkan di katalog publik`
-        : `"${target.name}" disembunyikan (stok habis)`
+        : `"${target.name}" disembunyikan dari publik`
+    );
+    await savePerfumesToServer(updated);
+  };
+
+  const handleRemoveFromCurrentCategory = async (
+    item: PerfumeItem,
+    catKey: CollectionCategoryKey
+  ) => {
+    const catMeta = COLLECTION_CATEGORIES.find((c) => c.id === catKey);
+    const currentCats = Array.isArray(item.collectionCategories) ? item.collectionCategories : [];
+    const nextCats = currentCats.filter((c) => c !== catKey);
+    const updated = perfumesList.map((p) =>
+      p.id === item.id ? { ...p, collectionCategories: nextCats } : p
+    );
+    setPerfumesList(updated);
+    onPerfumesUpdated?.(updated);
+    onShowToast(
+      `"${item.name}" dikeluarkan dari kategori ${catMeta?.title || catKey}`
     );
     await savePerfumesToServer(updated);
   };
@@ -714,16 +784,28 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       powdery: 'Powdery',
       unisex: 'Unisex',
     };
+    const parsedAccords = editingAccordsStr
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     const updatedItem: PerfumeItem = {
       ...editingPerfume,
       name: editingPerfume.name.trim(),
       categoryLabel: catLabels[editingPerfume.category] || 'Unisex',
+      tagline: editingPerfume.tagline.trim(),
+      accords: parsedAccords.length > 0 ? parsedAccords : editingPerfume.accords,
+      collectionCategories: Array.isArray(editingPerfume.collectionCategories)
+        ? editingPerfume.collectionCategories
+        : [],
+      pricePerMl: editingPerfume.pricePerMl === 4000 ? 4000 : 3000,
+      usageRecommendation: (editingPerfume.usageRecommendation || '').trim(),
     };
     const updated = perfumesList.map((p) => (p.id === updatedItem.id ? updatedItem : p));
     setPerfumesList(updated);
     onPerfumesUpdated?.(updated);
     setEditingPerfume(null);
-    onShowToast(`Varian "${updatedItem.name}" berhasil diperbarui!`);
+    onShowToast(`Varian "${updatedItem.name}" berhasil diperbarui & tersinkron ke Collection!`);
     await savePerfumesToServer(updated);
   };
 
@@ -751,6 +833,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       tagline: newPerfumeForm.tagline.trim() || 'Aroma Mewah Khas SINKI',
       accords: accords.length > 0 ? accords : ['Luxury', 'Signature'],
       isActive: true,
+      collectionCategories: newPerfumeForm.collectionCategories,
+      pricePerMl: newPerfumeForm.pricePerMl,
+      usageRecommendation: newPerfumeForm.usageRecommendation.trim(),
     };
     const updated = [newItem, ...perfumesList];
     setPerfumesList(updated);
@@ -761,33 +846,44 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       category: 'unisex',
       tagline: '',
       accordsStr: 'Warm, Floral, Woody',
+      collectionCategories: ['daily_fresh'],
+      pricePerMl: 3000,
+      usageRecommendation: '',
     });
-    onShowToast(`Varian baru "${newItem.name}" berhasil ditambahkan!`);
+    onShowToast(`Varian baru "${newItem.name}" berhasil ditambahkan & tampil di Collection!`);
     await savePerfumesToServer(updated);
   };
 
-  const handleDeletePerfume = async (id: string, name: string) => {
-    if (confirm(`Hapus permanen varian "${name}" dari katalog?`)) {
-      const updated = perfumesList.filter((p) => p.id !== id);
-      setPerfumesList(updated);
-      onPerfumesUpdated?.(updated);
-      onShowToast(`Menghapus varian "${name}" dari cloud...`);
-      await savePerfumesToServer(updated);
-      onShowToast(`Varian "${name}" berhasil dihapus & tersinkron ke publik! ✨`);
-    }
+  const handleDeletePerfume = (id: string, name: string) => {
+    setDeleteConfirmPerfume({ id, name });
   };
 
-  const handleResetPerfumes = async () => {
-    if (confirm('Kembalikan seluruh varian ke 60 varian bawaan asli SINKI?')) {
-      try {
-        onShowToast('Mereset katalog ke 60 varian awal...');
-        const def = await resetPerfumesToDefault();
-        setPerfumesList(def);
-        onPerfumesUpdated?.(def);
-        onShowToast('Katalog berhasil di-reset & tersinkron ke cloud publik! ✨');
-      } catch (err) {
-        console.error(err);
-      }
+  const confirmDeletePerfumeNow = async () => {
+    if (!deleteConfirmPerfume) return;
+    const { id, name } = deleteConfirmPerfume;
+    setDeleteConfirmPerfume(null);
+    const updated = perfumesList.filter((p) => p.id !== id);
+    setPerfumesList(updated);
+    onPerfumesUpdated?.(updated);
+    onShowToast(`Menghapus varian "${name}" dari cloud...`);
+    await savePerfumesToServer(updated);
+    onShowToast(`Varian "${name}" berhasil dihapus & tersinkron ke publik!`);
+  };
+
+  const handleResetPerfumes = () => {
+    setIsResetPerfumesConfirmOpen(true);
+  };
+
+  const confirmResetPerfumesNow = async () => {
+    setIsResetPerfumesConfirmOpen(false);
+    try {
+      onShowToast('Mereset katalog ke 68 varian awal...');
+      const def = await resetPerfumesToDefault();
+      setPerfumesList(def);
+      onPerfumesUpdated?.(def);
+      onShowToast('Katalog berhasil di-reset ke 68 varian & tersinkron ke cloud publik!');
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -1253,19 +1349,19 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       </svg>
 
       {/* 4. Fine Atelier Corner Marks */}
-      <div className="absolute top-4 left-6 flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-amber-400/20 uppercase">
+      <div className="absolute top-4 left-6 flex items-center gap-2 text-xs font-body tracking-[0.14em] text-amber-400/15 uppercase">
         <span>+</span>
         <span className="hidden sm:inline">SINKI PARFUM | DEFINE YOUR PRESENCE</span>
       </div>
-      <div className="absolute top-4 right-6 flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-amber-400/20 uppercase">
+      <div className="absolute top-4 right-6 flex items-center gap-2 text-xs font-body tracking-[0.14em] text-amber-400/15 uppercase">
         <span className="hidden sm:inline">ATELIER PRIVÉ</span>
         <span>+</span>
       </div>
-      <div className="absolute bottom-4 left-6 flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-amber-400/20 uppercase">
+      <div className="absolute bottom-4 left-6 flex items-center gap-2 text-xs font-body tracking-[0.14em] text-amber-400/15 uppercase">
         <span>+</span>
         <span className="hidden sm:inline">CONTROL SECURE</span>
       </div>
-      <div className="absolute bottom-4 right-6 flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-amber-400/20 uppercase">
+      <div className="absolute bottom-4 right-6 flex items-center gap-2 text-xs font-body tracking-[0.14em] text-amber-400/15 uppercase">
         <span className="hidden sm:inline">EST. 1995</span>
         <span>+</span>
       </div>
@@ -1277,23 +1373,23 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   // ========================================================
   if (!isAuthenticated) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#08090e] flex flex-col items-center justify-center p-4 text-slate-100 select-none overflow-hidden">
+      <div className="fixed inset-0 z-50 bg-[#08090e] font-body flex flex-col items-center justify-center p-4 text-slate-100 select-none overflow-hidden">
         <AdminLuxuryBackground />
 
-        <div className="relative z-10 w-full max-w-sm rounded-3xl bg-[#0f1118]/95 backdrop-blur-xl border border-amber-500/35 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.85)] text-center space-y-5">
+        <div className="relative z-10 w-full max-w-sm rounded-3xl bg-[#0f1118]/95 backdrop-blur-xl border border-amber-500/35 p-6 sm:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.85)] text-center space-y-5">
           {/* Sinki Lock Emblem */}
           <div className="relative mx-auto w-14 h-14 rounded-2xl bg-black/60 border border-amber-500/40 p-3 flex items-center justify-center shadow-lg">
             <Lock className="w-7 h-7 text-amber-300 drop-shadow-[0_2px_8px_rgba(245,186,73,0.4)]" />
           </div>
 
           <div>
-            <span className="text-[10px] font-mono tracking-[0.25em] text-amber-400/90 uppercase font-semibold block mb-1">
-              SINKI PARFUM | DEFINE YOUR PRESENCE
+            <span className="text-xs tracking-[0.14em] text-amber-400/90 uppercase font-semibold block mb-1">
+              SINKI PARFUM · DEFINE YOUR PRESENCE
             </span>
-            <h1 className="font-display text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5C2] via-[#E8B960] to-[#B3791B]">
+            <h1 className="font-heading text-2xl font-bold tracking-[0.06em] leading-[1.2] text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5C2] via-[#E8B960] to-[#B3791B]">
               DIMENSI-SINKI
             </h1>
-            <p className="text-xs text-slate-400 mt-1 font-medium">
+            <p className="text-xs sm:text-sm text-slate-400 mt-1 font-normal">
               Gerbang Khusus Pengendali Utama SINKI
             </p>
           </div>
@@ -1310,7 +1406,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 setPinError('');
               }}
               autoFocus
-              className="w-full py-3 px-4 rounded-xl bg-black/50 border border-amber-500/30 text-center font-mono text-xl tracking-[0.4em] text-amber-200 focus:outline-none focus:border-amber-400 placeholder:tracking-normal placeholder:text-slate-500 placeholder:text-xs transition-colors"
+              className="w-full py-2.5 px-4 rounded-xl bg-black/50 border border-amber-500/30 text-center tabular-nums text-xl font-semibold tracking-[0.35em] text-amber-200 focus:outline-none focus:border-amber-400 placeholder:tracking-normal placeholder:text-slate-500 placeholder:text-sm transition-colors"
             />
 
             {pinError && (
@@ -1321,7 +1417,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-110 active:scale-98 text-slate-950 font-bold text-xs uppercase tracking-widest transition-all shadow-md shadow-amber-950/40"
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-110 active:scale-98 text-slate-950 font-semibold text-sm transition-all shadow-md shadow-amber-950/40"
             >
               Buka Dimensi Sinki
             </button>
@@ -1329,7 +1425,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
           <button
             onClick={onExitToPublic}
-            className="text-[11px] text-slate-400 hover:text-amber-300 font-medium tracking-wide transition-colors"
+            className="text-xs text-slate-400 hover:text-amber-300 font-medium transition-colors"
           >
             ← Kembali ke Website Publik
           </button>
@@ -1402,7 +1498,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   // 2. TAMPILAN DASHBOARD PROFESIONAL: ADAPTIVE DESKTOP + MOBILE
   // ========================================================
   return (
-    <div className="fixed inset-0 z-50 bg-[#08090e] text-slate-100 flex flex-col lg:flex-row overflow-hidden font-sans select-none">
+    <div className="fixed inset-0 z-50 bg-[#08090e] text-slate-100 flex flex-col lg:flex-row overflow-hidden font-body select-none">
       {/* Latar Belakang Elegan Haute Parfumerie (Terlihat, Mewah & Tidak Mengganggu) */}
       <AdminLuxuryBackground />
 
@@ -1426,7 +1522,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           {/* Top Brand Block */}
           <div className="flex items-center justify-between pb-4 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-black/60 border border-amber-500/35 p-1.5 flex items-center justify-center shadow-md">
+              <div className="w-10 h-10 rounded-xl bg-black/60 border border-amber-500/35 p-1.5 flex items-center justify-center shadow-md shrink-0">
                 {currentLogo ? (
                   <img src={currentLogo} alt="Logo" className="w-full h-full object-contain" />
                 ) : (
@@ -1434,10 +1530,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 )}
               </div>
               <div>
-                <span className="font-display text-sm font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5C2] via-[#E8B960] to-[#B3791B] block">
+                <span className="font-heading text-base font-bold tracking-[0.06em] leading-tight text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5C2] via-[#E8B960] to-[#B3791B] block">
                   DIMENSI-SINKI
                 </span>
-                <span className="text-[9.5px] font-mono text-slate-400 uppercase tracking-wider block -mt-0.5">
+                <span className="text-xs text-slate-400 font-medium block mt-0.5">
                   Portal Kendali Owner
                 </span>
               </div>
@@ -1456,7 +1552,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           <nav className="space-y-4 overflow-y-auto no-scrollbar max-h-[calc(100vh-210px)] pr-1">
             {navGroups.map((group, gIdx) => (
               <div key={gIdx} className="space-y-1.5">
-                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-amber-400/80 px-2 block">
+                <span className="text-xs font-semibold text-amber-400/90 px-2 block">
                   {group.groupTitle}
                 </span>
                 <div className="space-y-1">
@@ -1471,9 +1567,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           setActiveMenu(item.id as MenuKey);
                           setIsSidebarOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between py-2 px-3 rounded-xl text-xs font-semibold transition-all active:scale-98 ${
+                        className={`w-full flex items-center justify-between py-2 px-3 rounded-xl text-xs sm:text-sm font-medium transition-all active:scale-98 ${
                           isActive
-                            ? 'bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm font-bold'
+                            ? 'bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm font-semibold'
                             : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'
                         }`}
                       >
@@ -1483,7 +1579,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </div>
                         {item.badge && (
                           <span
-                            className={`text-[9.5px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                            className={`text-xs tabular-nums px-2 py-0.5 rounded-full font-semibold leading-none ${
                               isActive
                                 ? 'bg-amber-500/25 text-amber-200'
                                 : 'bg-white/5 text-slate-400'
@@ -1506,18 +1602,18 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-mono text-emerald-300 font-semibold">
+              <span className="text-xs text-emerald-300 font-semibold">
                 Sistem Terhubung
               </span>
             </div>
-            <span className="text-[9.5px] font-mono text-slate-400">v1.2.0</span>
+            <span className="text-xs text-slate-400 tabular-nums">v1.2.0</span>
           </div>
 
           <button
             onClick={onExitToPublic}
-            className="w-full py-2 px-3 rounded-xl bg-red-950/30 hover:bg-red-950/50 border border-red-500/30 text-red-300 text-xs font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all"
+            className="w-full py-2 px-3 rounded-xl bg-red-950/30 hover:bg-red-950/50 border border-red-500/30 text-red-300 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all"
           >
-            <LogOut size={13} />
+            <LogOut size={14} />
             <span>Kunci & Keluar</span>
           </button>
         </div>
@@ -1529,7 +1625,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       <main className="relative z-10 flex-1 flex flex-col h-full overflow-y-auto no-scrollbar">
         {/* TOP BAR HEADER */}
         <header className="sticky top-0 z-30 bg-[#0d0f17]/90 backdrop-blur-md px-4 sm:px-6 py-3 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {/* Hamburger Button (Mobile only) */}
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -1540,9 +1636,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             </button>
 
             {/* Breadcrumb Display */}
-            <div>
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                <span className="font-display font-bold text-amber-400">DIMENSI-SINKI</span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-400">
+                <span className="font-heading font-bold text-amber-400 shrink-0">DIMENSI-SINKI</span>
                 <span>/</span>
                 <span className="text-slate-200 font-medium truncate">{menuLabels[activeMenu]}</span>
               </div>
@@ -1550,12 +1646,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           </div>
 
           {/* Right Header Controls */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Bersihkan Cache & Force Sync */}
             <button
               onClick={handlePurgeAndSyncCache}
               disabled={isPurgingCache}
-              className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
               title="Bersihkan cache browser & sinkronkan ulang seluruh data publik"
             >
               <RefreshCw size={13} className={isPurgingCache ? 'animate-spin' : ''} />
@@ -1567,7 +1663,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             {/* Live Web Preview Shortcut */}
             <button
               onClick={onExitToPublic}
-              className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all active:scale-95"
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold transition-all active:scale-95"
               title="Buka Website Publik"
             >
               <Eye size={14} />
@@ -1591,20 +1687,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => setActiveMenu(item.id as MenuKey)}
-                  className={`flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs whitespace-nowrap transition-all shrink-0 active:scale-95 select-none ${
+                  className={`flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm whitespace-nowrap transition-all shrink-0 active:scale-95 select-none ${
                     isActive
-                      ? 'bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-amber-600/25 text-amber-200 border border-amber-500/50 shadow-[0_2px_12px_rgba(245,186,73,0.18)] font-bold ring-1 ring-amber-400/20'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] border border-transparent'
+                      ? 'bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-amber-600/25 text-amber-200 border border-amber-500/50 shadow-[0_2px_12px_rgba(245,186,73,0.18)] font-semibold ring-1 ring-amber-400/20'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] border border-transparent font-medium'
                   }`}
                 >
                   <Icon size={14} className={isActive ? 'text-amber-400' : 'text-slate-400'} />
                   <span>{item.label}</span>
                   {item.badge && (
                     <span
-                      className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full font-bold leading-none ${
+                      className={`text-xs tabular-nums px-1.5 py-0.5 rounded-full font-semibold leading-none ${
                         isActive
                           ? 'bg-amber-400/30 text-amber-200 border border-amber-400/40'
-                          : 'bg-white/5 text-slate-500'
+                          : 'bg-white/5 text-slate-400'
                       }`}
                     >
                       {item.badge}
@@ -1628,23 +1724,23 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#121422] to-[#16192a] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-amber-400 uppercase tracking-widest font-semibold">
-                      PORTAL PENGELOLA
+                    <span className="text-xs text-amber-400 uppercase tracking-[0.12em] font-semibold">
+                      Portal Pengelola
                     </span>
                     <Crown size={15} className="text-amber-400" />
                   </div>
-                  <h1 className="font-display text-2xl sm:text-3xl font-black text-white mt-1">
+                  <h1 className="font-heading text-2xl sm:text-3xl font-bold leading-[1.2] text-white mt-1 tracking-[-0.015em]">
                     Selamat Datang, Owner
                   </h1>
-                  <p className="text-xs text-slate-400 mt-1 max-w-md">
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-md leading-[1.5]">
                     Kelola stok katalog, foto media, teks berjalan, ulasan, dan harga secara real-time.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 bg-black/40 border border-white/10 px-3.5 py-2.5 rounded-2xl shrink-0 self-start sm:self-auto">
+                <div className="flex items-center gap-2.5 bg-black/40 border border-white/10 px-3.5 py-2.5 rounded-2xl shrink-0 self-start sm:self-auto">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                   <div className="text-right">
-                    <div className="text-xs font-bold text-white">
+                    <div className="text-xs sm:text-sm font-semibold text-white">
                       {new Date().toLocaleDateString('id-ID', {
                         weekday: 'long',
                         day: 'numeric',
@@ -1652,7 +1748,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         year: 'numeric',
                       })}
                     </div>
-                    <span className="text-[10px] text-slate-400 font-mono">Status Server: Normal</span>
+                    <span className="text-xs text-slate-400">Status Server: Normal</span>
                   </div>
                 </div>
               </div>
@@ -1668,9 +1764,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <ChevronRight size={14} />
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-400 font-medium block">Konten Aktif</span>
-                    <span className="text-2xl font-display font-extrabold text-white">{articlesList.length}</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Artikel & tips wewangian</span>
+                    <span className="text-xs text-slate-300 font-medium block">Konten Aktif</span>
+                    <span className="text-2xl sm:text-[28px] font-bold text-white tabular-nums leading-[1.15] block mt-0.5">{articlesList.length}</span>
+                    <span className="text-xs text-slate-400 block mt-1">Artikel & tips wewangian</span>
                   </div>
                 </div>
 
@@ -1683,9 +1779,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <ChevronRight size={14} />
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-400 font-medium block">Media & Galeri</span>
-                    <span className="text-2xl font-display font-extrabold text-white">14</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Hero, Logo, QRIS & 11 Botol</span>
+                    <span className="text-xs text-slate-300 font-medium block">Media & Galeri</span>
+                    <span className="text-2xl sm:text-[28px] font-bold text-white tabular-nums leading-[1.15] block mt-0.5">14</span>
+                    <span className="text-xs text-slate-400 block mt-1">Hero, Logo, QRIS & 11 Botol</span>
                   </div>
                 </div>
 
@@ -1698,9 +1794,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <ChevronRight size={14} />
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-400 font-medium block">Tier Harga</span>
-                    <span className="text-2xl font-display font-extrabold text-white">3</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Classic, Premium, Mykonos</span>
+                    <span className="text-xs text-slate-300 font-medium block">Tier Harga</span>
+                    <span className="text-2xl sm:text-[28px] font-bold text-white tabular-nums leading-[1.15] block mt-0.5">3</span>
+                    <span className="text-xs text-slate-400 block mt-1">Classic, Premium, Mykonos</span>
                   </div>
                 </div>
 
@@ -1713,9 +1809,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <ChevronRight size={14} />
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-400 font-medium block">Ulasan Masuk</span>
-                    <span className="text-2xl font-display font-extrabold text-white">{reviewsList.length}</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Ulasan pembeli terverifikasi</span>
+                    <span className="text-xs text-slate-300 font-medium block">Ulasan Masuk</span>
+                    <span className="text-2xl sm:text-[28px] font-bold text-white tabular-nums leading-[1.15] block mt-0.5">{reviewsList.length}</span>
+                    <span className="text-xs text-slate-400 block mt-1">Ulasan pembeli terverifikasi</span>
                   </div>
                 </div>
               </div>
@@ -1731,26 +1827,26 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       <BarChart3 size={24} />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-semibold text-amber-300">
                           Grafik & Analitik Pengunjung
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9.5px] font-mono font-bold border border-emerald-500/30 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30 flex items-center gap-1 leading-tight">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          LIVE
+                          Live
                         </span>
                       </div>
-                      <h4 className="text-sm sm:text-base font-extrabold text-white mt-0.5">
+                      <h4 className="font-heading text-base font-semibold leading-[1.25] text-white mt-0.5">
                         Lihat Kebanyakan Pengunjung Masuk dari Mana
                       </h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-400 mt-0.5">
                         Instagram, TikTok, WhatsApp, Facebook, Google, Direct
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs font-bold text-amber-300 group-hover:text-amber-200 self-end shrink-0 pt-2 border-t border-white/5 w-full justify-between">
-                    <span className="text-[11px] text-slate-400">Pantau pertumbuhan website</span>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-amber-300 group-hover:text-amber-200 self-end shrink-0 pt-2.5 border-t border-white/5 w-full justify-between">
+                    <span className="text-xs text-slate-400 font-normal">Pantau pertumbuhan website</span>
                     <span className="flex items-center gap-1">
                       Buka Grafik Penuh <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </span>
@@ -1766,26 +1862,26 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       <ShieldCheck size={24} />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-emerald-300 uppercase tracking-wider">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-semibold text-emerald-300">
                           Keamanan & Kesehatan Sistem
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9.5px] font-mono font-bold border border-emerald-500/30 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30 flex items-center gap-1 leading-tight">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          OPTIMAL 100%
+                          Optimal 100%
                         </span>
                       </div>
-                      <h4 className="text-sm sm:text-base font-extrabold text-white mt-0.5">
+                      <h4 className="font-heading text-base font-semibold leading-[1.25] text-white mt-0.5">
                         Sapu Bersih Cache & Proteksi Benteng
                       </h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-400 mt-0.5">
                         1-Klik Bersihkan Sampah Web, Ganti PIN, & Cek Link Toko
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-300 group-hover:text-emerald-200 self-end shrink-0 pt-2 border-t border-white/5 w-full justify-between">
-                    <span className="text-[11px] text-slate-400">Website Cepat & Terlindungi</span>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-300 group-hover:text-emerald-200 self-end shrink-0 pt-2.5 border-t border-white/5 w-full justify-between">
+                    <span className="text-xs text-slate-400 font-normal">Website Cepat & Terlindungi</span>
                     <span className="flex items-center gap-1">
                       Buka Pusat Keamanan <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </span>
@@ -1797,7 +1893,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal size={15} className="text-amber-400" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                  <h3 className="font-heading text-base font-semibold leading-[1.25] text-white">
                     Pintasan Manajemen Cepat
                   </h3>
                 </div>
@@ -1808,19 +1904,19 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/40 flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
                         <Package size={18} />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-white block">
+                        <span className="font-heading text-sm font-semibold text-white block leading-snug">
                           Kelola Varian ({perfumesList.length})
                         </span>
-                        <span className="text-[10.5px] text-slate-400 block">
+                        <span className="text-xs text-slate-400 block mt-0.5">
                           Atur stok aktif & edit aroma
                         </span>
                       </div>
                     </div>
-                    <ArrowRight size={15} className="text-amber-400" />
+                    <ArrowRight size={15} className="text-amber-400 shrink-0" />
                   </div>
 
                   <div
@@ -1828,17 +1924,17 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/40 flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
                         <Upload size={18} />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-white block">Ganti Foto & Media</span>
-                        <span className="text-[10.5px] text-slate-400 block">
+                        <span className="font-heading text-sm font-semibold text-white block leading-snug">Ganti Foto & Media</span>
+                        <span className="text-xs text-slate-400 block mt-0.5">
                           Upload foto botol utama & 11 botol
                         </span>
                       </div>
                     </div>
-                    <ArrowRight size={15} className="text-amber-400" />
+                    <ArrowRight size={15} className="text-amber-400 shrink-0" />
                   </div>
 
                   <div
@@ -1846,17 +1942,17 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/40 flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
                         <Sliders size={18} />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-white block">Teks Berjalan & Harga</span>
-                        <span className="text-[10.5px] text-slate-400 block">
+                        <span className="font-heading text-sm font-semibold text-white block leading-snug">Teks Berjalan & Harga</span>
+                        <span className="text-xs text-slate-400 block mt-0.5">
                           Ubah running text & tarif botol
                         </span>
                       </div>
                     </div>
-                    <ArrowRight size={15} className="text-amber-400" />
+                    <ArrowRight size={15} className="text-amber-400 shrink-0" />
                   </div>
                 </div>
               </div>
@@ -1870,11 +1966,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-display text-xl font-bold text-amber-300 flex items-center gap-2">
-                    <BarChart3 size={20} className="text-amber-400" />
+                  <h2 className="font-heading text-xl font-bold leading-[1.25] text-amber-300 flex items-center gap-2 tracking-[-0.015em]">
+                    <BarChart3 size={20} className="text-amber-400 shrink-0" />
                     <span>Statistik & Grafik Pengunjung SINKI</span>
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
                     Pantau dari mana kebanyakan pengguna masuk ke website Sinki secara real-time.
                   </p>
                 </div>
@@ -1893,26 +1989,37 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-display text-xl font-bold text-amber-300">
-                    Katalog Varian ({perfumesList.length})
+                  <h2 className="font-heading text-xl font-bold leading-[1.25] text-amber-300 tracking-[-0.015em]">
+                    Katalog Varian & 6 Kategori Collection ({perfumesList.length})
                   </h2>
-                  <p className="text-xs text-slate-400">
-                    Kelola ketersediaan stok, ubah deskripsi aroma, atau tambahkan varian baru.
+                  <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-[1.45]">
+                    Kelola 6 kategori Collection (Daily Fresh, Professional, Attraction, Luxury, Viral Hits, New & Trending), tarif per ml, dan rekomendasi penggunaan.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
-                    onClick={() => setIsAddingPerfume(true)}
-                    className="py-2 px-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-105 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+                    onClick={() => {
+                      const isSixCat = COLLECTION_CATEGORIES.some(
+                        (c) => c.id === perfumeCategoryFilter
+                      );
+                      setNewPerfumeForm((prev) => ({
+                        ...prev,
+                        collectionCategories: isSixCat
+                          ? [perfumeCategoryFilter as CollectionCategoryKey]
+                          : ['daily_fresh'],
+                      }));
+                      setIsAddingPerfume(true);
+                    }}
+                    className="py-2 px-3.5 rounded-lg bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-105 text-slate-950 font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
                   >
                     <Plus size={15} />
                     <span>Tambah Varian Baru</span>
                   </button>
                   <button
                     onClick={handleResetPerfumes}
-                    className="py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs border border-white/10 flex items-center gap-1 transition-colors"
-                    title="Reset ke 60 Varian Bawaan"
+                    className="py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs sm:text-sm font-medium border border-white/10 flex items-center gap-1.5 transition-colors"
+                    title="Reset ke 68 Varian Bawaan"
                   >
                     <RotateCcw size={13} />
                     <span className="hidden sm:inline">Reset Default</span>
@@ -1920,17 +2027,98 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
               </div>
 
-              {/* Filter & Live Search Toolbar */}
-              <div className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 space-y-3">
-                <div className="flex flex-col sm:flex-row gap-3">
+              {/* 6 COLLECTION CATEGORY FILTER CARDS (ARCHITECTURAL ANTI-CAPSULE) */}
+              <div className="p-4 rounded-xl bg-[#0e111d] border border-white/10 space-y-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-heading text-sm font-semibold text-slate-200">
+                    Filter 6 Kategori Halaman Collection
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {COLLECTION_CATEGORIES.some((c) => c.id === perfumeCategoryFilter) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewPerfumeForm((prev) => ({
+                            ...prev,
+                            collectionCategories: [perfumeCategoryFilter as CollectionCategoryKey],
+                          }));
+                          setIsAddingPerfume(true);
+                        }}
+                        className="py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 flex items-center gap-1 transition-colors"
+                      >
+                        <Plus size={12} />
+                        <span>
+                          Tambah ke{' '}
+                          {COLLECTION_CATEGORIES.find((c) => c.id === perfumeCategoryFilter)?.title}
+                        </span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPerfumeCategoryFilter('all')}
+                      className={`py-1.5 px-2.5 rounded-lg text-xs font-semibold border transition-colors tabular-nums ${
+                        perfumeCategoryFilter === 'all'
+                          ? 'bg-amber-400 text-slate-950 border-amber-400'
+                          : 'bg-white/5 text-slate-300 border-white/10 hover:text-white'
+                      }`}
+                    >
+                      Semua Varian ({perfumesList.length})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  {COLLECTION_CATEGORIES.map((cat) => {
+                    const isSelected = perfumeCategoryFilter === cat.id;
+                    const count = perfumesList.filter(
+                      (p) =>
+                        Array.isArray(p.collectionCategories) &&
+                        p.collectionCategories.includes(cat.id)
+                    ).length;
+
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() =>
+                          setPerfumeCategoryFilter((prev) => (prev === cat.id ? 'all' : cat.id))
+                        }
+                        className={`text-left p-2.5 rounded-lg border transition-all flex flex-col justify-between min-h-[64px] ${
+                          isSelected
+                            ? 'bg-amber-500/15 border-amber-400 text-white shadow-sm'
+                            : 'bg-[#131724] border-white/10 hover:border-amber-500/40 text-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-heading text-xs sm:text-[13px] font-semibold truncate">
+                            {cat.title}
+                          </span>
+                          <span
+                            className={`text-xs tabular-nums ${
+                              isSelected ? 'text-amber-300 font-semibold' : 'text-slate-400'
+                            }`}
+                          >
+                            {count}
+                          </span>
+                        </div>
+                        <span className="text-xs text-slate-400 line-clamp-1 mt-1">
+                          {cat.subtitle}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Search & Base Gender Filter Row */}
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-2 border-t border-white/10">
                   <div className="relative flex-1">
-                    <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
                       value={perfumeSearchQuery}
                       onChange={(e) => setPerfumeSearchQuery(e.target.value)}
-                      placeholder="Cari varian (cth: Dior, Scandal, Oud, Vanilla)..."
-                      className="w-full py-2.5 pl-10 pr-8 rounded-xl bg-black/50 border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400 transition-all"
+                      placeholder="Cari nama varian, karakter aroma, atau rekomendasi penggunaan..."
+                      className="w-full py-2 pl-9 pr-8 rounded-lg bg-black/50 border border-white/10 text-base sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400 transition-all"
                     />
                     {perfumeSearchQuery && (
                       <button
@@ -1943,14 +2131,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   </div>
 
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                    {(['all', 'women', 'men', 'powdery', 'unisex'] as const).map((cat) => {
-                      const isSelected = perfumeCategoryFilter === cat;
-                      const count =
-                        cat === 'all'
-                          ? perfumesList.length
-                          : perfumesList.filter((p) => p.category === cat).length;
-                      const labels: Record<PerfumeCategory | 'all', string> = {
-                        all: 'Semua',
+                    {(['women', 'men', 'powdery', 'unisex'] as const).map((gCat) => {
+                      const isSel = perfumeCategoryFilter === gCat;
+                      const count = perfumesList.filter((p) => p.category === gCat).length;
+                      const labels: Record<PerfumeCategory, string> = {
                         women: 'Women',
                         men: 'Men',
                         powdery: 'Powdery',
@@ -1958,15 +2142,18 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       };
                       return (
                         <button
-                          key={cat}
-                          onClick={() => setPerfumeCategoryFilter(cat)}
-                          className={`shrink-0 py-1.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                            isSelected
-                              ? 'bg-amber-400 text-slate-950 font-black shadow-sm'
-                              : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
+                          key={gCat}
+                          type="button"
+                          onClick={() =>
+                            setPerfumeCategoryFilter((prev) => (prev === gCat ? 'all' : gCat))
+                          }
+                          className={`shrink-0 py-1.5 px-2.5 rounded-lg text-xs font-semibold border transition-colors tabular-nums ${
+                            isSel
+                              ? 'bg-white/20 text-white border-white/40'
+                              : 'bg-white/5 text-slate-400 hover:text-white border-white/10'
                           }`}
                         >
-                          {labels[cat]} ({count})
+                          {labels[gCat]} ({count})
                         </button>
                       );
                     })}
@@ -1974,103 +2161,163 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
               </div>
 
-              {/* GRID VARIAN (DESKTOP: 3 KOLOM, MOBILE: 1 KOLOM) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+              {/* GRID VARIAN (SERAGAM DI SEMUA 6 KATEGORI DENGAN EDIT, HIDE/SHOW, & HAPUS) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {perfumesList
                   .filter((item) => {
-                    const matchCategory =
-                      perfumeSearchQuery || perfumeCategoryFilter === 'all'
-                        ? true
-                        : item.category === perfumeCategoryFilter;
+                    const isSixCategory = COLLECTION_CATEGORIES.some(
+                      (c) => c.id === perfumeCategoryFilter
+                    );
+                    let matchCategory = true;
+                    if (perfumeCategoryFilter !== 'all') {
+                      if (isSixCategory) {
+                        matchCategory =
+                          Array.isArray(item.collectionCategories) &&
+                          item.collectionCategories.includes(
+                            perfumeCategoryFilter as CollectionCategoryKey
+                          );
+                      } else {
+                        matchCategory = item.category === perfumeCategoryFilter;
+                      }
+                    }
+
+                    const q = perfumeSearchQuery.trim().toLowerCase();
                     const matchSearch =
-                      item.name.toLowerCase().includes(perfumeSearchQuery.toLowerCase()) ||
-                      item.tagline.toLowerCase().includes(perfumeSearchQuery.toLowerCase()) ||
-                      item.accords.some((a) => a.toLowerCase().includes(perfumeSearchQuery.toLowerCase()));
+                      !q ||
+                      item.name.toLowerCase().includes(q) ||
+                      item.tagline.toLowerCase().includes(q) ||
+                      (item.usageRecommendation || '').toLowerCase().includes(q) ||
+                      item.accords.some((a) => a.toLowerCase().includes(q));
+
                     return matchCategory && matchSearch;
                   })
                   .map((item) => {
                     const isItemActive = item.isActive !== false;
-                    const catColors: Record<PerfumeCategory, string> = {
-                      women: 'bg-pink-500/15 text-pink-300 border-pink-500/30',
-                      men: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-                      powdery: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-                      unisex: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-                    };
+                    const itemCats = Array.isArray(item.collectionCategories)
+                      ? item.collectionCategories
+                      : [];
+                    const activeSixCatFilter = COLLECTION_CATEGORIES.find(
+                      (c) => c.id === perfumeCategoryFilter
+                    );
 
                     return (
                       <div
                         key={item.id}
-                        className={`p-4 rounded-2xl border transition-all ${
+                        className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
                           isItemActive
-                            ? 'bg-[#0f111a] border-white/10 hover:border-amber-500/30'
-                            : 'bg-[#0d0e14] border-rose-500/20 opacity-70'
+                            ? 'bg-[#0f111a] border-white/10 hover:border-amber-500/35'
+                            : 'bg-[#0d0e14] border-rose-500/25 opacity-75'
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`text-[9px] font-mono px-2 py-0.5 rounded-md border font-bold uppercase ${
-                                  catColors[item.category] || catColors.unisex
-                                }`}
-                              >
-                                {item.categoryLabel}
-                              </span>
-                              <span
-                                className={`text-[9px] font-mono px-2 py-0.5 rounded-md border font-bold ${
-                                  isItemActive
-                                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                                    : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                                }`}
-                              >
-                                {isItemActive ? 'Aktif di Web' : 'Stok Habis'}
-                              </span>
+                        <div className="space-y-2">
+                          {/* Top metadata + Uniform 3 Action Buttons (Show/Hide, Edit, Delete) */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5 text-xs tabular-nums">
+                                <span className="text-amber-300 font-semibold">
+                                  {item.categoryLabel}
+                                </span>
+                                <span className="text-slate-600">·</span>
+                                <span className="text-slate-200 font-semibold">
+                                  Rp {(item.pricePerMl === 4000 ? 4000 : 3000).toLocaleString('id-ID')}/ml
+                                </span>
+                                <span className="text-slate-600">·</span>
+                                <span
+                                  className={
+                                    isItemActive ? 'text-emerald-400 font-medium' : 'text-rose-400 font-medium'
+                                  }
+                                >
+                                  {isItemActive ? 'Aktif' : 'Disembunyikan'}
+                                </span>
+                              </div>
+
+                              <h4 className="font-heading font-semibold text-base text-white mt-1 leading-[1.3]">
+                                {item.name}
+                              </h4>
                             </div>
-                            <h4 className="font-display font-bold text-sm text-white mt-1.5">
-                              {item.name}
-                            </h4>
-                            <p className="text-[11px] text-slate-400 mt-0.5">{item.tagline}</p>
+
+                            {/* Uniform Actions across ALL 6 cards */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditPerfume(item)}
+                                className="p-1.5 rounded-md bg-white/5 hover:bg-amber-500/20 text-slate-300 hover:text-amber-300 border border-white/10 transition-colors"
+                                title="Edit Info & Kategori"
+                              >
+                                <Edit size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleTogglePerfumeStatus(item.id)}
+                                className={`p-1.5 rounded-md border transition-colors ${
+                                  isItemActive
+                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20'
+                                    : 'bg-rose-500/10 text-rose-400 border-rose-500/25 hover:bg-rose-500/20'
+                                }`}
+                                title={
+                                  isItemActive
+                                    ? 'Sembunyikan sementara dari publik'
+                                    : 'Tampilkan kembali di publik'
+                                }
+                              >
+                                {isItemActive ? <Eye size={14} /> : <EyeOff size={14} />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePerfume(item.id, item.name)}
+                                className="p-1.5 rounded-md bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-white/10 transition-colors"
+                                title="Hapus Varian Permanen"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => handleTogglePerfumeStatus(item.id)}
-                              className={`p-1.5 rounded-lg border transition-all active:scale-95 ${
-                                isItemActive
-                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
-                                  : 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
-                              }`}
-                              title={isItemActive ? 'Sembunyikan dari Publik' : 'Tampilkan di Publik'}
-                            >
-                              {isItemActive ? <Eye size={14} /> : <EyeOff size={14} />}
-                            </button>
-                            <button
-                              onClick={() => setEditingPerfume(item)}
-                              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10"
-                              title="Edit Varian"
-                            >
-                              <Edit size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDeletePerfume(item.id, item.name)}
-                              className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-white/10"
-                              title="Hapus Varian"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                          {/* Character & Usage Recommendation */}
+                          <div className="text-xs space-y-1 bg-black/30 p-2.5 rounded-lg border border-white/[0.06] leading-[1.45]">
+                            <p className="text-slate-200">
+                              <span className="text-slate-400">Karakter: </span>
+                              {item.tagline || '-'}
+                            </p>
+                            {item.usageRecommendation && (
+                              <p className="text-slate-300">
+                                <span className="text-slate-400">Penggunaan: </span>
+                                {item.usageRecommendation}
+                              </p>
+                            )}
                           </div>
                         </div>
 
-                        {/* Accords tags */}
-                        <div className="flex flex-wrap gap-1 mt-3 pt-2.5 border-t border-white/5">
-                          {item.accords.map((a, i) => (
-                            <span
-                              key={i}
-                              className="text-[9.5px] text-slate-300 bg-white/5 px-2 py-0.5 rounded-md"
+                        {/* Assigned Collection Categories + Quick Remove from Active Category */}
+                        <div className="pt-2 border-t border-white/[0.06] flex flex-col gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                            <span className="text-slate-400">Collection:</span>
+                            {itemCats.length === 0 ? (
+                              <span className="text-slate-500 italic">Belum masuk kategori</span>
+                            ) : (
+                              <span className="text-amber-200/90 font-medium">
+                                {itemCats
+                                  .map(
+                                    (cid) =>
+                                      COLLECTION_CATEGORIES.find((m) => m.id === cid)?.title || cid
+                                  )
+                                  .join(' · ')}
+                              </span>
+                            )}
+                          </div>
+
+                          {activeSixCatFilter && itemCats.includes(activeSixCatFilter.id) && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleRemoveFromCurrentCategory(item, activeSixCatFilter.id)
+                              }
+                              className="w-full py-1.5 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                             >
-                              {a}
-                            </span>
-                          ))}
+                              <X size={12} />
+                              <span>Keluarkan dari {activeSixCatFilter.title}</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -2079,10 +2326,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
               {/* MODAL EDIT VARIAN */}
               {editingPerfume && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-                  <div className="w-full max-w-md rounded-3xl bg-[#0f1118] border border-white/15 p-6 shadow-2xl space-y-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm font-body">
+                  <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-xl bg-[#0f1118] border border-white/15 p-5 shadow-2xl space-y-4">
                     <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                      <h3 className="font-display font-bold text-sm text-white">Edit Varian Parfum</h3>
+                      <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
+                        Edit Varian & Kategori Collection
+                      </h3>
                       <button
                         onClick={() => setEditingPerfume(null)}
                         className="text-slate-400 hover:text-white"
@@ -2091,46 +2340,150 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       </button>
                     </div>
 
-                    <form onSubmit={handleSaveEditPerfume} className="space-y-3">
+                    <form onSubmit={handleSaveEditPerfume} className="space-y-3.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-medium text-slate-300 block mb-1">
+                            Nama Varian *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={editingPerfume.name}
+                            onChange={(e) =>
+                              setEditingPerfume({ ...editingPerfume, name: e.target.value })
+                            }
+                            className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-medium text-slate-300 block mb-1">
+                            Profil Dasar
+                          </label>
+                          <select
+                            value={editingPerfume.category}
+                            onChange={(e) =>
+                              setEditingPerfume({
+                                ...editingPerfume,
+                                category: e.target.value as PerfumeCategory,
+                              })
+                            }
+                            className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          >
+                            <option value="unisex">Unisex</option>
+                            <option value="men">Men</option>
+                            <option value="women">Women</option>
+                            <option value="powdery">Powdery</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Tarif Harga per ml Aktual */}
                       <div>
-                        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">
-                          Nama Varian
+                        <label className="text-xs font-medium text-slate-300 block mb-1.5">
+                          Tarif Harga Aktual per ml
                         </label>
-                        <input
-                          type="text"
-                          required
-                          value={editingPerfume.name}
-                          onChange={(e) =>
-                            setEditingPerfume({ ...editingPerfume, name: e.target.value })
-                          }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400"
-                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          {([3000, 4000] as const).map((rate) => {
+                            const selected = (editingPerfume.pricePerMl || 3000) === rate;
+                            return (
+                              <button
+                                key={rate}
+                                type="button"
+                                onClick={() =>
+                                  setEditingPerfume({ ...editingPerfume, pricePerMl: rate })
+                                }
+                                className={`py-2 px-3 rounded-lg border text-xs sm:text-sm tabular-nums font-semibold transition-colors ${
+                                  selected
+                                    ? 'bg-amber-400/20 border-amber-400 text-amber-200'
+                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-white'
+                                }`}
+                              >
+                                Rp {rate.toLocaleString('id-ID')} / ml
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 4 Kategori Kebutuhan (Multi-Pilihan) */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-300 block mb-1.5">
+                          Kategori Kebutuhan (Bisa Pilih Lebih dari Satu)
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {COLLECTION_CATEGORIES.filter((c) => c.group === 'need').map((cat) => {
+                            const checked = (editingPerfume.collectionCategories || []).includes(
+                              cat.id
+                            );
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() =>
+                                  setEditingPerfume({
+                                    ...editingPerfume,
+                                    collectionCategories: toggleCollectionCategoryInList(
+                                      editingPerfume.collectionCategories,
+                                      cat.id
+                                    ),
+                                  })
+                                }
+                                className={`p-2 rounded-lg border text-left flex items-center justify-between text-xs transition-colors ${
+                                  checked
+                                    ? 'bg-amber-500/20 border-amber-400 text-white font-semibold'
+                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                <span>{cat.title}</span>
+                                {checked && <Check size={13} className="text-amber-300 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 2 Kategori Tren & Popularitas (Pilihan Bebas) */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-300 block mb-1.5">
+                          Kategori Tren & Popularitas (Opsional)
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {COLLECTION_CATEGORIES.filter((c) => c.group === 'trend').map((cat) => {
+                            const checked = (editingPerfume.collectionCategories || []).includes(
+                              cat.id
+                            );
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() =>
+                                  setEditingPerfume({
+                                    ...editingPerfume,
+                                    collectionCategories: toggleCollectionCategoryInList(
+                                      editingPerfume.collectionCategories,
+                                      cat.id
+                                    ),
+                                  })
+                                }
+                                className={`p-2 rounded-lg border text-left flex items-center justify-between text-xs transition-colors ${
+                                  checked
+                                    ? 'bg-amber-500/20 border-amber-400 text-white font-semibold'
+                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                <span>{cat.title}</span>
+                                {checked && <Check size={13} className="text-amber-300 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">
-                          Kategori
-                        </label>
-                        <select
-                          value={editingPerfume.category}
-                          onChange={(e) =>
-                            setEditingPerfume({
-                              ...editingPerfume,
-                              category: e.target.value as PerfumeCategory,
-                            })
-                          }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400"
-                        >
-                          <option value="unisex">Unisex</option>
-                          <option value="men">Men</option>
-                          <option value="women">Women</option>
-                          <option value="powdery">Powdery</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">
-                          Tagline / Karakter
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
+                          Karakter Aroma
                         </label>
                         <input
                           type="text"
@@ -2138,7 +2491,39 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           onChange={(e) =>
                             setEditingPerfume({ ...editingPerfume, tagline: e.target.value })
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400"
+                          placeholder="Contoh: Calabrian Bergamot & Sichuan Pepper"
+                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
+                          Rekomendasi Penggunaan
+                        </label>
+                        <input
+                          type="text"
+                          value={editingPerfume.usageRecommendation || ''}
+                          onChange={(e) =>
+                            setEditingPerfume({
+                              ...editingPerfume,
+                              usageRecommendation: e.target.value,
+                            })
+                          }
+                          placeholder="Contoh: Aktivitas harian, rapat formal, atau kencan malam"
+                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
+                          Notes / Accords (Pisahkan dengan koma)
+                        </label>
+                        <input
+                          type="text"
+                          value={editingAccordsStr}
+                          onChange={(e) => setEditingAccordsStr(e.target.value)}
+                          placeholder="Fresh Spicy, Amber, Citrus"
+                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                         />
                       </div>
 
@@ -2146,13 +2531,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setEditingPerfume(null)}
-                          className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-slate-300"
+                          className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
-                          className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-bold text-xs"
+                          className="flex-1 py-2 rounded-lg bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-sm"
                         >
                           Simpan Perubahan
                         </button>
@@ -2164,10 +2549,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
               {/* MODAL TAMBAH VARIAN BARU */}
               {isAddingPerfume && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-                  <div className="w-full max-w-md rounded-3xl bg-[#0f1118] border border-white/15 p-6 shadow-2xl space-y-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm font-body">
+                  <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-xl bg-[#0f1118] border border-white/15 p-5 shadow-2xl space-y-4">
                     <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                      <h3 className="font-display font-bold text-sm text-white">Tambah Varian Baru</h3>
+                      <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
+                        Tambah Varian Baru ke Katalog & Collection
+                      </h3>
                       <button
                         onClick={() => setIsAddingPerfume(false)}
                         className="text-slate-400 hover:text-white"
@@ -2176,61 +2563,179 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       </button>
                     </div>
 
-                    <form onSubmit={handleAddNewPerfume} className="space-y-3">
+                    <form onSubmit={handleAddNewPerfume} className="space-y-3.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-medium text-slate-300 block mb-1">
+                            Nama Parfum *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Contoh: Mykonos Slow Dance"
+                            value={newPerfumeForm.name}
+                            onChange={(e) =>
+                              setNewPerfumeForm({ ...newPerfumeForm, name: e.target.value })
+                            }
+                            className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-medium text-slate-300 block mb-1">
+                            Profil Dasar
+                          </label>
+                          <select
+                            value={newPerfumeForm.category}
+                            onChange={(e) =>
+                              setNewPerfumeForm({
+                                ...newPerfumeForm,
+                                category: e.target.value as PerfumeCategory,
+                              })
+                            }
+                            className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          >
+                            <option value="unisex">Unisex</option>
+                            <option value="men">Men</option>
+                            <option value="women">Women</option>
+                            <option value="powdery">Powdery</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Tarif Harga per ml */}
                       <div>
-                        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">
-                          Nama Parfum *
+                        <label className="text-xs font-medium text-slate-300 block mb-1.5">
+                          Tarif Harga Aktual per ml
                         </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="Contoh: Mykonos Slow Dance"
-                          value={newPerfumeForm.name}
-                          onChange={(e) =>
-                            setNewPerfumeForm({ ...newPerfumeForm, name: e.target.value })
-                          }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400"
-                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          {([3000, 4000] as const).map((rate) => {
+                            const selected = newPerfumeForm.pricePerMl === rate;
+                            return (
+                              <button
+                                key={rate}
+                                type="button"
+                                onClick={() =>
+                                  setNewPerfumeForm({ ...newPerfumeForm, pricePerMl: rate })
+                                }
+                                className={`py-2 px-3 rounded-lg border text-xs sm:text-sm tabular-nums font-semibold transition-colors ${
+                                  selected
+                                    ? 'bg-amber-400/20 border-amber-400 text-amber-200'
+                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-white'
+                                }`}
+                              >
+                                Rp {rate.toLocaleString('id-ID')} / ml
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Kategori Kebutuhan */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-300 block mb-1.5">
+                          Kategori Kebutuhan (Multi-Pilihan)
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {COLLECTION_CATEGORIES.filter((c) => c.group === 'need').map((cat) => {
+                            const checked = newPerfumeForm.collectionCategories.includes(cat.id);
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() =>
+                                  setNewPerfumeForm({
+                                    ...newPerfumeForm,
+                                    collectionCategories: toggleCollectionCategoryInList(
+                                      newPerfumeForm.collectionCategories,
+                                      cat.id
+                                    ),
+                                  })
+                                }
+                                className={`p-2 rounded-lg border text-left flex items-center justify-between text-xs transition-colors ${
+                                  checked
+                                    ? 'bg-amber-500/20 border-amber-400 text-white font-semibold'
+                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                <span>{cat.title}</span>
+                                {checked && <Check size={13} className="text-amber-300 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Kategori Tren & Popularitas */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-300 block mb-1.5">
+                          Kategori Tren & Popularitas (Opsional)
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {COLLECTION_CATEGORIES.filter((c) => c.group === 'trend').map((cat) => {
+                            const checked = newPerfumeForm.collectionCategories.includes(cat.id);
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() =>
+                                  setNewPerfumeForm({
+                                    ...newPerfumeForm,
+                                    collectionCategories: toggleCollectionCategoryInList(
+                                      newPerfumeForm.collectionCategories,
+                                      cat.id
+                                    ),
+                                  })
+                                }
+                                className={`p-2 rounded-lg border text-left flex items-center justify-between text-xs transition-colors ${
+                                  checked
+                                    ? 'bg-amber-500/20 border-amber-400 text-white font-semibold'
+                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                <span>{cat.title}</span>
+                                {checked && <Check size={13} className="text-amber-300 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">
-                          Kategori
-                        </label>
-                        <select
-                          value={newPerfumeForm.category}
-                          onChange={(e) =>
-                            setNewPerfumeForm({
-                              ...newPerfumeForm,
-                              category: e.target.value as PerfumeCategory,
-                            })
-                          }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400"
-                        >
-                          <option value="unisex">Unisex</option>
-                          <option value="men">Men</option>
-                          <option value="women">Women</option>
-                          <option value="powdery">Powdery</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">
-                          Tagline
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
+                          Karakter Aroma
                         </label>
                         <input
                           type="text"
-                          placeholder="Aroma mewah memikat"
+                          placeholder="Contoh: Sweet Floral & Red Berries"
                           value={newPerfumeForm.tagline}
                           onChange={(e) =>
                             setNewPerfumeForm({ ...newPerfumeForm, tagline: e.target.value })
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
+                          Rekomendasi Penggunaan
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: Aktivitas harian, kencan sore, atau rapat formal"
+                          value={newPerfumeForm.usageRecommendation}
+                          onChange={(e) =>
+                            setNewPerfumeForm({
+                              ...newPerfumeForm,
+                              usageRecommendation: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
                           Accords (Pisahkan dengan koma)
                         </label>
                         <input
@@ -2240,7 +2745,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           onChange={(e) =>
                             setNewPerfumeForm({ ...newPerfumeForm, accordsStr: e.target.value })
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                         />
                       </div>
 
@@ -2248,18 +2753,98 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setIsAddingPerfume(false)}
-                          className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-slate-300"
+                          className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
-                          className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-bold text-xs"
+                          className="flex-1 py-2 rounded-lg bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-sm"
                         >
                           Tambah Sekarang
                         </button>
                       </div>
                     </form>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL KONFIRMASI HAPUS VARIAN PERMANEN */}
+              {deleteConfirmPerfume && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm font-body">
+                  <div className="w-full max-w-sm rounded-xl bg-[#0f1118] border border-rose-500/35 p-5 shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                      <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
+                        Hapus Varian Parfum?
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmPerfume(null)}
+                        className="text-slate-400 hover:text-white"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <p className="text-sm text-slate-300 leading-[1.5]">
+                      Anda yakin ingin menghapus permanen varian{' '}
+                      <span className="font-semibold text-white">"{deleteConfirmPerfume.name}"</span>{' '}
+                      dari seluruh katalog & halaman Collection?
+                    </p>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmPerfume(null)}
+                        className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={confirmDeletePerfumeNow}
+                        className="flex-1 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm"
+                      >
+                        Ya, Hapus Permanen
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL KONFIRMASI RESET KE 68 VARIAN DEFAULT */}
+              {isResetPerfumesConfirmOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm font-body">
+                  <div className="w-full max-w-sm rounded-xl bg-[#0f1118] border border-amber-500/35 p-5 shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                      <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
+                        Reset Katalog Default?
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setIsResetPerfumesConfirmOpen(false)}
+                        className="text-slate-400 hover:text-white"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <p className="text-sm text-slate-300 leading-[1.5]">
+                      Kembalikan seluruh daftar katalog ke 68 varian bawaan asli SINKI dan sinkronkan ke publik?
+                    </p>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsResetPerfumesConfirmOpen(false)}
+                        className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={confirmResetPerfumesNow}
+                        className="flex-1 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-sm"
+                      >
+                        Ya, Reset Katalog
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2270,17 +2855,17 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               TAB 3: MEDIA, HERO & 11 BOTOL (WIDESCREEN MULTI-KOLOM)
              ======================================================== */}
           {activeMenu === 'media' && (
-            <div className="space-y-6">
+            <div className="space-y-6 font-body">
               <div>
-                <h2 className="font-display text-xl font-bold text-amber-300">
+                <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
                   Media, Foto Utama & 11 Botol Bestseller
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
                   Unggah dan sesuaikan gambar resmi dengan alat pemotong dan zoom terintegrasi.
                 </p>
               </div>
 
-              {/* SUB-TABS NAVIGATOR KHUSUS MEDIA (Rapi & Terstruktur) */}
+              {/* SUB-TABS NAVIGATOR KHUSUS MEDIA */}
               <div className="flex items-center gap-1.5 p-1.5 bg-black/60 rounded-2xl border border-white/10 overflow-x-auto no-scrollbar scroll-smooth">
                 {[
                   { id: 'all', label: '🌐 Semua Bagian' },
@@ -2295,9 +2880,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       key={st.id}
                       type="button"
                       onClick={() => setMediaSubTab(st.id as any)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
                         isCur
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-md'
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`}
                     >
@@ -2332,20 +2917,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       <Film size={24} />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-display font-bold text-base text-white">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-heading font-semibold text-base sm:text-lg text-white tracking-[-0.015em] leading-[1.25]">
                           Video Sinematik Beranda & Transisi Botol
                         </h3>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border ${
+                        <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${
                           heroMediaType === 'video' && heroVideoUrl
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                             : 'bg-slate-500/20 text-slate-400 border-slate-500/30'
                         }`}>
-                          {heroMediaType === 'video' && heroVideoUrl ? 'VIDEO AKTIF' : 'GAMBAR STATIS'}
+                          {heroMediaType === 'video' && heroVideoUrl ? 'Video Aktif' : 'Gambar Statis'}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-300 mt-0.5">
-                        Gambar botol tampil seketika saat web dimuat, lalu memudar lembut (crossfade dissolve) begitu video berputar.
+                      <p className="text-xs sm:text-sm text-slate-300 mt-0.5 leading-[1.45]">
+                        Gambar botol tampil seketika saat web dimuat, lalu memudar lembut begitu video berputar.
                       </p>
                     </div>
                   </div>
@@ -2355,9 +2940,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <button
                       type="button"
                       onClick={() => handleToggleMediaType('video')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
                         heroMediaType === 'video'
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-md'
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -2367,9 +2952,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <button
                       type="button"
                       onClick={() => handleToggleMediaType('image')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
                         heroMediaType === 'image'
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-md'
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -2380,12 +2965,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
 
                 {/* Info Card: Jawaban Pertanyaan Penggantian Video */}
-                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200/90 leading-relaxed flex items-start gap-2.5">
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200/90 leading-[1.5] flex items-start gap-2.5">
                   <Sparkles size={16} className="text-amber-400 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold text-amber-300">Bagaimana Cara Kerja Gambar & Video?</span>
+                    <span className="font-semibold text-amber-300">Bagaimana Cara Kerja Gambar & Video?</span>
                     <p className="text-slate-300 mt-0.5">
-                      Saat website dibuka, pengunjung langsung melihat gambar cover botol tanpa layar hitam. Begitu video siap, gambar botol memudar mulus masuk ke video. <strong>Ketika Anda mengganti video baru</strong>, sistem secara cerdas otomatis mengambil frame awal video baru tersebut sebagai cover! Anda juga tetap bisa mengunggah cover foto khusus jika diinginkan.
+                      Saat website dibuka, pengunjung langsung melihat gambar cover botol tanpa layar hitam. Begitu video siap, gambar botol memudar mulus masuk ke video. <strong className="font-semibold text-white">Ketika Anda mengganti video baru</strong>, sistem otomatis mengambil frame awal video baru tersebut sebagai cover! Anda juga tetap bisa mengunggah cover foto khusus jika diinginkan.
                     </p>
                   </div>
                 </div>
@@ -2395,7 +2980,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   {/* Kolom 1: Live Video & Fade Simulation Player */}
                   <div className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span className="text-xs sm:text-sm font-semibold text-white flex items-center gap-1.5">
                         <Play size={14} className="text-amber-400" />
                         <span>Pratinjau Video & Simulasi Memudar</span>
                       </span>
@@ -2407,7 +2992,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             setIsTestingFade(true);
                             setTimeout(() => setIsTestingFade(false), 2400);
                           }}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition-all active:scale-95"
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold transition-all active:scale-95"
                         >
                           {isTestingFade ? '✨ Memudar Masuk...' : 'Uji Efek Memudar'}
                         </button>
@@ -2415,13 +3000,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     {/* Switcher Ukuran Frame Pratinjau */}
-                    <div className="flex items-center justify-between gap-1 p-1.5 bg-black/60 rounded-xl border border-white/10 text-[10.5px]">
-                      <span className="text-[10px] text-slate-400 font-mono px-1.5 shrink-0 hidden sm:inline">Ukuran Frame:</span>
+                    <div className="flex items-center justify-between gap-1.5 p-1.5 bg-black/60 rounded-xl border border-white/10 text-xs">
+                      <span className="text-xs text-slate-400 font-medium px-1.5 shrink-0 hidden sm:inline">Ukuran Frame:</span>
                       <div className="grid grid-cols-4 gap-1 flex-1">
                         <button
                           type="button"
                           onClick={() => setAdminPreviewRatio('9:16')}
-                          className={`py-1.5 px-1.5 rounded-lg font-bold text-[10.5px] transition-all text-center ${
+                          className={`py-1.5 px-1.5 rounded-lg font-semibold text-xs transition-all text-center ${
                             adminPreviewRatio === '9:16'
                               ? 'bg-amber-400 text-slate-950 shadow-sm'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300'
@@ -2432,35 +3017,35 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setAdminPreviewRatio('full')}
-                          className={`py-1.5 px-1.5 rounded-lg font-bold text-[10.5px] transition-all text-center ${
+                          className={`py-1.5 px-1.5 rounded-lg font-semibold text-xs transition-all text-center ${
                             adminPreviewRatio === 'full'
                               ? 'bg-amber-400 text-slate-950 shadow-sm'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300'
                           }`}
                         >
-                          📺 Live Beranda
+                          📺 Live
                         </button>
                         <button
                           type="button"
                           onClick={() => setAdminPreviewRatio('1:1')}
-                          className={`py-1.5 px-1.5 rounded-lg font-bold text-[10.5px] transition-all text-center ${
+                          className={`py-1.5 px-1.5 rounded-lg font-semibold text-xs transition-all text-center ${
                             adminPreviewRatio === '1:1'
                               ? 'bg-amber-400 text-slate-950 shadow-sm'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300'
                           }`}
                         >
-                          ⬜ 1:1 Kotak
+                          ⬜ 1:1
                         </button>
                         <button
                           type="button"
                           onClick={() => setAdminPreviewRatio('16:9')}
-                          className={`py-1.5 px-1.5 rounded-lg font-bold text-[10.5px] transition-all text-center ${
+                          className={`py-1.5 px-1.5 rounded-lg font-semibold text-xs transition-all text-center ${
                             adminPreviewRatio === '16:9'
                               ? 'bg-amber-400 text-slate-950 shadow-sm'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300'
                           }`}
                         >
-                          🖥️ 16:9 Lebar
+                          🖥️ 16:9
                         </button>
                       </div>
                     </div>
@@ -2518,14 +3103,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             {adminPreviewRatio === 'full' && (
                               <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 select-none">
                                 <div className="pt-2 text-center">
-                                  <span className="font-display text-xs font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-400 drop-shadow-md">
+                                  <span className="font-heading text-xs font-bold tracking-[0.16em] text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-400 drop-shadow-md">
                                     SINKI
                                   </span>
-                                  <span className="block text-[7px] tracking-[0.25em] text-white/90 uppercase font-mono">
+                                  <span className="block text-[9px] tracking-[0.12em] text-white/90 uppercase font-body font-medium">
                                     EAU DE PARFUM
                                   </span>
                                 </div>
-                                <div className="p-1 rounded-lg bg-black/60 backdrop-blur-xs text-[8px] text-center text-amber-300/80 font-mono">
+                                <div className="p-1 rounded-lg bg-black/60 backdrop-blur-xs text-[10px] text-center text-amber-300/90 font-body font-medium">
                                   Live Preview Beranda
                                 </div>
                               </div>
@@ -2534,8 +3119,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         ) : (
                           <div className="text-center p-4 space-y-2">
                             <Film size={32} className="mx-auto text-slate-600" />
-                            <p className="text-xs text-slate-400">Belum ada file video yang diunggah</p>
-                            <span className="text-[10px] text-slate-500 block">
+                            <p className="text-xs font-medium text-slate-300">Belum ada file video yang diunggah</p>
+                            <span className="text-xs text-slate-500 block leading-[1.4]">
                               Unggah video MP4 atau masukkan URL video di sebelah kanan
                             </span>
                           </div>
@@ -2545,13 +3130,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                     {heroVideoUrl && (
                       <div className="flex items-center justify-between pt-1">
-                        <span className="text-[10px] text-slate-400 truncate max-w-[220px]">
+                        <span className="text-xs text-slate-400 truncate max-w-[220px]">
                           URL: {heroVideoUrl}
                         </span>
                         <button
                           type="button"
                           onClick={handleRemoveHeroVideo}
-                          className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1 font-bold"
+                          className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 font-semibold"
                         >
                           <Trash2 size={12} />
                           <span>Hapus Video</span>
@@ -2564,7 +3149,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <div className="space-y-4">
                     {/* Form Upload Video File */}
                     <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3">
-                      <span className="text-xs font-bold text-white block">
+                      <span className="text-xs sm:text-sm font-semibold text-white block">
                         Unggah File Video (.mp4 / .webm)
                       </span>
 
@@ -2573,20 +3158,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           type="button"
                           disabled={isUploadingVideo}
                           onClick={() => heroVideoInputRef.current?.click()}
-                          className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-105 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all disabled:opacity-50"
+                          className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-105 text-slate-950 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all disabled:opacity-50"
                         >
                           <Upload size={14} />
                           <span>{isUploadingVideo ? 'Mengunggah Video...' : 'Pilih File Video Baru'}</span>
                         </button>
                       </div>
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-xs text-slate-400 leading-[1.45]">
                         Otomatis disimpan permanen ke Supabase CDN & diekstrak frame gambarnya.
                       </p>
                     </div>
 
                     {/* Form URL Video Langsung */}
                     <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-2.5">
-                      <span className="text-xs font-bold text-white block">
+                      <span className="text-xs sm:text-sm font-semibold text-white block">
                         Atau Gunakan Tautan URL Video Langsung
                       </span>
                       <div className="flex gap-2">
@@ -2595,13 +3180,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           value={videoUrlInput}
                           onChange={(e) => setVideoUrlInput(e.target.value)}
                           placeholder="https://.../video.mp4"
-                          className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-white/15 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                          className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-white/15 text-base sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
                         />
                         <button
                           type="button"
                           disabled={isUploadingVideo || !videoUrlInput.trim()}
                           onClick={handleSaveVideoUrl}
-                          className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/15 transition-all active:scale-95 disabled:opacity-50"
+                          className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/15 transition-all active:scale-95 disabled:opacity-50"
                         >
                           Simpan
                         </button>
@@ -2612,10 +3197,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-xs font-bold text-white block">
+                          <span className="text-xs sm:text-sm font-semibold text-white block">
                             Gambar Cover Awal (Poster)
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-xs text-slate-400 leading-[1.4]">
                             Foto botol/frame yang tampil sebelum memudar ke video
                           </span>
                         </div>
@@ -2643,7 +3228,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                 type="button"
                                 disabled={isExtractingFrame}
                                 onClick={handleExtractFrameNow}
-                                className="py-1.5 px-2.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[10px] font-bold transition-all"
+                                className="py-1.5 px-2.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-all"
                               >
                                 {isExtractingFrame ? 'Mengambil Frame...' : '📷 Ambil Frame dari Video Ini'}
                               </button>
@@ -2652,12 +3237,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             <button
                               type="button"
                               onClick={() => heroPosterInputRef.current?.click()}
-                              className="py-1.5 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold border border-white/15 transition-all"
+                              className="py-1.5 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all"
                             >
                               Ganti Foto Cover Kustom
                             </button>
                           </div>
-                          <span className="text-[10px] text-slate-400 block">
+                          <span className="text-xs text-slate-400 block leading-[1.4]">
                             Setiap Anda mengganti video, cover otomatis disinkronkan dari awal video baru.
                           </span>
                         </div>
@@ -2671,11 +3256,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <SlidersHorizontal size={16} className="text-amber-400" />
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      <span className="font-heading text-sm font-semibold text-white tracking-[-0.01em]">
                         Pengaturan Layout & Posisi Video Beranda
                       </span>
                     </div>
-                    <span className="text-[10px] font-mono text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                    <span className="text-xs font-medium text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-md">
                       Live Fitting
                     </span>
                   </div>
@@ -2683,16 +3268,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                     {/* 1. Mode Fitting Layar */}
                     <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                      <span className="text-[11px] font-bold text-slate-200 block">
+                      <span className="text-xs font-semibold text-slate-200 block">
                         1. Mode Tampilan Layar (Fit)
                       </span>
                       <div className="grid grid-cols-2 gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleUpdateLayoutSetting('heroVideoFit', 'cover')}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all ${
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition-all ${
                             heroVideoFit === 'cover'
-                              ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                              ? 'bg-amber-400 text-slate-950 shadow-md'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
                           }`}
                         >
@@ -2701,16 +3286,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => handleUpdateLayoutSetting('heroVideoFit', 'contain')}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all ${
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition-all ${
                             heroVideoFit === 'contain'
-                              ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                              ? 'bg-amber-400 text-slate-950 shadow-md'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
                           }`}
                         >
                           Contain (Utuh)
                         </button>
                       </div>
-                      <p className="text-[9.5px] text-slate-400">
+                      <p className="text-xs text-slate-400 leading-[1.4]">
                         {heroVideoFit === 'cover'
                           ? 'Memenuhi panggung tanpa tepi hitam.'
                           : 'Seluruh frame video terlihat 100% utuh tanpa terpotong.'}
@@ -2719,7 +3304,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                     {/* 2. Posisi Fokus Kamera (Vertical Alignment) */}
                     <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                      <span className="text-[11px] font-bold text-slate-200 block">
+                      <span className="text-xs font-semibold text-slate-200 block">
                         2. Titik Fokus Botol (Posisi)
                       </span>
                       <div className="grid grid-cols-3 gap-1.5">
@@ -2731,9 +3316,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               key={pos}
                               type="button"
                               onClick={() => handleUpdateLayoutSetting('heroVideoPosition', pos)}
-                              className={`py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
+                              className={`py-2 px-1.5 rounded-xl text-xs font-semibold transition-all ${
                                 isSel
-                                  ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                                  ? 'bg-amber-400 text-slate-950 shadow-md'
                                   : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
                               }`}
                             >
@@ -2742,20 +3327,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           );
                         })}
                       </div>
-                      <p className="text-[9.5px] text-slate-400">
+                      <p className="text-xs text-slate-400 leading-[1.4]">
                         Geser fokus vertikal agar botol tidak menabrak teks judul.
                       </p>
                     </div>
 
                     {/* 3. Ketinggian Area Panggung (Hero Height) */}
                     <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-200 block">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xs font-semibold text-slate-200 block">
                           3. Ketinggian Panggung Beranda
                         </span>
                         {heroHeightMode === 'full' && (
-                          <span className="text-[9px] font-mono font-bold text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
-                            Mentok Ke Atas
+                          <span className="text-xs font-medium text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
+                            Penuh
                           </span>
                         )}
                       </div>
@@ -2765,7 +3350,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             compact: '60% (Sedang)',
                             balanced: '68% (Standar)',
                             tall: '76% (Tinggi)',
-                            full: '100% (Layar Penuh)',
+                            full: '100% (Penuh)',
                           };
                           const isSel = heroHeightMode === hm;
                           return (
@@ -2773,9 +3358,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               key={hm}
                               type="button"
                               onClick={() => handleUpdateLayoutSetting('heroHeightMode', hm)}
-                              className={`py-2 px-1 rounded-xl text-[10.5px] font-bold transition-all text-center ${
+                              className={`py-2 px-1.5 rounded-xl text-xs tabular-nums font-semibold transition-all text-center ${
                                 isSel
-                                  ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                                  ? 'bg-amber-400 text-slate-950 shadow-md'
                                   : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
                               }`}
                             >
@@ -2784,9 +3369,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           );
                         })}
                       </div>
-                      <p className="text-[9.5px] text-slate-400">
+                      <p className="text-xs text-slate-400 leading-[1.4]">
                         {heroHeightMode === 'full'
-                          ? '✨ Mode 100% Layar Penuh: Video mengisi seluruh panggung dari tepi atas sampai bawah tanpa terpotong!'
+                          ? '✨ Mode 100% Layar Penuh: Video mengisi seluruh panggung dari tepi atas sampai bawah!'
                           : 'Sesuaikan proporsi panggung video dengan menu bawah.'}
                       </p>
                     </div>
@@ -2802,12 +3387,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-display font-bold text-sm text-white">
+                        <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                           Foto Utama Beranda (Hero)
                         </h3>
-                        <span className="text-[10px] text-slate-400">Foto botol panggung depan</span>
+                        <span className="text-xs text-slate-400">Foto botol panggung depan</span>
                       </div>
-                      <label className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs cursor-pointer active:scale-95 transition-all">
+                      <label className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-semibold text-xs cursor-pointer active:scale-95 transition-all">
                         <span>Ganti Foto</span>
                         <input
                           type="file"
@@ -2826,7 +3411,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           className="w-full h-full object-contain filter drop-shadow-md"
                         />
                       ) : (
-                        <span className="text-xs text-slate-500 font-mono">Foto Utama Standar</span>
+                        <span className="text-xs text-slate-500">Foto Utama Standar</span>
                       )}
                     </div>
                   </div>
@@ -2835,16 +3420,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-display font-bold text-sm text-white">
+                        <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                           Logo Resmi SINKI & QRIS
                         </h3>
-                        <span className="text-[10px] text-slate-400">Identitas & Barcode Pembayaran</span>
+                        <span className="text-xs text-slate-400">Identitas & Barcode Pembayaran</span>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-2 text-center">
-                        <span className="text-[10px] font-bold text-slate-300 block">Logo SINKI</span>
+                        <span className="text-xs font-semibold text-slate-300 block">Logo SINKI</span>
                         <div className="h-28 rounded-xl bg-black/60 border border-white/5 p-2 flex items-center justify-center">
                           {currentLogo ? (
                             <img src={currentLogo} alt="Logo" className="w-full h-full object-contain" />
@@ -2852,7 +3437,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             <Sparkles size={24} className="text-amber-400" />
                           )}
                         </div>
-                        <label className="block py-1 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold cursor-pointer">
+                        <label className="block py-1.5 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer">
                           <span>Ganti Logo</span>
                           <input
                             type="file"
@@ -2864,15 +3449,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       </div>
 
                       <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-2 text-center">
-                        <span className="text-[10px] font-bold text-slate-300 block">Barcode QRIS</span>
+                        <span className="text-xs font-semibold text-slate-300 block">Barcode QRIS</span>
                         <div className="h-28 rounded-xl bg-black/60 border border-white/5 p-2 flex items-center justify-center">
                           {currentQris ? (
                             <img src={currentQris} alt="QRIS" className="w-full h-full object-contain" />
                           ) : (
-                            <span className="text-[10px] text-slate-500">QRIS Standar</span>
+                            <span className="text-xs text-slate-500">QRIS Standar</span>
                           )}
                         </div>
-                        <label className="block py-1 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold cursor-pointer">
+                        <label className="block py-1.5 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer">
                           <span>Ganti QRIS</span>
                           <input
                             type="file"
@@ -2909,19 +3494,19 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <Sparkles size={22} />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-heading text-sm sm:text-base font-semibold text-white tracking-[-0.015em]">
                         Sakelar Master Panggung 3D Beranda
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${
+                      <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${
                         isHeroStageEnabled
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                           : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
                       }`}>
-                        {isHeroStageEnabled ? 'AKTIF' : 'NONAKTIF'}
+                        {isHeroStageEnabled ? 'Aktif' : 'Nonaktif'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-300 mt-0.5">
+                    <p className="text-xs sm:text-sm text-slate-300 mt-0.5 leading-[1.45]">
                       {isHeroStageEnabled
                         ? 'Panggung 3D aktif dan akan menampilkan botol PNG transparan yang diunggah di bawah.'
                         : 'Panggung 3D dinonaktifkan. Beranda tetap bersih dan menampilkan gambar latar belakang asli Anda.'}
@@ -2932,10 +3517,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 <button
                   type="button"
                   onClick={handleToggleStageEnabled}
-                  className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shrink-0 ${
+                  className={`px-4 py-2 rounded-xl font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shrink-0 ${
                     isHeroStageEnabled
                       ? 'bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40'
-                      : 'bg-gradient-to-r from-[#DFB76C] to-[#c29849] hover:brightness-110 text-slate-950 shadow-md font-extrabold'
+                      : 'bg-gradient-to-r from-[#DFB76C] to-[#c29849] hover:brightness-110 text-slate-950 shadow-md'
                   }`}
                 >
                   {isHeroStageEnabled ? 'Matikan Panggung 3D' : 'Nyalakan Panggung 3D'}
@@ -2947,15 +3532,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 <div className="p-5 rounded-3xl bg-[#0e111d] border border-amber-500/30 space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-display font-bold text-sm text-amber-300 flex items-center gap-1.5">
+                      <h3 className="font-heading font-semibold text-base text-amber-300 tracking-[-0.015em] leading-[1.25] flex items-center gap-1.5">
                         <Sparkles size={15} />
                         <span>Efek Panggung 3D Beranda (4 Pilihan)</span>
                       </h3>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-400 mt-0.5">
                         Pilih efek gerakan botol parfum saat bertransisi otomatis
                       </p>
                     </div>
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
+                    <span className="text-xs px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/40">
                       Aktif
                     </span>
                   </div>
@@ -2975,14 +3560,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-bold text-amber-200">{eff.name}</span>
+                            <span className="text-xs sm:text-sm font-semibold text-amber-200">{eff.name}</span>
                             {isSelected && (
                               <span className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center">
                                 <Check size={10} className="stroke-[3]" />
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-300 block font-medium leading-tight">
+                          <span className="text-xs text-slate-300 block leading-[1.4]">
                             {eff.tagline}
                           </span>
                         </button>
@@ -2995,15 +3580,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 <div className="p-5 rounded-3xl bg-[#0e111d] border border-amber-500/30 space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-display font-bold text-sm text-amber-300 flex items-center gap-1.5">
+                      <h3 className="font-heading font-semibold text-base text-amber-300 tracking-[-0.015em] leading-[1.25] flex items-center gap-1.5">
                         <Crown size={15} />
                         <span>4 Slot Botol Parfum 3D (PNG Transparan)</span>
                       </h3>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-400 mt-0.5">
                         Slide bergantian setiap 4 detik di panggung tengah beranda
                       </p>
                     </div>
-                    <span className="text-[9px] text-amber-200/90 font-mono">
+                    <span className="text-xs text-amber-200/90 tabular-nums font-medium">
                       4 Botol
                     </span>
                   </div>
@@ -3020,12 +3605,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           className="p-2.5 rounded-xl bg-black/60 border border-white/10 flex flex-col justify-between space-y-2 text-center"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] font-mono font-bold text-amber-300">
+                            <span className="text-xs tabular-nums font-semibold text-amber-300">
                               #{idx + 1}
                             </span>
                             {isCustom && (
-                              <span className="text-[8px] text-emerald-400 flex items-center gap-0.5">
-                                <Check size={8} /> Kustom
+                              <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-0.5">
+                                <Check size={10} /> Kustom
                               </span>
                             )}
                           </div>
@@ -3048,9 +3633,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               setSelectedHeroBottleIdx(idx);
                               heroBottleInputRef.current?.click();
                             }}
-                            className="w-full py-1 px-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/30 text-amber-300 text-[9px] font-bold transition-all flex items-center justify-center gap-1"
+                            className="w-full py-1.5 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/30 text-amber-300 text-xs font-semibold transition-all flex items-center justify-center gap-1"
                           >
-                            <Upload size={10} />
+                            <Upload size={11} />
                             <span>Ganti PNG</span>
                           </button>
                         </div>
@@ -3068,14 +3653,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-display font-bold text-base text-white">
+                      <h3 className="font-heading font-semibold text-base sm:text-lg text-white tracking-[-0.015em] leading-[1.25]">
                         Varian Botol Bestseller ({topPerfumesList.length} Varian)
                       </h3>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                      <span className="text-xs tabular-nums px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">
                         Top {topPerfumesList.length}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
                       Kelola nama, deskripsi aroma, foto botol, dan tambahkan varian baru kapan saja.
                     </p>
                   </div>
@@ -3084,7 +3669,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <button
                       type="button"
                       onClick={handleOpenAddTopItem}
-                      className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#DFB76C] to-[#C5A059] hover:brightness-105 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-md"
+                      className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#DFB76C] to-[#C5A059] hover:brightness-105 text-slate-950 font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-all active:scale-95 shadow-md"
                     >
                       <Plus size={14} />
                       <span>Tambah Varian Baru</span>
@@ -3092,7 +3677,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <button
                       type="button"
                       onClick={handleResetTopPerfumes}
-                      className="py-1.5 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold flex items-center gap-1 transition-all"
+                      className="py-1.5 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs sm:text-sm font-medium flex items-center gap-1 transition-all"
                       title="Kembalikan ke 11 varian awal"
                     >
                       <RotateCcw size={13} />
@@ -3118,8 +3703,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         className="p-3.5 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/30 transition-all flex flex-col justify-between space-y-2.5"
                       >
                         {/* Header: Clean Number 1, 2, 3 (No #) & Type */}
-                        <div className="flex items-center justify-between text-[10px] font-mono">
-                          <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 tabular-nums font-semibold">
                             {p.rank || index + 1}
                           </span>
                           <span className="text-slate-400 truncate max-w-[110px]">
@@ -3137,10 +3722,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             />
                           ) : (
                             <div className="text-center p-2">
-                              <span className="text-[11px] text-amber-300/80 font-mono block font-bold">
+                              <span className="text-xs text-amber-300/90 tabular-nums block font-semibold">
                                 Botol {p.rank || index + 1}
                               </span>
-                              <span className="text-[9px] text-slate-500 block mt-0.5">
+                              <span className="text-xs text-slate-500 block mt-0.5">
                                 Belum ada foto
                               </span>
                             </div>
@@ -3149,18 +3734,18 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                         {/* Title & Subtitle */}
                         <div>
-                          <h4 className="font-display font-bold text-xs text-white truncate" title={p.name}>
+                          <h4 className="font-heading font-semibold text-sm text-white truncate tracking-[-0.01em]" title={p.name}>
                             {p.name}
                           </h4>
-                          <span className="text-[10px] text-slate-400 block truncate" title={p.subtitle}>
+                          <span className="text-xs text-slate-400 block truncate mt-0.5" title={p.subtitle}>
                             {p.subtitle || 'Aroma khas SINKI'}
                           </span>
                         </div>
 
                         {/* Action Buttons: Ganti Foto, Edit Info, Hapus */}
-                        <div className="space-y-1.5 pt-1 border-t border-white/5">
-                          <label className="w-full py-1.5 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/30 text-amber-300 font-bold text-[10px] flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all">
-                            <Upload size={11} />
+                        <div className="space-y-1.5 pt-1.5 border-t border-white/5">
+                          <label className="w-full py-1.5 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/30 text-amber-300 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all">
+                            <Upload size={12} />
                             <span>Ganti Foto</span>
                             <input
                               type="file"
@@ -3174,17 +3759,17 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             <button
                               type="button"
                               onClick={() => handleOpenEditTopItem(p)}
-                              className="py-1 px-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 text-[10px] font-semibold flex items-center justify-center gap-1 transition-all"
+                              className="py-1.5 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 text-xs font-medium flex items-center justify-center gap-1 transition-all"
                             >
-                              <Edit size={11} />
-                              <span>Edit Info</span>
+                              <Edit size={12} />
+                              <span>Edit</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteTopItem(p.id, p.name, p.rank || index + 1)}
-                              className="py-1 px-1.5 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-400 hover:text-red-300 border border-red-500/20 text-[10px] font-semibold flex items-center justify-center gap-1 transition-all"
+                              className="py-1.5 px-2 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-400 hover:text-red-300 border border-red-500/20 text-xs font-medium flex items-center justify-center gap-1 transition-all"
                             >
-                              <Trash2 size={11} />
+                              <Trash2 size={12} />
                               <span>Hapus</span>
                             </button>
                           </div>
@@ -3202,12 +3787,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               TAB 4: TEKS BERJALAN & HARGA (DESKTOP: SPLIT 2 KOLOM)
              ======================================================== */}
           {activeMenu === 'banner' && (
-            <div className="space-y-6">
+            <div className="space-y-6 font-body">
               <div>
-                <h2 className="font-display text-xl font-bold text-amber-300">
+                <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
                   Teks Berjalan & Konfigurasi Harga
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
                   Ubah running text marquee beranda, pilihan gaya tipografi, dan harga tier botol.
                 </p>
               </div>
@@ -3216,12 +3801,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 {/* KOLOM KIRI: TEKS BERJALAN & FONT */}
                 <div className="p-5 sm:p-6 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display font-bold text-sm text-white">
+                    <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                       Teks Berjalan Beranda (Marquee)
                     </h3>
                     <button
                       onClick={handleResetTicker}
-                      className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+                      className="text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1"
                     >
                       <RotateCcw size={12} />
                       <span>Reset</span>
@@ -3229,7 +3814,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-mono text-slate-400 uppercase block font-semibold">
+                    <label className="text-xs font-medium text-slate-300 block">
                       Isi Teks Marquee:
                     </label>
                     <input
@@ -3237,14 +3822,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       value={tickerForm.text}
                       onChange={(e) => setTickerForm({ ...tickerForm, text: e.target.value })}
                       placeholder="Masukkan slogan atau teks promo..."
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                     />
                   </div>
 
                   {/* Pilihan 4 Font */}
                   <div className="space-y-2 pt-1">
-                    <label className="text-[10px] font-mono text-slate-400 uppercase block font-semibold">
-                      Pilihan Font Tipografi:
+                    <label className="text-xs font-medium text-slate-300 block">
+                      Pilihan Gaya Tipografi:
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       {TICKER_FONTS.map((font) => {
@@ -3259,11 +3844,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                 : 'bg-black/30 border-white/10 text-slate-400 hover:border-white/20'
                             }`}
                           >
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-bold">{font.name}</span>
-                              {isSelected && <Check size={13} className="text-amber-400" />}
+                            <div className="flex items-center justify-between text-xs sm:text-sm">
+                              <span className="font-semibold">{font.name}</span>
+                              {isSelected && <Check size={13} className="text-amber-400 shrink-0" />}
                             </div>
-                            <span className="text-[9px] text-slate-400 block mt-1 line-clamp-1">
+                            <span className="text-xs text-slate-400 block mt-1 line-clamp-1">
                               {font.desc}
                             </span>
                           </div>
@@ -3274,11 +3859,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                   {/* LIVE SIMULATION CARD */}
                   <div className="pt-2">
-                    <span className="text-[10px] font-mono text-amber-400 block mb-1 font-semibold">
+                    <span className="text-xs font-medium text-amber-300 block mb-1.5">
                       Simulasi Tampilan Beranda:
                     </span>
                     <div className="p-3 rounded-2xl bg-black/60 border border-amber-500/25 overflow-hidden text-center">
-                      <span className="font-display font-black text-amber-200 text-xs tracking-wider animate-pulse">
+                      <span className="font-heading font-semibold text-amber-200 text-sm tracking-[0.02em] animate-pulse">
                         "{tickerForm.text}"
                       </span>
                     </div>
@@ -3287,7 +3872,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <button
                     onClick={handleSaveTicker}
                     disabled={isSavingTicker}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-md active:scale-98 transition-all"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-sm shadow-md active:scale-98 transition-all"
                   >
                     {isSavingTicker ? 'Menyimpan...' : 'Simpan Teks Berjalan'}
                   </button>
@@ -3296,15 +3881,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 {/* KOLOM KANAN: KONFIGURASI HARGA BOTOL */}
                 <div className="p-5 sm:p-6 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display font-bold text-sm text-white">
+                    <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                       Pengaturan Tarif & Harga
                     </h3>
-                    <span className="text-[10px] text-slate-400 font-mono">Mata Uang IDR</span>
+                    <span className="text-xs text-slate-400 font-medium">Mata Uang IDR</span>
                   </div>
 
                   <div className="space-y-3.5">
                     <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                      <label className="text-[10.5px] font-bold text-amber-300 block">
+                      <label className="text-xs font-semibold text-amber-300 block">
                         Botol Non-Premium 30ml (IDR):
                       </label>
                       <input
@@ -3319,12 +3904,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             },
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-base sm:text-sm tabular-nums text-white focus:outline-none focus:border-amber-400"
                       />
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                      <label className="text-[10.5px] font-bold text-amber-300 block">
+                      <label className="text-xs font-semibold text-amber-300 block">
                         Botol Non-Premium 50ml (IDR):
                       </label>
                       <input
@@ -3339,13 +3924,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             },
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-base sm:text-sm tabular-nums text-white focus:outline-none focus:border-amber-400"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                        <label className="text-[10px] font-bold text-amber-300 block truncate">
+                        <label className="text-xs font-semibold text-amber-300 block truncate">
                           Tarif Premium/ml:
                         </label>
                         <input
@@ -3357,12 +3942,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               premiumRatePerMl: Number(e.target.value) || 0,
                             })
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-base sm:text-sm tabular-nums text-white focus:outline-none focus:border-amber-400"
                         />
                       </div>
 
                       <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                        <label className="text-[10px] font-bold text-amber-300 block truncate">
+                        <label className="text-xs font-semibold text-amber-300 block truncate">
                           Tarif Mykonos/ml:
                         </label>
                         <input
@@ -3374,13 +3959,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               mykonosRatePerMl: Number(e.target.value) || 0,
                             })
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-base sm:text-sm tabular-nums text-white focus:outline-none focus:border-amber-400"
                         />
                       </div>
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                      <label className="text-[10.5px] font-bold text-amber-300 block">
+                      <label className="text-xs font-semibold text-amber-300 block">
                         Min. Belanja Gratis Ongkir (IDR):
                       </label>
                       <input
@@ -3392,7 +3977,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             minFreeShipping: Number(e.target.value) || 0,
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-base sm:text-sm tabular-nums text-white focus:outline-none focus:border-amber-400"
                       />
                     </div>
                   </div>
@@ -3400,7 +3985,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <button
                     onClick={handleSavePricing}
                     disabled={isSavingPricing}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-md active:scale-98 transition-all"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-sm shadow-md active:scale-98 transition-all"
                   >
                     {isSavingPricing ? 'Menyimpan...' : 'Simpan Perubahan Harga'}
                   </button>
@@ -3413,20 +3998,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               TAB 5: KONTEN WEBSITE (ARTIKEL & TIPS)
              ======================================================== */}
           {activeMenu === 'content' && (
-            <div className="space-y-4">
+            <div className="space-y-4 font-body">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-display text-xl font-bold text-amber-300">
+                  <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
                     Konten Website & Edukasi ({articlesList.length})
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
                     Terbitkan artikel wewangian, tips ketahanan, dan informasi promo.
                   </p>
                 </div>
 
                 <button
                   onClick={() => setIsAddingArticle(true)}
-                  className="py-2 px-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md self-start sm:self-auto"
+                  className="py-2 px-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-md self-start sm:self-auto"
                 >
                   <Plus size={15} />
                   <span>Buat Konten Baru</span>
@@ -3441,19 +4026,19 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     className="p-5 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/30 transition-all space-y-3 flex flex-col justify-between"
                   >
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-semibold">
                           {art.categoryLabel}
                         </span>
-                        <span className="text-slate-400 font-mono">{art.date}</span>
+                        <span className="text-slate-400 tabular-nums">{art.date}</span>
                       </div>
-                      <h4 className="font-display font-bold text-sm text-white">{art.title}</h4>
-                      <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
+                      <h4 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">{art.title}</h4>
+                      <p className="text-sm text-slate-300 line-clamp-3 leading-[1.5]">
                         {art.content}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5 text-[10px] text-slate-400">
+                    <div className="flex items-center justify-between pt-2.5 border-t border-white/5 text-xs text-slate-400">
                       <span>Penulis: {art.author}</span>
                       <button
                         onClick={() => handleDeleteArticle(art.id, art.title)}
@@ -3469,10 +4054,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
               {/* MODAL TAMBAH ARTIKEL */}
               {isAddingArticle && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in font-body">
                   <div className="w-full max-w-lg rounded-3xl bg-[#0f1118] border border-white/15 p-6 shadow-2xl space-y-4">
                     <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                      <h3 className="font-display font-bold text-sm text-white">
+                      <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                         Tulis Konten / Tips Baru
                       </h3>
                       <button
@@ -3485,7 +4070,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                     <form onSubmit={handleAddArticleSubmit} className="space-y-3">
                       <div>
-                        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
                           Judul Konten
                         </label>
                         <input
@@ -3494,18 +4079,18 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           placeholder="Contoh: Cara Membuat Parfum Tahan Lebih Lama"
                           value={newTitle}
                           onChange={(e) => setNewTitle(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
                           Kategori
                         </label>
                         <select
                           value={newCategory}
                           onChange={(e) => setNewCategory(e.target.value as any)}
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                         >
                           <option value="tips">Tips Perawatan</option>
                           <option value="men">Panduan Pria</option>
@@ -3516,7 +4101,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-mono text-slate-400 uppercase block mb-1">
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
                           Isi Konten
                         </label>
                         <textarea
@@ -3525,7 +4110,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           placeholder="Tuliskan isi panduan atau artikel di sini..."
                           value={newContent}
                           onChange={(e) => setNewContent(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-amber-400 resize-none"
+                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 resize-none leading-[1.5]"
                         />
                       </div>
 
@@ -3533,13 +4118,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setIsAddingArticle(false)}
-                          className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-slate-300"
+                          className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
-                          className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-bold text-xs"
+                          className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-sm"
                         >
                           Terbitkan Sekarang
                         </button>
@@ -3555,20 +4140,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               TAB 6: ULASAN PEMBELI (DESKTOP: 2 KOLOM)
              ======================================================== */}
           {activeMenu === 'reviews' && (
-            <div className="space-y-4">
+            <div className="space-y-4 font-body">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-display text-xl font-bold text-amber-300">
+                  <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
                     Moderasi Ulasan Pembeli ({reviewsList.length}/10 Slot)
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
                     Pantau dan moderasi ulasan pengalaman pembeli secara transparan. Sistem menampung hingga 10 ulasan terbaru secara bergantian.
                   </p>
                 </div>
 
                 <button
                   onClick={handleResetReviews}
-                  className="py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs border border-white/10 flex items-center gap-1.5 self-start sm:self-auto"
+                  className="py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs sm:text-sm font-medium border border-white/10 flex items-center gap-1.5 self-start sm:self-auto"
                 >
                   <RotateCcw size={13} />
                   <span>Kosongkan Semua Ulasan</span>
@@ -3577,7 +4162,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
               {reviewsList.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-[#0e111d] border border-white/10 text-center space-y-2">
-                  <p className="text-xs text-slate-400">
+                  <p className="text-sm text-slate-400 leading-[1.5]">
                     Belum ada ulasan yang masuk. Kotak ulasan saat ini kosong dan siap menampung ulasan baru dari pengunjung hingga 10 slot.
                   </p>
                 </div>
@@ -3593,32 +4178,32 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           <div className="flex items-center gap-2">
                             <span className="text-xl">{rev.emoji}</span>
                             <div>
-                              <span className="font-display font-bold text-xs text-white block">
+                              <span className="font-heading font-semibold text-sm text-white block tracking-[-0.01em]">
                                 {rev.name}
                               </span>
-                              <span className="text-[10px] text-amber-300">{rev.emojiLabel}</span>
+                              <span className="text-xs text-amber-300 font-medium">{rev.emojiLabel}</span>
                             </div>
                           </div>
 
                           <button
                             onClick={() => handleDeleteReview(rev.id, rev.name)}
-                            className="py-1 px-2.5 rounded-lg bg-red-600/30 hover:bg-red-600/50 border border-red-500/40 text-red-300 text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all"
+                            className="py-1 px-2.5 rounded-lg bg-red-600/30 hover:bg-red-600/50 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all"
                           >
                             <Trash2 size={12} />
                             <span>Hapus</span>
                           </button>
                         </div>
 
-                        <div className="text-[9.5px] font-mono text-slate-400 bg-white/5 px-2 py-0.5 rounded-md inline-block">
+                        <div className="text-xs text-slate-300 bg-white/5 px-2.5 py-0.5 rounded-md inline-block font-medium">
                           Varian: {rev.variant}
                         </div>
 
-                        <p className="text-xs text-slate-200 leading-relaxed italic">
+                        <p className="text-sm text-slate-200 leading-[1.5]">
                           "{rev.comment}"
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-white/5">
+                      <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-white/5 tabular-nums">
                         <span>{rev.date}</span>
                         <span>❤️ {rev.likes} Apresiasi</span>
                       </div>
@@ -3640,12 +4225,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               TAB 7: PENGATURAN & BRAND
              ======================================================== */}
           {activeMenu === 'settings' && (
-            <div className="space-y-4">
+            <div className="space-y-4 font-body">
               <div>
-                <h2 className="font-display text-xl font-bold text-amber-300">
+                <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
                   Pengaturan & Brand SINKI
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
                   Status proteksi akun, hak cipta resmi, dan tautan akses.
                 </p>
               </div>
@@ -3660,13 +4245,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       <Share2 size={20} className="text-amber-300" />
                     </div>
                     <div>
-                      <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
+                      <h3 className="font-heading text-base sm:text-lg font-semibold text-white tracking-[-0.015em] leading-[1.25] flex flex-wrap items-center gap-2">
                         <span>Kelola Akun Media Sosial & Toko Resmi</span>
-                        <span className="text-[9.5px] font-mono text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded-full border border-cyan-500/30 font-bold">
+                        <span className="font-body text-xs text-cyan-300 bg-cyan-500/15 px-2.5 py-0.5 rounded-md border border-cyan-500/30 font-semibold">
                           Live Sync
                         </span>
                       </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-[1.45]">
                         Ganti akun TikTok, Instagram, WhatsApp, atau marketplace Anda kapan saja. Tautan otomatis berubah di Beranda, Menu Drawer, dan Tombol Media Sosial.
                       </p>
                     </div>
@@ -3677,7 +4262,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       type="button"
                       onClick={handleResetSocial}
                       disabled={isSavingSocial}
-                      className="py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-all"
+                      className="py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs sm:text-sm font-medium flex items-center gap-1.5 active:scale-95 transition-all"
                       title="Kembalikan tautan ke akun default"
                     >
                       <RotateCcw size={12} />
@@ -3690,16 +4275,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* 1. AKUN TIKTOK (FOKUS UTAMA OWNER) */}
                     <div className="p-4 rounded-2xl bg-black/40 border border-cyan-500/30 space-y-2.5 shadow-md hover:border-cyan-400/50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
-                          <svg viewBox="0 0 24 24" className="w-4 h-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="text-xs sm:text-sm font-semibold text-cyan-300 flex items-center gap-2">
+                          <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
                             <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#00f2fe"/>
                             <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#fe2c55" opacity="0.7"/>
                             <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#ffffff" opacity="0.85"/>
                           </svg>
                           <span>Akun / Link Profil TikTok *</span>
                         </label>
-                        <span className="text-[10px] font-mono text-cyan-300 font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                        <span className="text-xs text-cyan-300 font-medium bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 truncate max-w-[140px]">
                           {extractTikTokHandle(socialForm.tiktok)}
                         </span>
                       </div>
@@ -3709,21 +4294,21 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         value={socialForm.tiktok}
                         onChange={(e) => setSocialForm({ ...socialForm, tiktok: e.target.value })}
                         placeholder="Contoh: @sinkiofficial atau https://www.tiktok.com/@sinkiofficial"
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-cyan-500/40 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-cyan-500/40 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
                       />
 
-                      <div className="flex items-center justify-between text-[10.5px]">
-                        <span className="text-slate-400 leading-snug">
-                          💡 Bisa ketik <code className="text-cyan-300 bg-white/5 px-1 py-0.5 rounded">@nama_baru</code> atau link lengkap.
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 leading-[1.4]">
+                          💡 Bisa ketik <span className="text-cyan-300 bg-white/5 px-1.5 py-0.5 rounded font-medium">@nama_baru</span> atau link lengkap.
                         </span>
                         <a
                           href={formatTikTokUrl(socialForm.tiktok)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-cyan-300 hover:text-white font-bold flex items-center gap-1 hover:underline ml-2 shrink-0"
+                          className="text-cyan-300 hover:text-white font-semibold flex items-center gap-1 hover:underline ml-2 shrink-0"
                           title="Buka akun TikTok untuk tes apakah link benar"
                         >
-                          <span>Tes Buka Profil</span>
+                          <span>Tes Profil</span>
                           <ExternalLink size={11} />
                         </a>
                       </div>
@@ -3731,16 +4316,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                     {/* 2. AKUN INSTAGRAM */}
                     <div className="p-4 rounded-2xl bg-black/40 border border-pink-500/30 space-y-2.5 shadow-md hover:border-pink-400/50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-pink-300 flex items-center gap-2">
-                          <div className="w-4 h-4 rounded bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center p-0.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="text-xs sm:text-sm font-semibold text-pink-300 flex items-center gap-2">
+                          <div className="w-4 h-4 rounded bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center p-0.5 shrink-0">
                             <svg viewBox="0 0 24 24" fill="white" className="w-full h-full">
                               <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                             </svg>
                           </div>
                           <span>Akun / Link Profil Instagram</span>
                         </label>
-                        <span className="text-[10px] font-mono text-pink-300 font-bold bg-pink-500/10 px-2 py-0.5 rounded border border-pink-500/20">
+                        <span className="text-xs text-pink-300 font-medium bg-pink-500/10 px-2 py-0.5 rounded border border-pink-500/20 truncate max-w-[140px]">
                           {extractInstagramHandle(socialForm.instagram)}
                         </span>
                       </div>
@@ -3750,20 +4335,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         value={socialForm.instagram}
                         onChange={(e) => setSocialForm({ ...socialForm, instagram: e.target.value })}
                         placeholder="Contoh: @sinki_official atau https://www.instagram.com/sinki_official"
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-pink-500/40 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/50"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-pink-500/40 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/50"
                       />
 
-                      <div className="flex items-center justify-between text-[10.5px]">
-                        <span className="text-slate-400 leading-snug">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 leading-[1.4]">
                           Tautan ke feed & katalog resmi SINKI di Instagram.
                         </span>
                         <a
                           href={formatInstagramUrl(socialForm.instagram)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-pink-300 hover:text-white font-bold flex items-center gap-1 hover:underline ml-2 shrink-0"
+                          className="text-pink-300 hover:text-white font-semibold flex items-center gap-1 hover:underline ml-2 shrink-0"
                         >
-                          <span>Tes Buka Profil</span>
+                          <span>Tes Profil</span>
                           <ExternalLink size={11} />
                         </a>
                       </div>
@@ -3771,12 +4356,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                     {/* 3. WHATSAPP HOTLINE VIP */}
                     <div className="p-4 rounded-2xl bg-black/40 border border-emerald-500/30 space-y-2.5 shadow-md hover:border-emerald-400/50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-2">
-                          <MessageCircle size={15} className="text-emerald-400" />
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="text-xs sm:text-sm font-semibold text-emerald-300 flex items-center gap-2">
+                          <MessageCircle size={15} className="text-emerald-400 shrink-0" />
                           <span>WhatsApp Hotline VIP & Order</span>
                         </label>
-                        <span className="text-[10px] font-mono text-emerald-300 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        <span className="text-xs text-emerald-300 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                           Aktif
                         </span>
                       </div>
@@ -3786,18 +4371,18 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         value={socialForm.whatsapp}
                         onChange={(e) => setSocialForm({ ...socialForm, whatsapp: e.target.value })}
                         placeholder="Contoh: 081398677610 atau https://wa.me/6281398677610"
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-emerald-500/40 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/50"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-emerald-500/40 text-base sm:text-sm tabular-nums text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/50"
                       />
 
-                      <div className="flex items-center justify-between text-[10.5px]">
-                        <span className="text-slate-400 leading-snug">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 leading-[1.4]">
                           Nomor chat pemesanan langsung & konsultasi parfum.
                         </span>
                         <a
                           href={formatWhatsAppUrl(socialForm.whatsapp)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-emerald-300 hover:text-white font-bold flex items-center gap-1 hover:underline ml-2 shrink-0"
+                          className="text-emerald-300 hover:text-white font-semibold flex items-center gap-1 hover:underline ml-2 shrink-0"
                         >
                           <span>Tes Chat WA</span>
                           <ExternalLink size={11} />
@@ -3808,8 +4393,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     {/* 4. SHOPEE & TOKOPEDIA */}
                     <div className="p-4 rounded-2xl bg-black/40 border border-amber-500/30 space-y-2.5 shadow-md hover:border-amber-400/50 transition-colors">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
-                          <ShoppingBag size={15} className="text-amber-400" />
+                        <label className="text-xs sm:text-sm font-semibold text-amber-300 flex items-center gap-2">
+                          <ShoppingBag size={15} className="text-amber-400 shrink-0" />
                           <span>Shopee & Tokopedia Official</span>
                         </label>
                       </div>
@@ -3820,14 +4405,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           value={socialForm.shopee}
                           onChange={(e) => setSocialForm({ ...socialForm, shopee: e.target.value })}
                           placeholder="Link Toko Shopee (https://shopee.co.id/...)"
-                          className="w-full px-3 py-2 rounded-xl bg-[#141624] border border-white/10 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-xl bg-[#141624] border border-white/10 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
                         />
                         <input
                           type="text"
                           value={socialForm.tokopedia}
                           onChange={(e) => setSocialForm({ ...socialForm, tokopedia: e.target.value })}
                           placeholder="Link Toko Tokopedia (https://tokopedia.com/...)"
-                          className="w-full px-3 py-2 rounded-xl bg-[#141624] border border-white/10 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-xl bg-[#141624] border border-white/10 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
                         />
                       </div>
                     </div>
@@ -3835,15 +4420,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                   {/* Tombol Simpan Perubahan Media Sosial */}
                   <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-xs sm:text-sm text-slate-400 leading-[1.45]">
                       ✨ Tekan tombol simpan di sebelah kanan agar akun baru langsung aktif dan disinkronkan ke cloud.
                     </p>
                     <button
                       type="submit"
                       disabled={isSavingSocial}
-                      className="w-full sm:w-auto py-2.5 px-6 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-110 disabled:opacity-50 text-slate-950 font-black text-xs uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-black/40 flex items-center justify-center gap-2 shrink-0 border border-[#DFB76C]/40"
+                      className="w-full sm:w-auto py-2.5 px-6 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-110 disabled:opacity-50 text-slate-950 font-semibold text-sm transition-all active:scale-95 shadow-lg shadow-black/40 flex items-center justify-center gap-2 shrink-0 border border-[#DFB76C]/40"
                     >
-                      <Save size={15} className="stroke-[2.5]" />
+                      <Save size={15} className="stroke-[2.2]" />
                       <span>{isSavingSocial ? 'Menyimpan ke Cloud...' : 'Simpan Perubahan Tautan'}</span>
                     </button>
                   </div>
@@ -3853,33 +4438,33 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white block">Status Keamanan:</span>
+                    <span className="font-heading text-sm font-semibold text-white block">Status Keamanan:</span>
                     <button
                       onClick={() => setActiveMenu('security')}
-                      className="text-[11px] font-bold text-amber-300 hover:underline flex items-center gap-1"
+                      className="text-xs font-semibold text-amber-300 hover:underline flex items-center gap-1"
                     >
                       <span>Lihat Detail Guard</span>
                       <ChevronRight size={12} />
                     </button>
                   </div>
-                  <div className="space-y-2 text-xs">
+                  <div className="space-y-2 text-xs sm:text-sm">
                     <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
                       <span className="text-slate-300">Autentikasi PIN Server:</span>
-                      <span className="text-emerald-400 font-bold">Aktif & Terproteksi</span>
+                      <span className="text-emerald-400 font-semibold">Aktif & Terproteksi</span>
                     </div>
                     <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
                       <span className="text-slate-300">Proteksi Brute-Force:</span>
-                      <span className="text-emerald-400 font-bold">Rate Limiter Aktif</span>
+                      <span className="text-emerald-400 font-semibold">Rate Limiter Aktif</span>
                     </div>
                     <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
                       <span className="text-slate-300">Token Sesi 24 Jam:</span>
-                      <span className="text-amber-300 font-bold font-mono">Terverifikasi</span>
+                      <span className="text-amber-300 font-semibold">Terverifikasi</span>
                     </div>
                   </div>
 
                   <button
                     onClick={() => setActiveMenu('security')}
-                    className="w-full mt-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600/30 via-emerald-500/20 to-amber-500/20 hover:from-emerald-600/40 hover:to-amber-500/30 border border-emerald-500/30 text-emerald-300 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-98"
+                    className="w-full mt-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600/30 via-emerald-500/20 to-amber-500/20 hover:from-emerald-600/40 hover:to-amber-500/30 border border-emerald-500/30 text-emerald-300 hover:text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-98"
                   >
                     <ShieldCheck size={14} />
                     <span>Buka Pusat Keamanan & Kesehatan Lengkap →</span>
@@ -3887,13 +4472,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
 
                 <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-3">
-                  <span className="text-xs font-bold text-white block">Hak Cipta & Brand:</span>
-                  <div className="p-3 rounded-xl bg-black/40 border border-white/5 text-slate-300 text-xs font-mono leading-relaxed">
+                  <span className="font-heading text-sm font-semibold text-white block">Hak Cipta & Brand:</span>
+                  <div className="p-3 rounded-xl bg-black/40 border border-white/5 text-slate-300 text-xs sm:text-sm leading-[1.5]">
                     © 2026 SINKI Parfums. All Rights Reserved. Define Your Presence.
                   </div>
                   <div className="pt-2">
-                    <span className="text-[10px] text-slate-400 block mb-1">Tautan Akses Rahasia:</span>
-                    <span className="font-mono text-amber-300 text-xs block bg-black/40 p-2 rounded-xl border border-white/5">
+                    <span className="text-xs text-slate-400 block mb-1">Tautan Akses Rahasia:</span>
+                    <span className="text-amber-300 text-xs sm:text-sm font-medium block bg-black/40 p-2.5 rounded-xl border border-white/5">
                       /dimensi-sinki
                     </span>
                   </div>
@@ -3905,7 +4490,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         </div>
 
         {/* BOTTOM NAVIGATION MOBILE ONLY (DESKTOP: HIDDEN) */}
-        <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-[#0d0f17]/95 border-t border-white/10 backdrop-blur-md px-3 py-2 flex items-center justify-around z-30 shadow-2xl">
+        <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-[#0d0f17]/95 border-t border-white/10 backdrop-blur-md px-3 py-2 flex items-center justify-around z-30 shadow-2xl font-body">
           {navItems.slice(0, 5).map((item) => {
             const Icon = item.icon;
             const isActive = activeMenu === item.id;
@@ -3913,8 +4498,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveMenu(item.id as MenuKey)}
-                className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
-                  isActive ? 'text-amber-400' : 'text-slate-500 hover:text-slate-300'
+                className={`flex flex-col items-center gap-1 text-xs font-medium transition-colors ${
+                  isActive ? 'text-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 <Icon size={16} />
@@ -3927,18 +4512,18 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
         {/* MODAL TAMBAH & EDIT VARIAN TOP BESTSELLER */}
         {isTopModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-body">
             <div className="w-full max-w-md rounded-3xl bg-[#121524] border border-amber-500/30 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold font-mono text-sm">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-semibold tabular-nums text-sm">
                     {editingTopItem ? editingTopItem.rank : topPerfumesList.length + 1}
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-sm text-white">
+                    <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                       {editingTopItem ? `Edit Varian Top ${editingTopItem.rank}` : 'Tambah Varian Top Baru'}
                     </h3>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-xs text-slate-400">
                       {editingTopItem ? 'Perbarui nama & karakter aroma' : 'Masukkan parfum baru ke daftar Bestseller'}
                     </span>
                   </div>
@@ -3955,7 +4540,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               <form onSubmit={handleSaveTopItem} className="space-y-3">
                 {/* Upload & Pratinjau Foto Botol */}
                 <div>
-                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block mb-1">
+                  <label className="text-xs font-medium text-slate-300 block mb-1">
                     Foto Botol Parfum (PNG Transparan / Foto Asli)
                   </label>
                   <div className="flex items-center gap-3 p-3 rounded-2xl bg-black/40 border border-white/10">
@@ -3968,12 +4553,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         />
                       ) : (
                         <div className="text-center p-1">
-                          <span className="text-[9px] text-slate-500 block">Belum ada foto</span>
+                          <span className="text-[11px] text-slate-500 block leading-tight">Belum ada foto</span>
                         </div>
                       )}
                     </div>
                     <div className="flex-1 space-y-1.5">
-                      <label className="py-2 px-3 rounded-xl bg-white/10 hover:bg-amber-500/20 text-amber-300 border border-white/10 hover:border-amber-500/30 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95">
+                      <label className="py-2 px-3 rounded-xl bg-white/10 hover:bg-amber-500/20 text-amber-300 border border-white/10 hover:border-amber-500/30 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95">
                         <Upload size={13} />
                         <span>{topFormPhoto ? 'Ganti Foto Botol' : 'Pilih Foto Botol'}</span>
                         <input
@@ -3987,20 +4572,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setTopFormPhoto('')}
-                          className="text-[10px] text-red-400 hover:text-red-300 underline block text-center w-full"
+                          className="text-xs text-red-400 hover:text-red-300 underline block text-center w-full"
                         >
                           Hapus foto pilihan
                         </button>
                       )}
-                      <span className="text-[9px] text-slate-400 block leading-tight">
-                        PNG transparan sangat direkomendasikan agar botol menyatu elegan di layar publik.
+                      <span className="text-xs text-slate-400 block leading-[1.4]">
+                        PNG transparan direkomendasikan agar menyatu elegan di layar publik.
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block mb-1">
+                  <label className="text-xs font-medium text-slate-300 block mb-1">
                     Nama Parfum *
                   </label>
                   <input
@@ -4009,18 +4594,18 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     value={topFormName}
                     onChange={(e) => setTopFormName(e.target.value)}
                     placeholder="Contoh: Mykonos Vanilla Clouds"
-                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block mb-1">
+                  <label className="text-xs font-medium text-slate-300 block mb-1">
                     Tipe Konsentrasi
                   </label>
                   <select
                     value={topFormType}
                     onChange={(e) => setTopFormType(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#0f111d] border border-white/10 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-[#0f111d] border border-white/10 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                   >
                     <option value="Extrait De Parfum">Extrait De Parfum</option>
                     <option value="Eau De Parfum">Eau De Parfum</option>
@@ -4029,7 +4614,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block mb-1">
+                  <label className="text-xs font-medium text-slate-300 block mb-1">
                     Tagline / Karakter Singkat
                   </label>
                   <input
@@ -4037,12 +4622,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     value={topFormSubtitle}
                     onChange={(e) => setTopFormSubtitle(e.target.value)}
                     placeholder="Contoh: Rich Amber, French Cognac & Royal Vanilla"
-                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block mb-1">
+                  <label className="text-xs font-medium text-slate-300 block mb-1">
                     Deskripsi Lengkap Aroma
                   </label>
                   <textarea
@@ -4050,13 +4635,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     value={topFormDescription}
                     onChange={(e) => setTopFormDescription(e.target.value)}
                     placeholder="Penjelasan detail aroma, kesan pertama, dan ketahanan wangi..."
-                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 resize-none"
+                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 resize-none leading-[1.5]"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
-                    <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
+                    <label className="text-xs font-medium text-slate-400 block mb-1">
                       Top Notes
                     </label>
                     <input
@@ -4064,11 +4649,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       value={topFormTopNotes}
                       onChange={(e) => setTopFormTopNotes(e.target.value)}
                       placeholder="e.g. Cognac, Bergamot"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-[11px] text-white focus:outline-none focus:border-amber-400"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
+                    <label className="text-xs font-medium text-slate-400 block mb-1">
                       Middle Notes
                     </label>
                     <input
@@ -4076,11 +4661,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       value={topFormMiddleNotes}
                       onChange={(e) => setTopFormMiddleNotes(e.target.value)}
                       placeholder="e.g. Amber, Tonka"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-[11px] text-white focus:outline-none focus:border-amber-400"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
+                    <label className="text-xs font-medium text-slate-400 block mb-1">
                       Base Notes
                     </label>
                     <input
@@ -4088,7 +4673,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       value={topFormBaseNotes}
                       onChange={(e) => setTopFormBaseNotes(e.target.value)}
                       placeholder="e.g. Vanilla, Cedar"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-[11px] text-white focus:outline-none focus:border-amber-400"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-amber-400"
                     />
                   </div>
                 </div>
@@ -4097,14 +4682,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsTopModalOpen(false)}
-                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs transition-colors"
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-medium text-sm transition-colors"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={isUploadingTopPhoto}
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 font-black text-xs shadow-md hover:brightness-105 active:scale-95 transition-all disabled:opacity-50"
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 font-semibold text-sm shadow-md hover:brightness-105 active:scale-95 transition-all disabled:opacity-50"
                   >
                     {isUploadingTopPhoto
                       ? 'Menyimpan ke Cloud...'

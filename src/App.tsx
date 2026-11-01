@@ -9,7 +9,7 @@ import { ReviewScreen } from './components/ReviewScreen';
 import { PinModal } from './components/PinModal';
 import { DrawerMenu } from './components/DrawerMenu';
 import { Toast } from './components/Toast';
-import { fetchPerfumesFromServer } from './utils/perfumeStorage';
+import { fetchPerfumesFromServer, getStoredPerfumes, PerfumeItem } from './utils/perfumeStorage';
 import {
   getStoredLogo,
   getStoredChibi,
@@ -39,6 +39,7 @@ import {
   fetchSocialLinksFromServer,
 } from './utils/socialStorage';
 import { fetchTopPerfumesFromServer } from './utils/topPerfumesStorage';
+import { CartItem, getStoredCart, getCartTotalCount } from './utils/cartStorage';
 
 const TABS: TabType[] = ['home', 'collection', 'top11', 'order', 'review'];
 
@@ -86,13 +87,31 @@ export default function App() {
   const [pricing, setPricing] = useState<PricingConfig>(() => getStoredPricing());
   const [tickerConfig, setTickerConfig] = useState<TickerConfig>(() => getStoredTicker());
   const [socialLinks, setSocialLinks] = useState<SocialLinks>(() => getStoredSocialLinks());
+  const [catalogPerfumes, setCatalogPerfumes] = useState<PerfumeItem[]>(() => getStoredPerfumes());
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => getStoredCart());
+
+  useEffect(() => {
+    const handleCartChange = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setCartItems(e.detail);
+      } else {
+        setCartItems(getStoredCart());
+      }
+    };
+    window.addEventListener('sinki_cart_updated', handleCartChange);
+    return () => window.removeEventListener('sinki_cart_updated', handleCartChange);
+  }, []);
 
   // Modals & Drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [collectionScrollTrigger, setCollectionScrollTrigger] = useState(0);
-  const [selectedPerfumeForOrder, setSelectedPerfumeForOrder] = useState<{ name: string; category?: string } | null>(null);
+  const [selectedPerfumeForOrder, setSelectedPerfumeForOrder] = useState<{
+    name: string;
+    category?: string;
+    pricePerMl?: number;
+  } | null>(null);
   const [reviewTargetVariant, setReviewTargetVariant] = useState<string | null>(null);
 
   useEffect(() => {
@@ -124,7 +143,13 @@ export default function App() {
 
     // Sync top bestseller perfumes and catalog from server/cloud immediately
     fetchTopPerfumesFromServer().catch(() => {});
-    fetchPerfumesFromServer().catch(() => {});
+    fetchPerfumesFromServer()
+      .then((list) => {
+        if (Array.isArray(list) && list.length > 0) {
+          setCatalogPerfumes(list);
+        }
+      })
+      .catch(() => {});
 
     // Sync with server on initial load (includes ticker, logo, chibi, qris, pricing, hero bottles & stage effect)
     fetchServerAssets().then((assets) => {
@@ -232,6 +257,7 @@ export default function App() {
           top11Photos={top11Photos}
           pricing={pricing}
           tickerConfig={tickerConfig}
+          perfumes={catalogPerfumes}
           socialLinks={socialLinks}
           heroBottles={heroBottles}
           heroStageEffect={heroStageEffect}
@@ -274,6 +300,9 @@ export default function App() {
           }}
           onTickerUpdated={(newTicker) => {
             setTickerConfig(newTicker);
+          }}
+          onPerfumesUpdated={(newList) => {
+            setCatalogPerfumes(newList);
           }}
           onSocialLinksUpdated={(newLinks) => {
             setSocialLinks(newLinks);
@@ -324,17 +353,14 @@ export default function App() {
             />
           </div>
 
-          {/* View 2: Collection (Grid 2x2 with all 68 variants) */}
+          {/* View 2: Collection */}
           <div className={`w-full h-full ${activeTab === 'collection' ? 'block' : 'hidden'}`}>
             <CollectionScreen
               onBackToHome={() => setActiveTab('home')}
               onShowToast={showToast}
               scrollToTopTrigger={collectionScrollTrigger}
-              onSelectPerfumeToOrder={(perfume) => {
-                setSelectedPerfumeForOrder({ name: perfume.name, category: perfume.category });
-                setActiveTab('order');
-                showToast(`Varian "${perfume.name}" dipilih! Silakan tentukan ukuran botol`);
-              }}
+              perfumes={catalogPerfumes}
+              onCartUpdated={() => setCartItems(getStoredCart())}
             />
           </div>
 
@@ -353,9 +379,11 @@ export default function App() {
           <div className={`w-full h-full ${activeTab === 'order' ? 'block' : 'hidden'}`}>
             <OrderScreen
               onBackToHome={() => setActiveTab('home')}
+              onNavigateToCollection={() => setActiveTab('collection')}
               onShowToast={showToast}
               pricing={pricing}
               customQris={customQris}
+              cartItems={cartItems}
               selectedPerfumeFromCollection={selectedPerfumeForOrder}
             />
           </div>
@@ -404,7 +432,7 @@ export default function App() {
             }
             setActiveTab(tab);
           }}
-          orderCount={0}
+          orderCount={getCartTotalCount(cartItems)}
         />
       </main>
     </div>

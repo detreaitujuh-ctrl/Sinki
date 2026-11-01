@@ -342,7 +342,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           className="flex items-center select-none py-1 px-1"
           title="SINKI Parfums"
         >
-          <span className="font-display text-[15px] sm:text-base font-bold tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-[#FBF2D5] via-[#E4C373] to-[#C5A059] uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+          <span className="font-heading text-base sm:text-lg font-bold tracking-[0.22em] text-transparent bg-clip-text bg-gradient-to-r from-[#FBF2D5] via-[#E4C373] to-[#C5A059] uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
             SINKI
           </span>
         </div>
@@ -423,13 +423,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       */}
       <section className="relative z-10 space-y-2 shrink-0">
         {/* Story Box "Define your presence" with Quiet Luxury Clean Typography */}
-        <div className="py-2.5 px-3 rounded-2xl bg-gradient-to-r from-[#171926]/95 via-[#131520]/95 to-[#0f111a]/95 border border-white/10 hover:border-white/20 shadow-[0_8px_25px_rgba(0,0,0,0.65)] flex items-center justify-between gap-3 backdrop-blur-md transition-all">
+        <div className="py-2.5 px-3.5 rounded-2xl bg-gradient-to-r from-[#171926]/95 via-[#131520]/95 to-[#0f111a]/95 border border-white/10 hover:border-white/20 shadow-[0_8px_25px_rgba(0,0,0,0.65)] flex items-center justify-between gap-3 backdrop-blur-md transition-all">
           {/* Story Text */}
           <div className="flex-1 min-w-0">
-            <h2 className="font-display text-[11px] font-extrabold tracking-wider text-slate-100 uppercase leading-tight">
+            <h2 className="font-heading text-[14.5px] sm:text-[15px] font-semibold tracking-[-0.015em] text-white leading-[1.22]">
               Define your presence
             </h2>
-            <p className="text-[10.5px] text-slate-300 font-medium italic leading-snug mt-0.5 line-clamp-2">
+            <p className="font-body text-xs text-slate-200 font-normal italic leading-[1.42] mt-0.5 line-clamp-2">
               “Aroma yang di tinggal lebih lama dari pada kesan pertama”
             </p>
           </div>
@@ -437,18 +437,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {/* Standalone Model 1: 3 Bulatan Terhubung Garis (Share2) Berukuran Kecil */}
           <button
             onClick={handleShare}
-            className="group shrink-0 relative p-1.5 text-[#DFB76C] hover:text-[#F0DFB6] hover:scale-115 active:scale-90 transition-all duration-200 flex items-center justify-center select-none"
+            className="group shrink-0 relative p-2 text-[#DFB76C] hover:text-[#F0DFB6] hover:scale-110 active:scale-90 transition-all duration-200 flex items-center justify-center select-none"
             title="Bagikan SINKI"
             aria-label="Bagikan"
           >
             {copied ? (
               <Check
-                size={13}
-                className="text-[#DFB76C] stroke-[2.6] filter drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] animate-in zoom-in-75 duration-200"
+                size={15}
+                className="text-[#DFB76C] stroke-[2.5] filter drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] animate-in zoom-in-75 duration-200"
               />
             ) : (
               <Share2
-                size={13}
+                size={15}
                 className="text-[#DFB76C] group-hover:text-[#F0DFB6] stroke-[2.2] filter drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] transition-colors"
               />
             )}
@@ -457,7 +457,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         {/* Follow Sinki Section with Equal-Sized Logos & Glassmorphism Borders */}
         <div className="space-y-1.5">
-          <span className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-slate-300 pl-1 block">
+          <span className="font-body text-[11px] font-medium tracking-[0.02em] text-slate-300 pl-1 block leading-tight">
             Follow Sinki
           </span>
 
@@ -471,19 +471,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               className="group flex items-center justify-between py-2 px-2.5 rounded-2xl bg-gradient-to-b from-[#1e2235]/95 to-[#141626]/95 hover:from-[#24283f] hover:to-[#171a2c] border border-pink-500/35 hover:border-pink-400/60 transition-all active:scale-98 shadow-[0_4px_15px_rgba(0,0,0,0.45)] backdrop-blur-md"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center p-1.5 shrink-0 shadow-md">
-                  <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+                <div className="w-6.5 h-6.5 rounded-lg bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center p-1.5 shrink-0 shadow-md">
+                  <svg viewBox="0 0 24 24" fill="white" className="w-3.5 h-3.5">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <span className="block text-[8.5px] text-pink-300 font-bold uppercase leading-none">Instagram</span>
-                  <span className="block text-[10.5px] font-bold text-white truncate">
+                  <span className="font-body block text-[10.5px] text-pink-300 font-medium leading-tight">Instagram</span>
+                  <span className="font-body block text-xs font-semibold text-white leading-snug truncate">
                     {extractInstagramHandle(currentSocial.instagram)}
                   </span>
                 </div>
               </div>
-              <ExternalLink size={11} className="text-slate-300 group-hover:text-pink-300 shrink-0 ml-1" />
+              <ExternalLink size={12} className="text-slate-300 group-hover:text-pink-300 shrink-0 ml-1" />
             </a>
 
             {/* TikTok Box */}
@@ -495,21 +495,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               className="group flex items-center justify-between py-2 px-2.5 rounded-2xl bg-gradient-to-b from-[#1e2235]/95 to-[#141626]/95 hover:from-[#24283f] hover:to-[#171a2c] border border-cyan-500/35 hover:border-cyan-400/60 transition-all active:scale-98 shadow-[0_4px_15px_rgba(0,0,0,0.45)] backdrop-blur-md"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-black border border-slate-700 flex items-center justify-center p-1.5 shrink-0 shadow-md">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4">
+                <div className="w-6.5 h-6.5 rounded-lg bg-black border border-slate-700 flex items-center justify-center p-1.5 shrink-0 shadow-md">
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5">
                     <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#00f2fe"/>
                     <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#fe2c55" opacity="0.7"/>
                     <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#ffffff" opacity="0.85"/>
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <span className="block text-[8.5px] text-cyan-300 font-bold uppercase leading-none">TikTok</span>
-                  <span className="block text-[10.5px] font-bold text-white truncate">
+                  <span className="font-body block text-[10.5px] text-cyan-300 font-medium leading-tight">TikTok</span>
+                  <span className="font-body block text-xs font-semibold text-white leading-snug truncate">
                     {extractTikTokHandle(currentSocial.tiktok)}
                   </span>
                 </div>
               </div>
-              <ExternalLink size={11} className="text-slate-300 group-hover:text-cyan-300 shrink-0 ml-1" />
+              <ExternalLink size={12} className="text-slate-300 group-hover:text-cyan-300 shrink-0 ml-1" />
             </a>
           </div>
         </div>
@@ -518,23 +518,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <button
           onClick={onNavigateToCollection}
           aria-label="Lihat Koleksi Parfum SINKI"
-          className="luxury-ticker-container w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#171927]/95 via-[#1d2238]/95 to-[#131625]/95 hover:from-[#21263d] hover:to-[#181c2f] border border-white/12 hover:border-[#DFB76C]/40 flex items-center gap-2 text-slate-100 transition-all active:scale-[0.98] shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)] backdrop-blur-md group overflow-hidden"
+          className="luxury-ticker-container w-full py-2 px-3 rounded-xl bg-gradient-to-r from-[#171927]/95 via-[#1d2238]/95 to-[#131625]/95 hover:from-[#21263d] hover:to-[#181c2f] border border-white/12 hover:border-[#DFB76C]/40 flex items-center gap-2 text-slate-100 transition-all active:scale-[0.98] shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)] backdrop-blur-md group overflow-hidden"
         >
           {/* Running Text Area with Mask Fade */}
           <div className="flex-1 overflow-hidden relative ticker-mask-fade py-0.5 min-w-0">
-            <div className={`luxury-ticker-track text-[9.5px] text-slate-300 ${activeFont.styleClass}`}>
+            <div className={`luxury-ticker-track font-body text-xs leading-tight text-slate-200 ${activeFont.styleClass}`}>
               {[0, 1, 2, 3, 4, 5].map((idx) => (
-                <span key={idx} className="inline-block pr-6 text-zinc-200 font-medium">
-                  <span className="text-[#DFB76C] font-bold mr-1.5">•</span> {tickerText}
+                <span key={idx} className="inline-block pr-6 text-zinc-200 font-normal">
+                  <span className="text-[#DFB76C] font-semibold mr-1.5">•</span> {tickerText}
                 </span>
               ))}
             </div>
           </div>
 
           {/* Action indicator button/arrow */}
-          <div className="shrink-0 flex items-center gap-1 text-[8.5px] font-medium tracking-wider text-[#DFB76C] group-hover:text-[#F0DFB6] pl-2 border-l border-white/10">
+          <div className="shrink-0 flex items-center gap-1 font-body text-[11px] font-semibold leading-none text-[#DFB76C] group-hover:text-[#F0DFB6] pl-2.5 border-l border-white/10">
             <span className="hidden xs:inline">Koleksi</span>
-            <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform text-[#DFB76C]" />
+            <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform text-[#DFB76C]" />
           </div>
         </button>
       </section>

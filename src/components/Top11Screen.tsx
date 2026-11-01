@@ -204,7 +204,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
             >
               <ArrowLeft size={16} />
             </button>
-            <h2 className="font-display text-sm font-extrabold text-white tracking-wider uppercase">
+            <h2 className="font-heading text-[15px] sm:text-base font-semibold text-white tracking-[-0.015em] leading-[1.2]">
               Top {topItems.length} Parfum
             </h2>
           </div>
@@ -213,30 +213,30 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
           <div className="flex items-center bg-[#12141e] p-1 rounded-xl border border-white/10">
             <button
               onClick={() => setViewMode('spotlight')}
-              className={`py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
+              className={`py-1 px-2.5 rounded-lg font-body text-[11.5px] font-semibold leading-tight transition-all ${
                 viewMode === 'spotlight'
-                  ? 'bg-gradient-to-r from-[#DFB76C] to-[#A07C3A] text-slate-950 shadow-sm font-black'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-gradient-to-r from-[#DFB76C] to-[#A07C3A] text-slate-950 shadow-sm'
+                  : 'text-slate-300 hover:text-white font-medium'
               }`}
             >
               Spotlight
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 ${
+              className={`py-1 px-2.5 rounded-lg font-body text-[11.5px] font-semibold leading-tight transition-all flex items-center gap-1 ${
                 viewMode === 'grid'
-                  ? 'bg-gradient-to-r from-[#DFB76C] to-[#A07C3A] text-slate-950 shadow-sm font-black'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-gradient-to-r from-[#DFB76C] to-[#A07C3A] text-slate-950 shadow-sm'
+                  : 'text-slate-300 hover:text-white font-medium'
               }`}
             >
-              <LayoutGrid size={11} />
+              <LayoutGrid size={12} />
               <span>Semua</span>
             </button>
           </div>
         </div>
 
         {/* Quick Rank Number Pills (Clean numbers 1, 2, 3... up to 50) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2.5 pb-0.5 scroll-smooth">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 pb-0.5 scroll-smooth">
           {topItems.map((item, idx) => {
             const isActive = viewMode === 'spotlight' && currentIndex === idx;
 
@@ -250,10 +250,10 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                   setCurrentIndex(idx);
                   setViewMode('spotlight');
                 }}
-                className={`shrink-0 w-7 h-7 rounded-lg text-[11px] font-bold font-mono transition-all flex items-center justify-center relative ${
+                className={`shrink-0 w-7 h-7 rounded-lg font-body text-xs tabular-nums transition-all flex items-center justify-center relative ${
                   isActive
-                    ? 'bg-gradient-to-br from-[#DFB76C] to-[#A07C3A] text-slate-950 scale-105 shadow-sm font-black'
-                    : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
+                    ? 'bg-gradient-to-br from-[#DFB76C] to-[#A07C3A] text-slate-950 scale-105 shadow-sm font-semibold'
+                    : 'bg-white/5 text-slate-300 hover:text-white border border-white/10 font-medium'
                 }`}
               >
                 {item.rank}
@@ -269,22 +269,21 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
            VIEW 1: LUXURY SPOTLIGHT HERO CARD VIEW
            ========================================== */}
         <div
-          className={`space-y-3.5 transition-opacity duration-200 ${
+          className={`space-y-3 transition-opacity duration-200 ${
             viewMode === 'spotlight' ? 'block' : 'hidden'
           }`}
         >
             {/* Spotlight Card with Glassmorphism Border & Deep Royal Charcoal Gradient */}
-            <div className="relative rounded-3xl bg-gradient-to-b from-[#1e2235]/95 via-[#181a2b]/95 to-[#131524]/95 border border-white/12 hover:border-[#C5A059]/40 p-4 shadow-[0_15px_45px_rgba(0,0,0,0.7)] overflow-hidden backdrop-blur-md transition-colors">
-              {/* Top Card Bar: Rank Badge + Heart */}
+            <div className="relative rounded-3xl bg-gradient-to-b from-[#1e2235]/95 via-[#181a2b]/95 to-[#131524]/95 border border-white/12 hover:border-[#C5A059]/40 p-3.5 sm:p-4 shadow-[0_15px_45px_rgba(0,0,0,0.7)] overflow-hidden backdrop-blur-md transition-colors">
               {/* Top Card Bar: Rank Badge + Heart & Counter (Bersih & Elegan) */}
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between gap-2 mb-2">
                 <span
-                  className={`text-[9.5px] font-black uppercase tracking-widest py-1 px-2.5 rounded-full border shadow-sm ${currentItem.accentBadge}`}
+                  className={`font-body text-[11px] font-semibold tracking-normal py-0.5 px-2.5 rounded-full border shadow-sm leading-snug truncate ${currentItem.accentBadge}`}
                 >
                   {currentItem.badge}
                 </span>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() =>
                       toggleFavorite(currentItem.id, currentItem.name)
@@ -293,7 +292,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                     title="Favorit"
                   >
                     <Heart
-                      size={15}
+                      size={14}
                       className={
                         favorites.includes(currentItem.id)
                           ? 'fill-red-500 text-red-500'
@@ -302,7 +301,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                     />
                   </button>
 
-                  <span className="text-[10.5px] font-mono font-bold text-[#DFB76C] bg-white/10 px-2.5 py-0.5 rounded-md border border-white/15 shadow-sm">
+                  <span className="font-body text-[11px] font-medium tabular-nums text-[#DFB76C] bg-white/10 px-2 py-0.5 rounded-md border border-white/15 shadow-sm leading-snug">
                     {currentIndex + 1} / {topItems.length}
                   </span>
                 </div>
@@ -342,7 +341,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
               </div>
 
               {/* Dots Pagination Carousel */}
-              <div className="flex items-center justify-center gap-1.5 py-1 mb-1.5 select-none">
+              <div className="flex items-center justify-center gap-1.5 py-1 mb-1 select-none">
                 {topItems.map((item, idx) => {
                   const isActiveDot = currentIndex === idx;
                   return (
@@ -363,72 +362,72 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
               </div>
 
               {/* Title & Subtitle with Pure White Crisp and Soft Champagne Accent */}
-              <div className="text-center space-y-1 pt-1 pb-2">
-                <span className="text-[9.5px] font-mono uppercase tracking-[0.25em] text-[#DFB76C] font-bold block">
+              <div className="text-center space-y-1 pt-0.5 pb-1">
+                <span className="font-body text-[11px] font-medium tracking-[0.04em] text-[#DFB76C] block leading-tight">
                   {currentItem.type}
                 </span>
-                <h3 className="font-display text-xl font-black text-white leading-tight drop-shadow-sm">
+                <h3 className="font-heading text-lg sm:text-[19px] font-bold text-white tracking-[-0.015em] leading-[1.2] break-words px-1 drop-shadow-sm">
                   {currentItem.name}
                 </h3>
-                <p className="text-[11px] text-zinc-300 font-medium italic">
+                <p className="font-body text-xs text-zinc-300 font-normal italic leading-[1.42]">
                   “{currentItem.subtitle}”
                 </p>
-                <p className="text-[10.5px] text-zinc-200 font-medium leading-relaxed pt-1 max-w-xs mx-auto drop-shadow-sm">
+                <p className="font-body text-[12.5px] sm:text-[13px] text-zinc-200 font-normal leading-[1.48] pt-0.5 max-w-sm mx-auto drop-shadow-sm">
                   {currentItem.description}
                 </p>
               </div>
 
               {/* Fragrance Pyramid Notes Breakdown with High Contrast & Calm Aesthetics */}
-              <div className="mt-2 p-3.5 rounded-2xl bg-[#121422] border border-white/12 space-y-2 text-[10.5px] shadow-inner">
+              <div className="mt-2 p-2.5 rounded-2xl bg-[#121422] border border-white/12 space-y-1 font-body text-xs shadow-inner">
                 <div className="flex items-start gap-2">
-                  <span className="w-16 text-[#DFB76C] font-semibold shrink-0">
+                  <span className="w-[72px] text-[#DFB76C] font-medium shrink-0 leading-[1.45]">
                     Top Notes:
                   </span>
-                  <span className="text-zinc-100 flex-1 font-medium">
+                  <span className="text-zinc-100 flex-1 font-normal leading-[1.45]">
                     {currentItem.topNotes}
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="w-16 text-[#DFB76C] font-semibold shrink-0">
+                  <span className="w-[72px] text-[#DFB76C] font-medium shrink-0 leading-[1.45]">
                     Heart:
                   </span>
-                  <span className="text-zinc-100 flex-1 font-medium">
+                  <span className="text-zinc-100 flex-1 font-normal leading-[1.45]">
                     {currentItem.middleNotes}
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="w-16 text-[#DFB76C] font-semibold shrink-0">
+                  <span className="w-[72px] text-[#DFB76C] font-medium shrink-0 leading-[1.45]">
                     Base:
                   </span>
-                  <span className="text-zinc-100 flex-1 font-medium">
+                  <span className="text-zinc-100 flex-1 font-normal leading-[1.45]">
                     {currentItem.baseNotes}
                   </span>
                 </div>
 
                 {/* Performance Metrics */}
-                <div className="pt-2 border-t border-white/12 flex items-center justify-between text-[10.5px]">
-                  <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                    <Clock size={13} />
+                <div className="pt-1.5 border-t border-white/12 flex items-center justify-between gap-2 text-[11px]">
+                  <div className="flex items-center gap-1 text-emerald-400 font-medium">
+                    <Clock size={12} className="shrink-0" />
                     <span>Ketahanan: {currentItem.longevity}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-sky-300 font-semibold">
-                    <Flame size={13} />
+                  <div className="flex items-center gap-1 text-sky-300 font-medium">
+                    <Flame size={12} className="shrink-0" />
                     <span>Sillage: {currentItem.sillage}</span>
                   </div>
                 </div>
               </div>
 
               {/* Bottle Size Selector & Option B Pricing (Pilihan Ukuran Botol & Harga) */}
-              <div className="mt-3 p-3 rounded-2xl bg-[#11131c] border border-white/10 space-y-2.5 shadow-sm">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-white font-bold flex items-center gap-1.5 tracking-wide">
-                    <span>Pilih Ukuran Botol:</span>
+              <div className="mt-2.5 p-2.5 sm:p-3 rounded-2xl bg-[#11131c] border border-white/10 space-y-2 shadow-sm">
+                <div className="flex items-center justify-between gap-2 font-body">
+                  <span className="text-xs text-white font-semibold flex items-center gap-1.5 leading-tight">
+                    <span>Pilih Ukuran Botol</span>
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-white/10 text-slate-300 border border-white/15 uppercase tracking-wider">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="font-body text-[11px] font-medium px-2 py-0.5 rounded-md bg-white/10 text-slate-200 border border-white/15 leading-tight">
                       {getItemPricingInfo(currentItem, selectedBottleSize).categoryName}
                     </span>
-                    <span className="font-mono text-[10px] text-slate-200 font-bold px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                    <span className="font-body text-[11px] text-slate-200 font-medium tabular-nums px-2 py-0.5 rounded-full bg-white/5 border border-white/10 leading-tight">
                       {selectedBottleSize}ml
                     </span>
                   </div>
@@ -443,17 +442,17 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                         key={size}
                         type="button"
                         onClick={() => setSelectedBottleSize(size)}
-                        className={`relative py-1.5 rounded-xl text-center font-mono text-[11px] font-black transition-all active:scale-95 border ${
+                        className={`relative py-1.5 rounded-xl text-center font-body text-[11.5px] font-semibold leading-tight tabular-nums transition-all active:scale-95 border ${
                           isSelected
                             ? 'bg-gradient-to-r from-[#DFC07B] to-[#C09B50] text-slate-950 border-[#F5E6C4]/85 shadow-sm scale-[1.02]'
-                            : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                            : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/10 font-medium'
                         }`}
                       >
                         {size}ml
                         {size === 30 && (
                           <span
-                            className={`block text-[7px] leading-tight font-sans tracking-tight ${
-                              isSelected ? 'text-slate-950 font-black' : 'text-slate-400'
+                            className={`block text-[9.5px] leading-none font-body mt-0.5 ${
+                              isSelected ? 'text-slate-950 font-semibold' : 'text-slate-400 font-normal'
                             }`}
                           >
                             Favorit
@@ -468,18 +467,18 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                 {(() => {
                   const pricingInfo = getItemPricingInfo(currentItem, selectedBottleSize);
                   return (
-                    <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                      <div className="text-[11px] text-slate-300">
-                        <span className="text-slate-400 text-[10px] block leading-tight">Tarif Resmi:</span>
-                        <span className="font-mono text-[11px] text-slate-200 font-semibold">
+                    <div className="flex items-center justify-between pt-2 border-t border-white/10 font-body">
+                      <div>
+                        <span className="text-slate-400 text-[11px] font-normal block leading-tight">Tarif Resmi:</span>
+                        <span className="text-xs sm:text-[13px] text-slate-200 font-medium tabular-nums leading-snug">
                           Rp {pricingInfo.ratePerMl.toLocaleString('id-ID')}/ml
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block leading-tight">
+                        <span className="text-[11px] text-slate-400 font-normal block leading-tight">
                           Total Harga ({selectedBottleSize}ml):
                         </span>
-                        <span className="text-base font-extrabold text-[#DFB76C] font-mono tracking-tight drop-shadow-sm">
+                        <span className="text-[17px] sm:text-lg font-bold text-[#DFB76C] tabular-nums tracking-tight leading-snug drop-shadow-sm">
                           Rp {pricingInfo.totalPrice.toLocaleString('id-ID')}
                         </span>
                       </div>
@@ -495,9 +494,9 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                   <div className="pt-2">
                     <button
                       onClick={() => handleOrderWhatsApp(currentItem)}
-                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#9E7834] text-slate-950 font-black text-xs flex items-center justify-center gap-2 hover:brightness-105 active:scale-98 transition-all shadow-md uppercase tracking-wider"
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#9E7834] text-slate-950 font-body font-semibold text-[13px] sm:text-[13.5px] tabular-nums flex items-center justify-center gap-2 hover:brightness-105 active:scale-98 transition-all shadow-md"
                     >
-                      <MessageCircle size={15} />
+                      <MessageCircle size={15} className="shrink-0" />
                       <span>
                         Pesan Top {currentItem.rank} ({selectedBottleSize}ml • Rp {pricingInfo.totalPrice.toLocaleString('id-ID')})
                       </span>
@@ -516,7 +515,7 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
             viewMode === 'grid' ? 'block' : 'hidden'
           }`}
         >
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             {topItems.map((item) => {
               const isFav = favorites.includes(item.id);
 
@@ -528,11 +527,11 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                     if (idx !== -1) setCurrentIndex(idx);
                     setViewMode('spotlight');
                   }}
-                  className="relative flex flex-col justify-between p-3 rounded-2xl bg-gradient-to-b from-[#1c1f32] to-[#141626] hover:from-[#22263d] hover:to-[#171a2c] border border-white/10 hover:border-[#C5A059]/50 shadow-[0_8px_25px_rgba(0,0,0,0.55)] transition-all cursor-pointer active:scale-[0.99]"
+                  className="relative flex flex-col justify-between p-2.5 sm:p-3 rounded-2xl bg-gradient-to-b from-[#1c1f32] to-[#141626] hover:from-[#22263d] hover:to-[#171a2c] border border-white/10 hover:border-[#C5A059]/50 shadow-[0_8px_25px_rgba(0,0,0,0.55)] transition-all cursor-pointer active:scale-[0.99]"
                 >
                   {/* Top Row: Rank Tag + Heart (Clean Number 1, 2, 3...) */}
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded-md bg-white/10 text-zinc-200 border border-white/15 shadow-sm">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-body text-[11px] font-semibold tabular-nums px-1.5 py-0.5 rounded-md bg-white/10 text-zinc-200 border border-white/15 shadow-sm leading-tight">
                       {item.rank}
                     </span>
                     <button
@@ -561,32 +560,32 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                   </div>
 
                   {/* Info */}
-                  <div className="space-y-1 mb-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[8.5px] font-mono text-[#DFB76C] font-semibold uppercase tracking-widest block">
+                  <div className="space-y-1 mb-2 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-body text-[10.5px] text-[#DFB76C] font-medium leading-tight truncate">
                         {item.type}
                       </span>
                       {(() => {
                         const gridPricing = getItemPricingInfo(item, selectedBottleSize);
                         return (
-                          <span className="text-[7.5px] font-mono font-medium px-1.5 py-0.5 rounded bg-white/10 text-zinc-300 border border-white/15">
+                          <span className="font-body text-[10px] font-medium px-1.5 py-0.5 rounded bg-white/10 text-zinc-300 border border-white/15 leading-none shrink-0">
                             {gridPricing.isMykonos ? 'Mykonos' : 'Premium'}
                           </span>
                         );
                       })()}
                     </div>
-                    <h4 className="font-display text-xs font-black text-white leading-tight line-clamp-1">
+                    <h4 className="font-heading text-[13px] sm:text-[13.5px] font-semibold text-white tracking-[-0.015em] leading-[1.22] line-clamp-1">
                       {item.name}
                     </h4>
-                    <p className="text-[8.5px] text-zinc-300 font-medium italic line-clamp-2 leading-tight">
+                    <p className="font-body text-[11px] text-zinc-300 font-normal italic line-clamp-2 leading-[1.35]">
                       {item.subtitle}
                     </p>
                     {(() => {
                       const gridPricing = getItemPricingInfo(item, selectedBottleSize);
                       return (
-                        <div className="pt-1 flex items-center justify-between border-t border-white/5 text-[9px]">
-                          <span className="text-slate-400 font-mono text-[8.5px]">{selectedBottleSize}ml:</span>
-                          <span className="font-mono font-bold text-[#DFB76C] text-[10.5px]">
+                        <div className="pt-1.5 flex items-center justify-between border-t border-white/10 font-body">
+                          <span className="text-slate-400 text-[11px] tabular-nums leading-tight">{selectedBottleSize}ml:</span>
+                          <span className="font-semibold text-[#DFB76C] text-xs sm:text-[13px] tabular-nums leading-tight">
                             Rp {gridPricing.totalPrice.toLocaleString('id-ID')}
                           </span>
                         </div>
@@ -603,10 +602,10 @@ export const Top11Screen: React.FC<Top11ScreenProps> = ({
                           e.stopPropagation();
                           handleOrderWhatsApp(item);
                         }}
-                        className="w-full py-1.5 px-2 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 hover:brightness-105 border border-[#DFB76C]/30 text-[9px] font-black flex items-center justify-center gap-1 transition-all active:scale-95 shadow-sm"
+                        className="w-full py-1.5 px-2 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 hover:brightness-105 border border-[#DFB76C]/30 font-body text-[11px] font-semibold leading-tight tabular-nums flex items-center justify-center gap-1 transition-all active:scale-95 shadow-sm"
                       >
-                        <MessageCircle size={11} />
-                        <span>Pesan {selectedBottleSize}ml (Rp {gridPricing.totalPrice.toLocaleString('id-ID')})</span>
+                        <MessageCircle size={12} className="shrink-0" />
+                        <span className="truncate">Pesan {selectedBottleSize}ml • Rp {gridPricing.totalPrice.toLocaleString('id-ID')}</span>
                       </button>
                     );
                   })()}

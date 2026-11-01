@@ -141,45 +141,45 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-5 font-body animate-in fade-in duration-300">
       {/* ========================================================
           1. HEADER & LIVE STATUS BADGE
          ======================================================== */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-gradient-to-r from-[#0f121d] via-[#121626] to-[#0f121d] border border-amber-500/20 shadow-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#0f121d] via-[#121626] to-[#0f121d] border border-amber-500/20 shadow-xl">
         <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
               <ShieldCheck size={20} />
             </div>
             <div>
-              <h2 className="font-display text-lg sm:text-xl font-bold text-white tracking-wide flex items-center gap-2">
-                Pusat Keamanan & Kesehatan Sistem SINKI
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400">
+              <h2 className="font-heading text-lg sm:text-xl font-bold leading-[1.25] text-white tracking-[-0.015em] flex items-center gap-2 flex-wrap">
+                <span>Pusat Keamanan & Kesehatan Sistem SINKI</span>
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 leading-tight">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Optimal & Terlindungi
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-[1.45]">
                 Pemantau kecepatan respon, pembersih sampah/cache otomatis, dan proteksi akun SINKI Parfums.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="px-3 py-1.5 rounded-xl bg-black/40 border border-white/10 flex items-center gap-2 text-xs">
-            <Radio size={14} className="text-emerald-400 animate-pulse" />
-            <span className="text-slate-400 font-mono text-[11px]">Latensi:</span>
-            <span className="font-bold text-emerald-400 font-mono text-xs">{pingMs} ms</span>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="px-3 py-2 rounded-xl bg-black/40 border border-white/10 flex items-center gap-2 text-xs sm:text-sm tabular-nums">
+            <Radio size={14} className="text-emerald-400 animate-pulse shrink-0" />
+            <span className="text-slate-400">Latensi:</span>
+            <span className="font-semibold text-emerald-400">{pingMs} ms</span>
           </div>
 
           <button
             onClick={loadData}
             disabled={isLoadingHealth}
-            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
+            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs sm:text-sm text-slate-200 hover:text-white font-semibold flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
           >
-            <RefreshCw size={13} className={isLoadingHealth ? 'animate-spin' : ''} />
-            <span className="font-medium">Segarkan</span>
+            <RefreshCw size={14} className={isLoadingHealth ? 'animate-spin' : ''} />
+            <span>Segarkan</span>
           </button>
         </div>
       </div>
@@ -190,17 +190,17 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Metric 1: Skor Kesehatan */}
         <div className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 space-y-2 relative overflow-hidden">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-mono uppercase tracking-wider">Skor Web</span>
+          <div className="flex items-center justify-between text-slate-300">
+            <span className="text-xs font-medium">Skor Web</span>
             <Activity size={16} className="text-emerald-400" />
           </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="font-display text-2xl sm:text-3xl font-bold text-emerald-400">
+          <div className="flex items-baseline gap-1.5 tabular-nums">
+            <span className="text-2xl sm:text-[28px] font-bold text-emerald-400 leading-[1.15]">
               {healthData?.score || 98}
             </span>
-            <span className="text-xs text-slate-400 font-mono">/ 100</span>
+            <span className="text-xs text-slate-400 font-medium">/ 100</span>
           </div>
-          <p className="text-[10px] text-slate-400">Performa website sangat cepat dan optimal.</p>
+          <p className="text-xs text-slate-400 leading-[1.4]">Performa website sangat cepat dan optimal.</p>
           <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
             <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${healthData?.score || 98}%` }} />
           </div>
@@ -208,17 +208,17 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
 
         {/* Metric 2: Memory Heap */}
         <div className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-mono uppercase tracking-wider">Memori Node.js</span>
+          <div className="flex items-center justify-between text-slate-300">
+            <span className="text-xs font-medium">Memori Node.js</span>
             <Cpu size={16} className="text-amber-400" />
           </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="font-display text-2xl sm:text-3xl font-bold text-white">
+          <div className="flex items-baseline gap-1.5 tabular-nums">
+            <span className="text-2xl sm:text-[28px] font-bold text-white leading-[1.15]">
               {healthData?.memory?.heapUsedMb || 42.5}
             </span>
-            <span className="text-xs text-amber-300 font-mono">MB</span>
+            <span className="text-xs text-amber-300 font-semibold">MB</span>
           </div>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-xs text-slate-400 leading-[1.4]">
             Status: <span className="text-emerald-400 font-semibold">{healthData?.memory?.status || 'Sangat Efisien'}</span>
           </p>
           <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
@@ -228,17 +228,17 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
 
         {/* Metric 3: Server Uptime */}
         <div className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-mono uppercase tracking-wider">Uptime Server</span>
+          <div className="flex items-center justify-between text-slate-300">
+            <span className="text-xs font-medium">Uptime Server</span>
             <Clock size={16} className="text-sky-400" />
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="font-display text-lg sm:text-2xl font-bold text-white tracking-tight">
+            <span className="font-heading text-lg sm:text-2xl font-bold text-white tracking-tight leading-[1.2] tabular-nums">
               {healthData?.server?.uptime || 'Aktif'}
             </span>
           </div>
-          <p className="text-[10px] text-slate-400">
-            Node: <span className="font-mono text-slate-300">{healthData?.server?.nodeVersion || 'v20'}</span> • Linux
+          <p className="text-xs text-slate-400 leading-[1.4]">
+            Node: <span className="text-slate-300 font-medium tabular-nums">{healthData?.server?.nodeVersion || 'v20'}</span> • Linux
           </p>
           <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
             <div className="bg-sky-400 h-full rounded-full" style={{ width: '100%' }} />
@@ -247,17 +247,17 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
 
         {/* Metric 4: Cloud Storage */}
         <div className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-mono uppercase tracking-wider">Database & CDN</span>
+          <div className="flex items-center justify-between text-slate-300">
+            <span className="text-xs font-medium">Database & CDN</span>
             <HardDrive size={16} className="text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="font-display text-lg sm:text-xl font-bold text-emerald-400 truncate">
+            <span className="font-heading text-lg sm:text-xl font-bold text-emerald-400 truncate leading-[1.2]">
               Supabase CDN
             </span>
           </div>
-          <p className="text-[10px] text-slate-400">
-            Bucket: <span className="font-mono text-amber-300 font-semibold">sinki-media (Aktif)</span>
+          <p className="text-xs text-slate-400 leading-[1.4]">
+            Bucket: <span className="text-amber-300 font-semibold">sinki-media (Aktif)</span>
           </p>
           <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
             <div className="bg-emerald-400 h-full rounded-full" style={{ width: '100%' }} />
@@ -269,17 +269,17 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
           3. PEMBERSIH CACHE & SAMPAH WEB (1-KLIK SAPU BERSIH)
          ======================================================== */}
       <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#0e111d] via-[#111422] to-[#0e111d] border border-white/15 space-y-4 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/25 flex items-center justify-center text-red-400">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/25 flex items-center justify-center text-red-400 shrink-0">
                 <Trash2 size={16} />
               </div>
-              <h3 className="font-display font-bold text-base text-white">
+              <h3 className="font-heading font-semibold text-base sm:text-lg leading-[1.25] text-white tracking-[-0.015em]">
                 Pembersih Sampah & Cache Website (1-Klik)
               </h3>
             </div>
-            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-[1.5]">
               Jika website terasa lambat atau ada perubahan gambar/teks yang belum muncul, fitur ini akan menghapus cache browser yang menumpuk, membuang buffer gambar lawas, dan menyegarkan memori server tanpa menghapus ulasan atau varian parfum Anda.
             </p>
           </div>
@@ -287,47 +287,47 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
           <button
             onClick={handleCleanCache}
             disabled={isCleaningCache}
-            className="py-3 px-5 rounded-2xl bg-gradient-to-r from-red-600 via-amber-500 to-amber-600 hover:brightness-110 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-amber-950/30 disabled:opacity-60 whitespace-nowrap self-start sm:self-auto"
+            className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-red-600 via-amber-500 to-amber-600 hover:brightness-110 text-slate-950 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-amber-950/30 disabled:opacity-60 whitespace-nowrap self-start sm:self-auto"
           >
-            <RefreshCw size={14} className={isCleaningCache ? 'animate-spin' : ''} />
+            <RefreshCw size={15} className={isCleaningCache ? 'animate-spin' : ''} />
             <span>{isCleaningCache ? 'Membersihkan Cache...' : 'Sapu Bersih Cache Sekarang'}</span>
           </button>
         </div>
 
         {cleanReport && (
-          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5 text-xs text-emerald-300 animate-in fade-in">
+          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5 text-xs sm:text-sm text-emerald-300 animate-in fade-in">
             <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-emerald-400" />
-            <span className="leading-relaxed font-medium">{cleanReport}</span>
+            <span className="leading-[1.5] font-medium">{cleanReport}</span>
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-          <div className="p-3 rounded-xl bg-black/30 border border-white/5 space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
-              <Zap size={14} className="text-amber-400" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div className="p-3.5 rounded-xl bg-black/30 border border-white/5 space-y-1">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-200">
+              <Zap size={14} className="text-amber-400 shrink-0" />
               <span>Memori Browser</span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-xs text-slate-400 leading-[1.45]">
               Menghapus entri temporary local cache dan asset preview yang sudah usang.
             </p>
           </div>
 
-          <div className="p-3 rounded-xl bg-black/30 border border-white/5 space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
-              <Server size={14} className="text-sky-400" />
+          <div className="p-3.5 rounded-xl bg-black/30 border border-white/5 space-y-1">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-200">
+              <Server size={14} className="text-sky-400 shrink-0" />
               <span>Sesi & Rate Limit Server</span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-xs text-slate-400 leading-[1.45]">
               Menyapu IP rate limiter yang sudah kadaluarsa agar koneksi tetap lancar.
             </p>
           </div>
 
-          <div className="p-3 rounded-xl bg-black/30 border border-white/5 space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
-              <ShieldCheck size={14} className="text-emerald-400" />
+          <div className="p-3.5 rounded-xl bg-black/30 border border-white/5 space-y-1">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-200">
+              <ShieldCheck size={14} className="text-emerald-400 shrink-0" />
               <span>Aman 100%</span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-xs text-slate-400 leading-[1.45]">
               Data katalog produk, ulasan asli pembeli, dan foto botol Anda tetap utuh aman.
             </p>
           </div>
@@ -340,15 +340,15 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Kolom Kiri: Form Ubah PIN Pemilik */}
         <div className="p-5 sm:p-6 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
-          <div className="flex items-center gap-2.5 pb-2 border-b border-white/10">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400">
+          <div className="flex items-center gap-2.5 pb-2.5 border-b border-white/10">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shrink-0">
               <KeyRound size={16} />
             </div>
             <div>
-              <h3 className="font-display font-bold text-sm text-white">
+              <h3 className="font-heading font-semibold text-base sm:text-lg leading-[1.25] text-white tracking-[-0.015em]">
                 Ganti PIN Rahasia Dimensi Sinki
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-400 mt-0.5">
                 Ubah kode PIN akses pemilik untuk keamanan tingkat tinggi.
               </p>
             </div>
@@ -356,7 +356,7 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
 
           <form onSubmit={handleChangePin} className="space-y-3">
             <div>
-              <label className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
+              <label className="text-xs sm:text-[13px] font-medium text-slate-300 block mb-1">
                 PIN Lama (Saat Ini)
               </label>
               <input
@@ -366,13 +366,13 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
                 placeholder="Masukkan PIN lama..."
                 value={oldPin}
                 onChange={(e) => setOldPin(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-400 font-mono tracking-widest"
+                className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/15 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 tabular-nums tracking-widest"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
+                <label className="text-xs sm:text-[13px] font-medium text-slate-300 block mb-1">
                   PIN Baru (Minimal 4 digit)
                 </label>
                 <input
@@ -382,12 +382,12 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
                   placeholder="PIN baru..."
                   value={newPin}
                   onChange={(e) => setNewPin(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-400 font-mono tracking-widest"
+                  className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/15 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 tabular-nums tracking-widest"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
+                <label className="text-xs sm:text-[13px] font-medium text-slate-300 block mb-1">
                   Ulangi PIN Baru
                 </label>
                 <input
@@ -397,23 +397,23 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
                   placeholder="Ulangi PIN..."
                   value={confirmPin}
                   onChange={(e) => setConfirmPin(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-400 font-mono tracking-widest"
+                  className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/15 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 tabular-nums tracking-widest"
                 />
               </div>
             </div>
 
             {pinMessage && (
               <div
-                className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
+                className={`p-3 rounded-xl border text-xs sm:text-sm flex items-center gap-2 ${
                   pinMessage.isError
                     ? 'bg-red-500/10 border-red-500/30 text-red-300'
                     : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                 }`}
               >
                 {pinMessage.isError ? (
-                  <AlertTriangle size={14} className="shrink-0" />
+                  <AlertTriangle size={15} className="shrink-0" />
                 ) : (
-                  <CheckCircle2 size={14} className="shrink-0" />
+                  <CheckCircle2 size={15} className="shrink-0" />
                 )}
                 <span>{pinMessage.text}</span>
               </div>
@@ -422,16 +422,16 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
             <button
               type="submit"
               disabled={isChangingPin}
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-110 active:scale-98 text-slate-950 font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-amber-950/20"
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-110 active:scale-98 text-slate-950 font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-amber-950/20"
             >
               {isChangingPin ? (
                 <>
-                  <RefreshCw size={13} className="animate-spin" />
+                  <RefreshCw size={14} className="animate-spin" />
                   <span>Menyimpan ke Server...</span>
                 </>
               ) : (
                 <>
-                  <Lock size={13} />
+                  <Lock size={14} />
                   <span>Simpan PIN Baru Secara Permanen</span>
                 </>
               )}
@@ -441,57 +441,57 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
 
         {/* Kolom Kanan: Status Proteksi Firewall & Keamanan */}
         <div className="p-5 sm:p-6 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
-          <div className="flex items-center gap-2.5 pb-2 border-b border-white/10">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+          <div className="flex items-center gap-2.5 pb-2.5 border-b border-white/10">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
               <ShieldCheck size={16} />
             </div>
             <div>
-              <h3 className="font-display font-bold text-sm text-white">
+              <h3 className="font-heading font-semibold text-base sm:text-lg leading-[1.25] text-white tracking-[-0.015em]">
                 Benteng Keamanan (Security Audit)
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-400 mt-0.5">
                 Fitur proteksi aktif yang melindungi website SINKI dari spam & bot.
               </p>
             </div>
           </div>
 
-          <div className="space-y-2 text-xs">
-            <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
+          <div className="space-y-2.5">
+            <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between gap-2">
               <div className="space-y-0.5">
-                <span className="text-white font-medium block">Enkripsi SSL / TLS 1.3:</span>
-                <span className="text-[10px] text-slate-400">Semua transmisi data terenkripsi HTTPS aman</span>
+                <span className="text-xs sm:text-sm text-white font-medium block">Enkripsi SSL / TLS 1.3</span>
+                <span className="text-xs text-slate-400 block">Semua transmisi data terenkripsi HTTPS aman</span>
               </div>
-              <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+              <span className="text-xs text-emerald-300 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 shrink-0">
                 Grade A+ Aktif
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between gap-2">
               <div className="space-y-0.5">
-                <span className="text-white font-medium block">Shield Anti-Brute Force:</span>
-                <span className="text-[10px] text-slate-400">Maks 6 percobaan PIN per menit per alamat IP</span>
+                <span className="text-xs sm:text-sm text-white font-medium block">Shield Anti-Brute Force</span>
+                <span className="text-xs text-slate-400 block">Maks 6 percobaan PIN per menit per alamat IP</span>
               </div>
-              <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+              <span className="text-xs text-emerald-300 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 shrink-0">
                 Terkunci Aman
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between gap-2">
               <div className="space-y-0.5">
-                <span className="text-white font-medium block">Sensor Kata Kasar Otomatis:</span>
-                <span className="text-[10px] text-slate-400">22 filter kata tidak sopan pada formulir ulasan</span>
+                <span className="text-xs sm:text-sm text-white font-medium block">Sensor Kata Kasar Otomatis</span>
+                <span className="text-xs text-slate-400 block">22 filter kata tidak sopan pada formulir ulasan</span>
               </div>
-              <span className="text-amber-300 font-mono font-bold bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+              <span className="text-xs text-amber-300 font-semibold bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20 shrink-0">
                 Siaga Aktif
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between gap-2">
               <div className="space-y-0.5">
-                <span className="text-white font-medium block">Anti-DoS Memory Shield:</span>
-                <span className="text-[10px] text-slate-400">Batas muatan JSON 10MB mencegah server crash</span>
+                <span className="text-xs sm:text-sm text-white font-medium block">Anti-DoS Memory Shield</span>
+                <span className="text-xs text-slate-400 block">Batas muatan JSON 10MB mencegah server crash</span>
               </div>
-              <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+              <span className="text-xs text-emerald-300 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 shrink-0">
                 Diproteksi
               </span>
             </div>
@@ -503,22 +503,22 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
           5. PEMERIKSA TAUTAN OTOMATIS (LINK HEALTH GUARD)
          ======================================================== */}
       <div className="p-5 sm:p-6 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-white/10">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/25 flex items-center justify-center text-sky-400">
+            <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/25 flex items-center justify-center text-sky-400 shrink-0">
               <Globe size={16} />
             </div>
             <div>
-              <h3 className="font-display font-bold text-sm text-white">
+              <h3 className="font-heading font-semibold text-base sm:text-lg leading-[1.25] text-white tracking-[-0.015em]">
                 Pemeriksa Kesehatan Tautan Toko (Link Health Check)
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-400 mt-0.5">
                 Memastikan calon pembeli tidak pernah mengalami kendala saat mengklik tautan order.
               </p>
             </div>
           </div>
 
-          <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl self-start sm:self-auto">
+          <span className="text-xs font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl self-start sm:self-auto">
             Semua Tautan Online (100%)
           </span>
         </div>
@@ -527,32 +527,32 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
           {links.map((link, idx) => (
             <div
               key={idx}
-              className="p-3.5 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2 hover:border-amber-400/30 transition-all"
+              className="p-3.5 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2.5 hover:border-amber-400/30 transition-all"
             >
               <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white block">{link.name}</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-heading text-sm font-semibold text-white block">{link.name}</span>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
                     {link.badge}
                   </span>
                 </div>
-                <span className="text-[10px] text-amber-300 font-mono block">{link.type}</span>
-                <span className="text-[10px] text-slate-400 font-mono truncate block">{link.url}</span>
+                <span className="text-xs text-amber-300 font-medium block">{link.type}</span>
+                <span className="text-xs text-slate-400 truncate block">{link.url}</span>
               </div>
 
               <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-                <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-                  <Check size={12} />
+                <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
+                  <Check size={13} />
                   <span>Siap Terima Order</span>
                 </span>
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] text-slate-400 hover:text-amber-300 font-medium flex items-center gap-1 transition-colors"
+                  className="text-xs text-slate-300 hover:text-amber-300 font-medium flex items-center gap-1 transition-colors"
                 >
                   <span>Test Link</span>
-                  <ExternalLink size={11} />
+                  <ExternalLink size={12} />
                 </a>
               </div>
             </div>
@@ -564,32 +564,32 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
           6. LOG AUDIT AKTIVITAS KEAMANAN
          ======================================================== */}
       <div className="p-5 sm:p-6 rounded-3xl bg-[#0e111d] border border-white/10 space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-white/10">
+        <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-amber-400" />
-            <h3 className="font-display font-bold text-xs uppercase tracking-wider text-white">
+            <ShieldCheck size={16} className="text-amber-400 shrink-0" />
+            <h3 className="font-heading font-semibold text-base leading-[1.25] text-white tracking-[-0.015em]">
               Log Audit Aktivitas & Proteksi Terakhir
             </h3>
           </div>
-          <span className="text-[10px] text-slate-400 font-mono">Terekam Otomatis</span>
+          <span className="text-xs text-slate-400 font-medium">Terekam Otomatis</span>
         </div>
 
         <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
           {auditLogs.map((log) => (
             <div
               key={log.id}
-              className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-start justify-between gap-3 text-xs"
+              className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-start justify-between gap-3 text-xs sm:text-sm"
             >
               <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-white">{log.title}</span>
-                  <span className="text-[9px] uppercase font-mono px-1.5 py-0.2 rounded bg-white/10 text-slate-300">
+                  <span className="text-xs font-medium px-2 py-0.5 rounded bg-white/10 text-slate-300 leading-tight">
                     {log.type}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400">{log.detail}</p>
+                <p className="text-xs text-slate-400 leading-[1.45]">{log.detail}</p>
               </div>
-              <span className="text-[10px] font-mono text-slate-500 shrink-0">{log.timestamp}</span>
+              <span className="text-xs text-slate-400 tabular-nums shrink-0">{log.timestamp}</span>
             </div>
           ))}
         </div>

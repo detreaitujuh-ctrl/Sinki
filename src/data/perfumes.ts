@@ -1,5 +1,61 @@
 export type PerfumeCategory = 'women' | 'men' | 'powdery' | 'unisex';
 
+export type CollectionCategoryKey =
+  | 'daily_fresh'
+  | 'professional'
+  | 'attraction'
+  | 'luxury'
+  | 'viral_hits'
+  | 'new_trending';
+
+export type PricePerMlRate = 3000 | 4000;
+
+export interface CollectionCategoryMeta {
+  id: CollectionCategoryKey;
+  title: string;
+  subtitle: string;
+  group: 'need' | 'trend';
+}
+
+export const COLLECTION_CATEGORIES: CollectionCategoryMeta[] = [
+  {
+    id: 'daily_fresh',
+    title: 'Daily Fresh',
+    subtitle: 'Segar untuk sehari-hari',
+    group: 'need',
+  },
+  {
+    id: 'professional',
+    title: 'Professional',
+    subtitle: 'Rapi & berkelas saat bekerja',
+    group: 'need',
+  },
+  {
+    id: 'attraction',
+    title: 'Attraction',
+    subtitle: 'Untuk kencan & memikat perhatian',
+    group: 'need',
+  },
+  {
+    id: 'luxury',
+    title: 'Luxury',
+    subtitle: 'Elegan untuk acara spesial',
+    group: 'need',
+  },
+  {
+    id: 'viral_hits',
+    title: 'Viral Hits',
+    subtitle: 'Parfum viral & paling populer',
+    group: 'trend',
+  },
+  {
+    id: 'new_trending',
+    title: 'New & Trending',
+    subtitle: 'Rilisan terbaru & sedang tren',
+    group: 'trend',
+  },
+];
+
 export interface PerfumeItem {
   id: string;
   name: string;
@@ -8,6 +64,9 @@ export interface PerfumeItem {
   tagline: string;
   accords: string[];
   isActive?: boolean;
+  collectionCategories?: CollectionCategoryKey[];
+  pricePerMl?: PricePerMlRate;
+  usageRecommendation?: string;
 }
 
 export const PERFUMES_DATA: PerfumeItem[] = [
@@ -19,6 +78,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Sweet Floral & Red Berries',
     accords: ['Floral', 'Fruity', 'Sweet'],
+    collectionCategories: ['daily_fresh', 'attraction', 'viral_hits'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Aktivitas harian, jalan santai sore, dan kencan romantis',
   },
   {
     id: 'w-2',
@@ -27,6 +89,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Warm Floral & Raspberry Seduction',
     accords: ['Fruity', 'Warm', 'Floral'],
+    collectionCategories: ['attraction', 'viral_hits'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Kencan malam hari, hangout spesial, dan momen memikat',
   },
   {
     id: 'w-3',
@@ -35,6 +100,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Rich Intense Praline & Peony',
     accords: ['Sweet', 'Floral', 'Intense'],
+    collectionCategories: ['attraction', 'luxury', 'viral_hits'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Pesta malam, makan malam romantis, dan acara eksklusif',
   },
   {
     id: 'w-4',
@@ -43,6 +111,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Light Fresh Floral Breeze',
     accords: ['Fresh', 'Floral', 'Light'],
+    collectionCategories: ['daily_fresh', 'attraction'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Pemakaian sehari-hari, kuliah, dan suasana santai',
   },
   {
     id: 'w-5',
@@ -51,6 +122,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Confident Green & Citrus Elegance',
     accords: ['Citrus', 'Green', 'Fresh'],
+    collectionCategories: ['daily_fresh', 'professional', 'new_trending'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Bekerja di kantor, meeting profesional, dan aktivitas pagi',
   },
   {
     id: 'w-6',
@@ -59,6 +133,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Sensual Red Apple & Rose Petals',
     accords: ['Floral', 'Amber', 'Sensual'],
+    collectionCategories: ['attraction', 'viral_hits', 'new_trending'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Kencan spesial, hangout sore hingga malam hari',
   },
   {
     id: 'w-7',
@@ -67,6 +144,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Salty Vanilla & Jasmine Goddess',
     accords: ['Vanilla', 'Salty', 'White Floral'],
+    collectionCategories: ['attraction', 'luxury'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Acara formal malam hari, resepsi, dan momen berkelas',
   },
   {
     id: 'w-8',
@@ -75,6 +155,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Lavender & Moroccan Orange Blossom',
     accords: ['Lavender', 'Citrus', 'Vanilla'],
+    collectionCategories: ['professional', 'luxury', 'viral_hits'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Rapat eksekutif, kerja kantoran rapi, dan acara formal',
   },
   {
     id: 'w-9',
@@ -83,6 +166,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Sweet Strawberry & Datura Flower',
     accords: ['Fruity', 'Sweet', 'Patchouli'],
+    collectionCategories: ['attraction', 'luxury'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Kencan romantis, perayaan spesial, dan acara malam',
   },
   {
     id: 'w-10',
@@ -91,6 +177,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Sparkling Blackcurrant & Strawberry',
     accords: ['Fruity', 'Sweet', 'Citrus'],
+    collectionCategories: ['daily_fresh', 'attraction'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Hangout ceria bersama teman dan aktivitas luar ruangan',
   },
   {
     id: 'w-11',
@@ -99,6 +188,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Juicy Cherry & Marshmallow Delicacy',
     accords: ['Cherry', 'Sweet', 'Fruity'],
+    collectionCategories: ['daily_fresh', 'attraction'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Aktivitas kasual harian, kencan siang, dan suasana santai',
   },
   {
     id: 'w-12',
@@ -107,6 +199,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Exotic Passion Fruit & Red Peony',
     accords: ['Tropical', 'Fruity', 'Floral'],
+    collectionCategories: ['attraction', 'daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Liburan, jalan sore, dan momen kencan kasual',
   },
   {
     id: 'w-13',
@@ -115,6 +210,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Sweet Caramel & Green Leaves',
     accords: ['Caramel', 'Fruity', 'Vanilla'],
+    collectionCategories: ['attraction'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Pertemuan dekat, kencan sore, dan acara semi-formal',
   },
   {
     id: 'w-14',
@@ -123,6 +221,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Earl Grey Tea & Calming White Floral',
     accords: ['Tea', 'Floral', 'Fresh'],
+    collectionCategories: ['professional', 'daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Ruang kerja ber-AC, aktivitas kantor tenang, dan harian rapi',
   },
   {
     id: 'w-15',
@@ -131,6 +232,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Blackberry & Dark Chocolate Romance',
     accords: ['Fruity', 'Sweet', 'Gourmand'],
+    collectionCategories: ['attraction', 'daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Hangout malam, nonton konser, dan suasana kasual akrab',
   },
   {
     id: 'w-16',
@@ -139,6 +243,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Velvety Lavender & Soft Apple Martini',
     accords: ['Musk', 'Powdery', 'Woody'],
+    collectionCategories: ['professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Bekerja seharian di kantor, presentasi, dan tampil dewasa rapi',
   },
   {
     id: 'w-17',
@@ -147,6 +254,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Blackcurrant, Iris & Warm Bourbon Vanilla',
     accords: ['Vanilla', 'Sweet', 'Powdery'],
+    collectionCategories: ['attraction', 'luxury', 'new_trending'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Makan malam romantis, acara malam, dan cuaca sejuk',
   },
   {
     id: 'w-18',
@@ -155,6 +265,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Raspberry, Peach & Golden Amber Magic',
     accords: ['Fruity', 'Sweet', 'Vanilla'],
+    collectionCategories: ['attraction', 'daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Aktivitas kuliah, jalan santai, dan momen spesial sore hari',
   },
   {
     id: 'w-19',
@@ -163,6 +276,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Fresh Orange Blossom & Tuberose Bouquet',
     accords: ['White Floral', 'Citrus', 'Fresh'],
+    collectionCategories: ['professional', 'daily_fresh', 'new_trending'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Kerja profesional, pertemuan bisnis, dan acara siang hari',
   },
   {
     id: 'w-20',
@@ -171,6 +287,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Romantic Rose & Soft Violet Charm',
     accords: ['Floral', 'Rose', 'Powdery'],
+    collectionCategories: ['professional', 'luxury'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Undangan resmi, acara keluarga, dan tampilan feminin anggun',
   },
   {
     id: 'w-21',
@@ -179,6 +298,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Clean White Musk & Earthy Botanicals',
     accords: ['Musky', 'Clean', 'Floral'],
+    collectionCategories: ['daily_fresh', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Sehabis mandi, kerja harian di ruangan tertutup, dan santai',
   },
   {
     id: 'w-22',
@@ -187,6 +309,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Sweet Vanilla Bakery & Butter Frosting',
     accords: ['Gourmand', 'Vanilla', 'Sweet'],
+    collectionCategories: ['attraction', 'new_trending'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Kencan santai di kafe, hangout sore, dan pencinta aroma manis',
   },
   {
     id: 'w-23',
@@ -195,6 +320,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Pure Morning Damask Rose Petals',
     accords: ['Rose', 'Floral', 'Fresh'],
+    collectionCategories: ['daily_fresh', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Kegiatan pagi hari, ibadah, dan suasana formal yang lembut',
   },
   {
     id: 'w-24',
@@ -203,6 +331,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Crisp Arctic Citrus & Cooling Breeze',
     accords: ['Fresh', 'Aquatic', 'Citrus'],
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Cuaca panas terik, olahraga ringan, dan kesegaran sepanjang hari',
   },
   {
     id: 'w-25',
@@ -211,6 +342,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Purple Passion Fruit & Shangri-la Peony',
     accords: ['Fruity', 'Floral', 'Fresh'],
+    collectionCategories: ['daily_fresh', 'attraction', 'viral_hits'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Segala suasana harian, kencan pertama, dan tampil percaya diri',
   },
   {
     id: 'w-26',
@@ -219,6 +353,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Women',
     tagline: 'Sun-Drenched Grapefruit & Tropical Lily',
     accords: ['Tropical', 'Citrus', 'Floral'],
+    collectionCategories: ['daily_fresh', 'new_trending'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Aktivitas outdoor siang hari, liburan, dan suasana segar ceria',
   },
 
   // --- MEN (18 Varian) ---
@@ -229,6 +366,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Dynamic Mint, Lemon & Amber Woods',
     accords: ['Aromatic', 'Fresh', 'Woody'],
+    collectionCategories: ['daily_fresh', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Kerja harian, mobilitas tinggi, dan kesegaran maskulin rapi',
   },
   {
     id: 'm-2',
@@ -237,6 +377,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Oceanic Lotus, Bergamot & Ambergris',
     accords: ['Aquatic', 'Citrus', 'Fresh'],
+    collectionCategories: ['daily_fresh', 'professional', 'viral_hits'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Kantor, kuliah, aktivitas siang hari, dan aman di segala cuaca',
   },
   {
     id: 'm-3',
@@ -245,6 +388,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Calabrian Bergamot & Sichuan Pepper',
     accords: ['Fresh Spicy', 'Amber', 'Citrus'],
+    collectionCategories: ['professional', 'attraction', 'viral_hits'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Meeting penting, kencan malam hari, dan tampil karismatik',
   },
   {
     id: 'm-4',
@@ -253,6 +399,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Crisp Mandarin, Lavender & Sandalwood',
     accords: ['Citrus', 'Woody', 'Aromatic'],
+    collectionCategories: ['daily_fresh', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Kerja kantoran, berkendara, dan rutinitas harian yang rapi',
   },
   {
     id: 'm-5',
@@ -261,6 +410,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Futuristic Creamy Lavender & Lemon Zest',
     accords: ['Vanilla', 'Lavender', 'Citrus'],
+    collectionCategories: ['attraction', 'new_trending'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Hangout malam, kencan modern, dan acara sosial anak muda',
   },
   {
     id: 'm-6',
@@ -269,6 +421,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Classic Bergamot, Pineapple & Oakmoss',
     accords: ['Fruity', 'Aromatic', 'Woody'],
+    collectionCategories: ['professional', 'luxury'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Presentasi bisnis, setelan kemeja rapi, dan acara formal',
   },
   {
     id: 'm-7',
@@ -277,6 +432,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Sporty Grapefruit, Melon & Vetiver',
     accords: ['Sporty', 'Citrus', 'Fresh'],
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Olahraga, gym, aktivitas lapangan, dan keseharian aktif',
   },
   {
     id: 'm-8',
@@ -285,6 +443,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Invigorating Mint, Seagrass & Ginger',
     accords: ['Aromatic', 'Green', 'Fresh'],
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Aktivitas outdoor, olahraga pagi, dan cuaca tropis panas',
   },
   {
     id: 'm-9',
@@ -293,6 +454,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Deep Ocean Posidonia & Mineral Amber',
     accords: ['Marine', 'Citrus', 'Aquatic'],
+    collectionCategories: ['daily_fresh', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Kerja seharian, aktivitas luar ruang, dan kesan segar tenang',
   },
   {
     id: 'm-10',
@@ -301,6 +465,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Crisp Wave, Rosemary & Cedarwood',
     accords: ['Aquatic', 'Aromatic', 'Fresh'],
+    collectionCategories: ['daily_fresh', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Ngantor harian, sehabis mandi pagi, dan gaya kasual bersih',
   },
   {
     id: 'm-11',
@@ -309,6 +476,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Mysterious Dark Wood & Spiced Suede',
     accords: ['Woody', 'Warm Spicy', 'Smoky'],
+    collectionCategories: ['attraction', 'luxury'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Acara malam hari, makan malam formal, dan suasana maskulin hangat',
   },
   {
     id: 'm-12',
@@ -317,6 +487,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Kumquat, Pink Pepper & White Cedar',
     accords: ['Citrus', 'Fresh Spicy', 'Woody'],
+    collectionCategories: ['daily_fresh', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Produktivitas kerja pagi hingga sore dan aktivitas dinamis',
   },
   {
     id: 'm-13',
@@ -325,6 +498,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Crispy Apple, Coriander & Frankincense',
     accords: ['Warm Spicy', 'Vanilla', 'Woody'],
+    collectionCategories: ['professional', 'attraction'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Smart-casual kantor, ngopi sore, dan kencan santai',
   },
   {
     id: 'm-14',
@@ -333,6 +509,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Earthy Bamboo & Marine Pine Mist',
     accords: ['Woody', 'Aquatic', 'Aromatic'],
+    collectionCategories: ['daily_fresh', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Aktivitas kerja lapangan maupun ruang kantor dengan kesan kalem',
   },
   {
     id: 'm-15',
@@ -341,6 +520,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Tropical Frangipani & Island Breeze',
     accords: ['Tropical', 'Floral', 'Fresh'],
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Suasana santai akhir pekan, liburan, dan pemakaian harian rileks',
   },
   {
     id: 'm-16',
@@ -349,6 +531,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Lush Green Lotus Leaves & Yuzu Water',
     accords: ['Green', 'Aquatic', 'Citrus'],
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Cuaca siang yang terik, kesegaran alami harian, dan kuliah',
   },
   {
     id: 'm-17',
@@ -357,6 +542,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Sophisticated Tobacco Leaf & Nutmeg',
     accords: ['Tobacco', 'Warm Spicy', 'Woody'],
+    collectionCategories: ['luxury', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Jamuan bisnis malam, jas formal, dan kesan pria matang berwibawa',
   },
   {
     id: 'm-18',
@@ -365,6 +553,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Men',
     tagline: 'Electrifying Peach, Coriander & Patchouli',
     accords: ['Patchouli', 'White Floral', 'Spicy'],
+    collectionCategories: ['attraction', 'new_trending'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Pesta malam, kencan intens, dan tampil beda mencuri perhatian',
   },
 
   // --- POWDERY (8 Varian) ---
@@ -375,6 +566,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Powdery',
     tagline: 'Classic Red Rosewater & Gentle Petals',
     accords: ['Rose', 'Powdery', 'Floral'],
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Keseharian di rumah, ibadah, dan aroma lembut menenangkan',
   },
   {
     id: 'p-2',
@@ -383,6 +577,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Powdery',
     tagline: 'Calming French Lavender & Herbal Dew',
     accords: ['Lavender', 'Herbal', 'Aromatic'],
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Waktu istirahat, relaksasi sore, dan aktivitas santai harian',
   },
   {
     id: 'p-3',
@@ -391,6 +588,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Powdery',
     tagline: 'Creamy Shower Blossom & Pure Soft Musk',
     accords: ['Soapy', 'Floral', 'Fresh'],
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Wangi bersih sehabis mandi sepanjang hari untuk aktivitas kasual',
   },
   {
     id: 'p-4',
@@ -399,6 +599,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Powdery',
     tagline: 'Luxurious Fresh Laundry & Garden Bloom',
     accords: ['Clean', 'Floral', 'Fresh'],
+    collectionCategories: ['daily_fresh', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Pakaian kerja rapi, kuliah, dan kesan bersih segar seharian',
   },
   {
     id: 'p-5',
@@ -407,6 +610,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Powdery',
     tagline: 'Warm Cozy Cotton & Sweet Vanilla Cloud',
     accords: ['Soft', 'Sweet', 'Cozy'],
+    collectionCategories: ['daily_fresh', 'attraction', 'new_trending'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Suasana dekat yang nyaman, ruangan ber-AC, dan harian lembut',
   },
   {
     id: 'p-6',
@@ -415,6 +621,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Powdery',
     tagline: 'Gentle Chamomile & Clean Baby Freshness',
     accords: ['Clean', 'Floral', 'Powdery'],
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Pemakaian harian ringan yang lembut dan tidak menyengat',
   },
   {
     id: 'p-7',
@@ -423,6 +632,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Powdery',
     tagline: 'Timeless Aldehydes, Ylang-Ylang & Iris',
     accords: ['Aldehydic', 'Powdery', 'Floral'],
+    collectionCategories: ['luxury', 'professional'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Gala dinner, resepsi resmi, dan gaya klasik berkelas tinggi',
   },
   {
     id: 'p-8',
@@ -431,6 +643,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Powdery',
     tagline: 'Soft Soothing Baby Powder & Cananga',
     accords: ['Powdery', 'Soft', 'Clean'],
+    collectionCategories: ['daily_fresh', 'viral_hits'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Aktivitas santai harian, setelah mandi, dan wangi bedak lembut',
   },
 
   // --- UNISEX (16 Varian) ---
@@ -441,6 +656,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Addictive Black Coffee, Vanilla & Cedar',
     accords: ['Coffee', 'Vanilla', 'Sweet'],
+    collectionCategories: ['attraction', 'luxury', 'viral_hits'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Kencan malam hari, nongkrong di lounge/kafe, dan acara spesial',
   },
   {
     id: 'u-2',
@@ -449,6 +667,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Luminous Saffron, Ambergris & Cedarwood',
     accords: ['Amber', 'Woody', 'Warm Spicy'],
+    collectionCategories: ['luxury', 'attraction', 'viral_hits'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Pesta pernikahan, acara VIP, dan meninggalkan jejak mewah',
   },
   {
     id: 'u-3',
@@ -457,6 +678,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Juicy Pineapple, Passionfruit & Freesia',
     accords: ['Fruity', 'Sweet', 'Tropical'],
+    collectionCategories: ['daily_fresh'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Aktivitas pagi-siang yang aktif, kuliah, dan jalan santai',
   },
   {
     id: 'u-4',
@@ -465,6 +689,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Cool Waters, Rain-Kissed Daisy & Freesia',
     accords: ['Aquatic', 'Floral', 'Fresh'],
+    collectionCategories: ['daily_fresh', 'new_trending'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Kesegaran harian sehabis mandi dan cuaca siang yang hangat',
   },
   {
     id: 'u-5',
@@ -473,6 +700,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Opulent Amber, Clove, Orange & Tonka',
     accords: ['Warm Spicy', 'Amber', 'Citrus'],
+    collectionCategories: ['professional', 'luxury'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Pertemuan eksekutif, busana formal, dan perayaan bergengsi',
   },
   {
     id: 'u-6',
@@ -481,6 +711,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Fizzy Golden Champagne & Sweet Peach Bellini',
     accords: ['Sparkling', 'Fruity', 'Sweet'],
+    collectionCategories: ['attraction', 'luxury', 'new_trending'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Pesta perayaan, makan malam spesial, dan tampil glamor ceria',
   },
   {
     id: 'u-7',
@@ -489,6 +722,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Flirty Red Fruits & Velvet Amber Musk',
     accords: ['Fruity', 'Musky', 'Sensual'],
+    collectionCategories: ['attraction'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Momen romantis berdua dan acara kencan malam hari',
   },
   {
     id: 'u-8',
@@ -497,6 +733,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Regal Golden Saffron, Amber & Sweet Oud',
     accords: ['Warm Spicy', 'Amber', 'Woody'],
+    collectionCategories: ['luxury', 'viral_hits', 'new_trending'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Acara besar, kondangan VIP, dan tampil eksklusif berwibawa',
   },
   {
     id: 'u-9',
@@ -505,6 +744,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Exotic Desert Spices & Frankincense Smoke',
     accords: ['Spicy', 'Smoky', 'Oriental'],
+    collectionCategories: ['luxury'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Acara keagamaan besar, malam hari, dan silaturahmi resmi',
   },
   {
     id: 'u-10',
@@ -513,6 +755,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Deep Agarwood & Traditional Bukhoor Essence',
     accords: ['Oud', 'Woody', 'Balsamic'],
+    collectionCategories: ['luxury'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Majelis resmi, ibadah Jumat/Hari Raya, dan acara malam mewah',
   },
   {
     id: 'u-11',
@@ -521,6 +766,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Royal Smoked Oud, Vanilla Sugar & Herbs',
     accords: ['Oud', 'Vanilla', 'Warm Spicy'],
+    collectionCategories: ['luxury', 'viral_hits'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Acara spesial malam hari, resepsi, dan pencinta oud manis hangat',
   },
   {
     id: 'u-12',
@@ -529,6 +777,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Golden Honeycomb, Caramel & Warm Orange',
     accords: ['Caramel', 'Sweet', 'Citrus'],
+    collectionCategories: ['daily_fresh', 'luxury'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Silaturahmi keluarga, kegiatan harian rapi, dan suasana hangat',
   },
   {
     id: 'u-13',
@@ -537,6 +788,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Serene Sacred Floral & Heavenly White Musk',
     accords: ['Floral', 'Musky', 'Spiritual'],
+    collectionCategories: ['daily_fresh', 'luxury'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Ibadah harian, pengajian, dan ketenangan sepanjang hari',
   },
   {
     id: 'u-14',
@@ -545,6 +799,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Crisp Mountain Stream, Green Tea & Citrus',
     accords: ['Aquatic', 'Green', 'Metallic'],
+    collectionCategories: ['daily_fresh', 'professional'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Bekerja di kantor, aktivitas siang hari, dan kesan bersih modern',
   },
   {
     id: 'u-15',
@@ -553,6 +810,9 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Authentic Deep Deer Musk & Sacred Earth',
     accords: ['Musky', 'Earthy', 'Animalic'],
+    collectionCategories: ['luxury'],
+    pricePerMl: 4000,
+    usageRecommendation: 'Ibadah khusyuk, acara keagamaan, dan momen sakral istimewa',
   },
   {
     id: 'u-16',
@@ -561,5 +821,8 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     categoryLabel: 'Unisex',
     tagline: 'Charismatic Leather, Vetiver & Dark Amber',
     accords: ['Leather', 'Woody', 'Warm Spicy'],
+    collectionCategories: ['professional', 'luxury', 'new_trending'],
+    pricePerMl: 3000,
+    usageRecommendation: 'Pertemuan formal, jamuan malam, dan karakter maskulin tegas',
   },
 ];

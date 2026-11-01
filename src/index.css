@@ -1,31 +1,93 @@
 @import "tailwindcss";
 
+:root {
+  --font-heading: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Refined Boutique Typography Scale (Compact Mobile-First max-w-md Frame) */
+  --text-xs: 0.6875rem;    /* 11px: micro captions, nav labels, compact badges */
+  --text-sm: 0.75rem;      /* 12px: secondary metadata, category subtitles */
+  --text-base: 0.8125rem;  /* 13px: compact card prose, aroma notes, UI labels */
+  --text-lg: 0.9375rem;    /* 15px: mobile app-bar titles, product card titles */
+  --text-xl: 1.0625rem;    /* 17px: section headings & detail titles */
+  --text-2xl: 1.1875rem;   /* 19px: spotlight hero titles */
+  --text-display: clamp(1.25rem, 3.5vw, 1.5rem); /* 20–24px: primary display emphasis */
+
+  --leading-heading: 1.22;
+  --leading-body: 1.48;
+}
+
+@theme {
+  --font-sans: var(--font-body);
+  --font-display: var(--font-heading);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-body);
+}
+
 @layer base {
+  html {
+    font-family: var(--font-body);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-body);
+    font-weight: 400;
+    line-height: var(--leading-body);
     background-color: #0e1017;
     color: #f8fafc;
   }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    line-height: var(--leading-heading);
+    letter-spacing: -0.015em;
+  }
+
+  button,
+  input,
+  textarea,
+  select,
+  optgroup,
+  option,
+  table,
+  th,
+  td {
+    font-family: var(--font-body);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    font-family: var(--font-body);
+    font-weight: 400;
+  }
 }
 
-.font-display {
-  font-family: 'Cinzel', serif;
-}
-
-.font-cinzel {
-  font-family: 'Cinzel', serif;
-}
-
+.font-heading,
+.font-display,
+.font-cinzel,
 .font-playfair {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
 }
 
-.font-jakarta {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-}
-
+.font-body,
+.font-jakarta,
 .font-cormorant {
-  font-family: 'Cormorant Garamond', Garamond, serif;
+  font-family: var(--font-body);
+}
+
+.font-mono {
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Hide scrollbars for smooth native app touch feel */
@@ -47,7 +109,8 @@
 .champagne-gold-btn {
   background: linear-gradient(135deg, #E2C27F 0%, #C5A059 60%, #9A742F 100%);
   color: #090a0f;
-  font-weight: 800;
+  font-family: var(--font-body);
+  font-weight: 600;
 }
 
 .gold-border {
@@ -501,5 +564,21 @@
   animation: pedestalGlowPulse 4.5s ease-in-out infinite;
 }
 
+@keyframes sinkiAmberBlink {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(0.85);
+    box-shadow: 0 0 3px rgba(251, 191, 36, 0.35);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.9), 0 0 18px rgba(245, 158, 11, 0.45);
+  }
+}
 
-
+.sinki-amber-dot {
+  animation: sinkiAmberBlink 1.8s ease-in-out infinite;
+  will-change: opacity, transform;
+}

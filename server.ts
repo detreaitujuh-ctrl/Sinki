@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const DEFAULT_OWNER_PIN = (process.env.OWNER_PIN || '1995').trim();
+const DEFAULT_OWNER_PIN = (process.env.OWNER_PIN || '').trim() || '1995';
 const PIN_FILE = path.join(path.resolve(__dirname, 'data'), 'owner_pin.json');
 
 function getOwnerPin(): string {
@@ -111,6 +111,7 @@ const TICKER_FILE = path.join(DATA_DIR, 'ticker_config.json');
 const PERFUMES_FILE = path.join(DATA_DIR, 'perfumes_catalog.json');
 const SOCIAL_FILE = path.join(DATA_DIR, 'social_links.json');
 const TOP_PERFUMES_FILE = path.join(DATA_DIR, 'top_perfumes.json');
+const ARTICLES_FILE = path.join(DATA_DIR, 'articles.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -202,13 +203,17 @@ function getTickerConfig(): { text: string; font: string; updatedAt?: string } {
 const INITIAL_4_REVIEWS: any[] = [];
 
 // Konfigurasi Supabase Storage (Metode A: Upsert/Overwrite Otomatis - Server Side Only)
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://tsxclttisxnmvdkwziqx.supabase.co';
-const rawSupabaseKey = process.env.SUPABASE_KEY;
+const rawSupabaseUrl = (process.env.SUPABASE_URL || '').trim();
+const SUPABASE_URL =
+  rawSupabaseUrl && rawSupabaseUrl.startsWith('http')
+    ? rawSupabaseUrl
+    : 'https://tsxclttisxnmvdkwziqx.supabase.co';
+const rawSupabaseKey = (process.env.SUPABASE_KEY || '').trim();
 const SUPABASE_KEY =
-  rawSupabaseKey && !rawSupabaseKey.includes('YOUR_SUPABASE_KEY')
+  rawSupabaseKey && !rawSupabaseKey.includes('YOUR_SUPABASE_KEY') && rawSupabaseKey.length > 20
     ? rawSupabaseKey
     : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
-const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'sinki-media';
+const SUPABASE_BUCKET = (process.env.SUPABASE_BUCKET || '').trim() || 'sinki-media';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -329,6 +334,7 @@ interface AssetsData {
   top11?: Record<string, string>;
   heroBottles?: string[];
   heroStageEffect?: string;
+  heroStageEnabled?: boolean;
   heroMediaType?: 'image' | 'video';
   heroVideoUrl?: string | null;
   heroVideoPoster?: string | null;
@@ -378,6 +384,7 @@ const getAssets = (): AssetsData => {
         top11: parsed.top11 && typeof parsed.top11 === 'object' ? parsed.top11 : {},
         heroBottles: Array.isArray(parsed.heroBottles) ? parsed.heroBottles : [],
         heroStageEffect: parsed.heroStageEffect || 'royal-elevation',
+        heroStageEnabled: Boolean(parsed.heroStageEnabled),
         heroMediaType: resolvedMediaType,
         heroVideoUrl: resolvedVideoUrl,
         heroVideoPoster: resolvedPoster,
@@ -637,6 +644,78 @@ app.post('/api/owner/update-social-links', async (req, res) => {
   });
 });
 
+// GET & POST Articles (Panduan Aroma & Tips)
+const DEFAULT_ARTICLES = [
+  {
+    id: 'art-1',
+    title: '3 Titik Semprot Rahasia Agar Parfum Tahan 12+ Jam',
+    category: 'tips',
+    categoryLabel: 'Tips Perawatan',
+    readTime: '2 mnt baca',
+    content:
+      'Semprotkan parfum pada titik denyut nadi yang hangat: kedua sisi leher, pergelangan tangan bagian dalam, dan belakang telinga. Untuk ketahanan ekstra, oleskan sedikit lotion atau pelembap tanpa aroma sebelum menyemprotkan SINKI Eau de Parfum.',
+    date: '12 Okt 2026',
+    author: 'SINKI Perfumer',
+  },
+  {
+    id: 'art-2',
+    title: 'Perbedaan Eau de Parfum (EDP) vs Extrait de Parfum',
+    category: 'story',
+    categoryLabel: 'Edukasi Aroma',
+    readTime: '3 mnt baca',
+    content:
+      'Eau de Parfum (EDP) memiliki konsentrasi bibit wewangian 15-20% dengan proyeksi aroma segar yang kuat. Sedangkan Extrait de Parfum memiliki konsentrasi bibit hingga 30-40% yang menghasilkan jejak aroma lebih dalam, pekat, dan bertahan seharian penuh tanpa perlu semprot ulang.',
+    date: '10 Okt 2026',
+    author: 'SINKI Perfumer',
+  },
+  {
+    id: 'art-3',
+    title: 'Rekomendasi Parfum Pria Terbaik untuk Acara Malam & Kencan',
+    category: 'men',
+    categoryLabel: 'Panduan Pria',
+    readTime: '2 mnt baca',
+    content:
+      'Untuk suasana malam hari yang elegan dan berkarisma, pilihlah varian dengan sentuhan Warm Amber, Woody, dan Vanilla seperti Baccarat Rouge 540, Dior Sauvage Elixir, atau Creed Aventus. Karakter aromanya meninggalkan jejak tak terlupakan bagi lawan bicara.',
+    date: '08 Okt 2026',
+    author: 'SINKI Perfumer',
+  },
+];
+
+app.get('/api/articles', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  if (fs.existsSync(ARTICLES_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(ARTICLES_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return res.json(data);
+    } catch {}
+  }
+  return res.json(DEFAULT_ARTICLES);
+});
+
+app.post('/api/owner/update-articles', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+  const { articles } = req.body;
+  if (!Array.isArray(articles)) {
+    return res.status(400).json({ error: 'Data artikel tidak valid!' });
+  }
+  try {
+    fs.writeFileSync(ARTICLES_FILE, JSON.stringify(articles, null, 2), 'utf-8');
+    await supabase.storage.from(SUPABASE_BUCKET).upload('articles.json', JSON.stringify(articles, null, 2), {
+      contentType: 'application/json',
+      upsert: true,
+    });
+  } catch (err) {
+    console.warn('Notice syncing articles to Supabase:', err);
+  }
+  return res.json({
+    success: true,
+    message: 'Konten panduan aroma berhasil disimpan ke cloud!',
+    articles,
+  });
+});
+
 // POST Check Store & Hotline Links
 app.post('/api/system/check-links', (_req, res) => {
   const currentSocial = getSocialLinks();
@@ -711,6 +790,7 @@ app.post('/api/owner/update-assets', async (req, res) => {
     top11,
     heroBottles,
     heroStageEffect,
+    heroStageEnabled,
     heroMediaType,
     heroVideoUrl,
     heroVideoPoster,
@@ -726,6 +806,7 @@ app.post('/api/owner/update-assets', async (req, res) => {
   const newTop11 = { ...(existing.top11 || {}) };
   let newHeroBottles = Array.isArray(existing.heroBottles) ? [...existing.heroBottles] : [];
   let newHeroStageEffect = existing.heroStageEffect || 'royal-elevation';
+  let newHeroStageEnabled = Boolean(existing.heroStageEnabled);
   let newHeroMediaType = existing.heroMediaType || 'image';
   let newHeroVideoUrl = existing.heroVideoUrl || null;
   let newHeroVideoPoster = existing.heroVideoPoster || null;
@@ -794,6 +875,10 @@ app.post('/api/owner/update-assets', async (req, res) => {
     newHeroStageEffect = heroStageEffect;
   }
 
+  if (typeof heroStageEnabled === 'boolean') {
+    newHeroStageEnabled = heroStageEnabled;
+  }
+
   if (heroMediaType !== undefined) {
     newHeroMediaType = heroMediaType === 'video' ? 'video' : 'image';
   }
@@ -830,6 +915,7 @@ app.post('/api/owner/update-assets', async (req, res) => {
     top11: newTop11,
     heroBottles: newHeroBottles,
     heroStageEffect: newHeroStageEffect,
+    heroStageEnabled: newHeroStageEnabled,
     heroMediaType: newHeroMediaType,
     heroVideoUrl: newHeroVideoUrl,
     heroVideoPoster: newHeroVideoPoster,

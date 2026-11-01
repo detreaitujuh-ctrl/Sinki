@@ -87,14 +87,14 @@ export const PerfumeBottleVisual: React.FC<PerfumeBottleVisualProps> = ({
               />
 
               {/* Bottle Emblem & Label */}
-              <div className="relative z-10 w-full mt-auto mb-auto bg-[#0b0d13]/85 border border-amber-400/40 rounded-xl p-2 text-center shadow-lg">
-                <span className="font-mono text-[7px] tracking-[0.25em] text-amber-300 font-bold uppercase block">
+              <div className="relative z-10 w-full mt-auto mb-auto bg-[#0b0d13]/85 border border-amber-400/40 rounded-xl p-1.5 text-center shadow-lg">
+                <span className="font-heading text-[8px] tracking-[0.16em] text-amber-300 font-bold block leading-none">
                   SINKI
                 </span>
-                <span className="font-display text-[9px] font-extrabold text-white leading-tight block truncate mt-0.5">
+                <span className="font-heading text-[10px] font-semibold text-white leading-tight block truncate mt-0.5">
                   {item.name}
                 </span>
-                <span className="text-[7px] text-amber-200/70 font-sans block mt-0.5">
+                <span className="font-body text-[8px] text-amber-200/80 font-normal block mt-0.5 leading-none truncate">
                   {item.type}
                 </span>
               </div>

@@ -191,10 +191,10 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
           /* TAMPILAN BAWAAN JIKA BELUM ADA FOTO YANG DIUNGGAH */
           <div className="p-3 bg-white flex flex-col items-center justify-center text-center">
             <div className="pb-1 text-center">
-              <span className="font-display font-black text-sm tracking-widest text-slate-900 uppercase block">
-                QRIS RESMI SINKI
+              <span className="font-heading font-bold text-sm tracking-[0.04em] text-slate-900 block leading-tight">
+                QRIS Resmi SINKI
               </span>
-              <span className="text-[8.5px] text-slate-500 font-mono block">
+              <span className="font-body text-xs tabular-nums text-slate-500 font-normal block leading-snug">
                 NMID: ID1026602183968 • A01
               </span>
             </div>
@@ -207,7 +207,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
               />
             </div>
 
-            <span className="text-[9px] text-slate-400 font-medium mt-1 block">
+            <span className="font-body text-xs text-slate-500 font-normal mt-1 block leading-[1.4]">
               Scan dengan BCA, Mandiri, BRI, GoPay, OVO, Dana & ShopeePay
             </span>
           </div>
@@ -215,11 +215,11 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
 
         {/* Footer Total Tagihan (Kecil & Rapi) */}
         {amount && amount > 0 && (
-          <div className="bg-[#E51B24] text-white px-3 py-1.5 flex items-center justify-between text-xs font-bold shadow-inner">
-            <span className="text-[9px] uppercase tracking-wider font-semibold">
+          <div className="bg-[#E51B24] text-white px-3.5 py-2 flex items-center justify-between font-body shadow-inner">
+            <span className="text-xs font-medium leading-tight">
               Total Pembayaran:
             </span>
-            <span className="font-display font-black text-xs bg-black/20 px-2 py-0.5 rounded-md">
+            <span className="font-body font-semibold text-sm tabular-nums bg-black/20 px-2.5 py-0.5 rounded-md leading-tight">
               Rp {amount.toLocaleString('id-ID')}
             </span>
           </div>
@@ -227,17 +227,17 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
       </div>
 
       {/* 2. KETERANGAN & TOMBOL KIRIM BUKTI PEMBAYARAN LEWAT WHATSAPP (UKURAN LEBIH KECIL & RAPI) */}
-      <div className="p-2.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 max-w-[310px] mx-auto text-center space-y-1.5 shadow-md">
-        <p className="text-[9.5px] text-slate-300 leading-snug">
+      <div className="p-2.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 max-w-[310px] mx-auto text-center space-y-2 shadow-md">
+        <p className="font-body text-xs text-slate-300 font-normal leading-[1.45]">
           Setelah transfer, kirim bukti bayar lewat WhatsApp agar pesanan segera diproses.
         </p>
 
         <button
           type="button"
           onClick={handleSendProof}
-          className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-sm cursor-pointer"
+          className="w-full py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-body font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-sm cursor-pointer"
         >
-          <MessageCircle size={13} />
+          <MessageCircle size={14} className="shrink-0" />
           <span>Kirim Bukti Bayar via WhatsApp</span>
         </button>
       </div>
@@ -255,8 +255,8 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
               className="relative w-full max-w-xs rounded-3xl bg-[#12141e] border border-white/15 p-5 shadow-2xl space-y-4 text-center cursor-default"
             >
               {/* Header Modal */}
-              <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                <span className="font-display font-extrabold text-xs text-white">
+              <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                <span className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                   Unggah Foto QRIS Asli SINKI
                 </span>
                 <button
@@ -271,7 +271,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
               {!isPinVerified ? (
                 /* Form Verifikasi PIN Pemilik */
                 <form onSubmit={handleVerifyOwnerPin} className="space-y-3">
-                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                  <p className="font-body text-xs text-slate-300 font-normal leading-[1.45]">
                     Masukkan PIN Pemilik Toko untuk memasang foto barcode QRIS resmi toko Anda:
                   </p>
                   <input
@@ -284,14 +284,14 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
                       setOwnerPin(e.target.value);
                       setPinError('');
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/15 text-center text-sm font-mono tracking-widest text-white focus:outline-none focus:border-[#DFB76C]"
+                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/15 text-center text-base sm:text-sm font-body font-medium tabular-nums tracking-[0.15em] text-white focus:outline-none focus:border-[#DFB76C]"
                   />
                   {pinError && (
-                    <p className="text-[10px] text-red-400 font-medium">{pinError}</p>
+                    <p className="font-body text-xs text-red-400 font-medium">{pinError}</p>
                   )}
                   <button
                     type="submit"
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-black text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-black/30"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-sm transition-all active:scale-95 shadow-md shadow-black/30"
                   >
                     Buka Akses Unggah
                   </button>
@@ -299,7 +299,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
               ) : (
                 /* Form Pilih File Foto QRIS dari Galeri */
                 <div className="space-y-3">
-                  <p className="text-[10.5px] text-slate-300 leading-relaxed">
+                  <p className="font-body text-xs text-slate-300 font-normal leading-[1.45]">
                     Pilih file foto atau tangkapan layar (screenshot) barcode QRIS resmi toko Anda dari galeri HP:
                   </p>
 
@@ -315,7 +315,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
                     type="button"
                     disabled={isUploading}
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-body font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-amber-500/20 disabled:opacity-50"
                   >
                     <Upload size={15} />
                     <span>{isUploading ? 'Menyimpan Foto...' : 'Pilih File Foto QRIS Asli'}</span>
@@ -325,7 +325,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
                     <button
                       type="button"
                       onClick={handleResetQris}
-                      className="w-full py-2 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-slate-400 hover:text-red-300 text-[10px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                      className="w-full py-2 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-slate-300 hover:text-red-300 font-body text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <RotateCcw size={12} />
                       <span>Kembalikan ke Bawaan</span>

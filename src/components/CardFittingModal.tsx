@@ -163,13 +163,13 @@ export const CardFittingModal: React.FC<CardFittingModalProps> = ({
             className="relative w-full max-w-sm rounded-3xl bg-[#10121d] border border-white/15 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.95)] space-y-3.5 text-center cursor-default max-h-[94vh] overflow-y-auto no-scrollbar"
           >
             {/* Header Modal */}
-            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+            <div className="flex items-center justify-between pb-2.5 border-b border-white/10 font-body">
               <div className="text-left">
-                <h3 className="font-display font-bold text-xs text-white flex items-center gap-1.5">
-                  <Maximize2 size={14} className="text-[#DFB76C]" />
+                <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25] flex items-center gap-1.5">
+                  <Maximize2 size={15} className="text-[#DFB76C]" />
                   <span>{title}</span>
                 </h3>
-                <span className="text-[9.5px] text-slate-400 block mt-0.5">
+                <span className="text-xs text-slate-400 font-normal block mt-0.5 leading-[1.4]">
                   {subtitle || 'Atur perbesar/perkecil & geser agar pas di kartu'}
                 </span>
               </div>
@@ -211,13 +211,13 @@ export const CardFittingModal: React.FC<CardFittingModalProps> = ({
                 {/* Panduan Garis Aman Judul SINKI untuk Foto Hero Beranda */}
                 {targetType === 'hero' && (
                   <div className="absolute top-0 inset-x-0 h-14 bg-gradient-to-b from-black/90 via-black/70 to-transparent border-b border-[#DFB76C]/50 pointer-events-none z-20 flex flex-col items-center justify-center px-2 pt-1 shadow-md">
-                    <span className="text-[10px] font-display font-black text-[#DFB76C] tracking-[0.2em] uppercase drop-shadow-sm">
+                    <span className="text-[11px] font-heading font-bold text-[#DFB76C] tracking-[0.16em] uppercase leading-tight drop-shadow-sm">
                       SINKI
                     </span>
-                    <span className="text-[7px] text-zinc-300 tracking-widest uppercase -mt-0.5 font-bold">
-                      EAU DE PARFUM (AREA TEKS)
+                    <span className="text-[9px] font-body text-zinc-300 tracking-[0.06em] font-medium leading-tight">
+                      Eau de Parfum (Area Teks)
                     </span>
-                    <span className="text-[7.5px] text-emerald-300 font-semibold mt-0.5 bg-black/70 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                    <span className="text-[9.5px] font-body text-emerald-300 font-medium mt-0.5 bg-black/70 px-2 py-0.5 rounded-full border border-emerald-500/40 leading-none">
                       ↓ Pas-kan botol di bawah garis ini ↓
                     </span>
                   </div>
@@ -237,35 +237,35 @@ export const CardFittingModal: React.FC<CardFittingModalProps> = ({
                 />
 
                 {/* Indikator Sentuh & Geser */}
-                <div className="absolute bottom-2 inset-x-2 z-20 flex items-center justify-center gap-1.5 bg-black/80 backdrop-blur-xs py-1 px-2 rounded-lg text-[8.5px] text-amber-300 font-mono pointer-events-none border border-amber-500/25">
-                  <Move size={10} />
+                <div className="absolute bottom-2 inset-x-2 z-20 flex items-center justify-center gap-1.5 bg-black/80 backdrop-blur-xs py-1 px-2 rounded-lg font-body text-xs text-amber-300 font-medium pointer-events-none border border-amber-500/25">
+                  <Move size={11} />
                   <span>Sentuh & geser foto untuk atur posisi</span>
                 </div>
               </div>
             </div>
 
             {/* PRESET CEPAT & BILAH KONTROL PERBESAR / PERKECIL (ZOOM) */}
-            <div className="p-3 rounded-2xl bg-[#090b14] border border-white/10 space-y-2.5">
+            <div className="p-3 rounded-2xl bg-[#090b14] border border-white/10 space-y-2.5 font-body">
               {/* Tombol Preset Cepat */}
-              <div className="flex items-center justify-between text-[10px]">
+              <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={handleFitCenter}
-                    className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 text-slate-300 hover:text-amber-200 text-[9.5px] font-bold border border-white/10 transition-all active:scale-95"
+                    className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 text-slate-300 hover:text-amber-200 text-xs font-medium border border-white/10 transition-all active:scale-95"
                   >
                     Pas di Tengah
                   </button>
                   <button
                     type="button"
                     onClick={handleFillBox}
-                    className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 text-slate-300 hover:text-amber-200 text-[9.5px] font-bold border border-white/10 transition-all active:scale-95"
+                    className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 text-slate-300 hover:text-amber-200 text-xs font-medium border border-white/10 transition-all active:scale-95"
                   >
                     Isi Penuh Kartu
                   </button>
                 </div>
 
-                <span className="font-mono text-amber-400 font-bold text-xs">
+                <span className="tabular-nums text-amber-400 font-semibold text-xs">
                   {Math.round(zoom * 100)}%
                 </span>
               </div>
@@ -312,20 +312,20 @@ export const CardFittingModal: React.FC<CardFittingModalProps> = ({
             </div>
 
             {/* Action Buttons: Batal vs Pas! Pasang ke Kartu Ini */}
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-1 font-body">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs transition-colors active:scale-95"
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-medium text-sm transition-colors active:scale-95"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={handleApply}
-                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-md shadow-black/30"
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-semibold text-sm flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-md shadow-black/30"
               >
-                <Check size={15} className="stroke-[3]" />
+                <Check size={15} className="stroke-[2.5]" />
                 <span>Pas! Pasang ke Kartu</span>
               </button>
             </div>

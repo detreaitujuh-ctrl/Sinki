@@ -9,7 +9,15 @@
       "Floral",
       "Fruity",
       "Sweet"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "attraction",
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas harian, jalan santai sore, dan kencan romantis"
   },
   {
     "id": "w-2",
@@ -21,7 +29,14 @@
       "Fruity",
       "Warm",
       "Floral"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan malam hari, hangout spesial, dan momen memikat"
   },
   {
     "id": "w-3",
@@ -33,7 +48,15 @@
       "Sweet",
       "Floral",
       "Intense"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "luxury",
+      "viral_hits"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Pesta malam, makan malam romantis, dan acara eksklusif"
   },
   {
     "id": "w-4",
@@ -45,7 +68,14 @@
       "Fresh",
       "Floral",
       "Light"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pemakaian sehari-hari, kuliah, dan suasana santai"
   },
   {
     "id": "w-5",
@@ -57,7 +87,15 @@
       "Citrus",
       "Green",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional",
+      "new_trending"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Bekerja di kantor, meeting profesional, dan aktivitas pagi"
   },
   {
     "id": "w-6",
@@ -69,7 +107,15 @@
       "Floral",
       "Amber",
       "Sensual"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "viral_hits",
+      "new_trending"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan spesial, hangout sore hingga malam hari"
   },
   {
     "id": "w-7",
@@ -81,7 +127,14 @@
       "Vanilla",
       "Salty",
       "White Floral"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "luxury"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Acara formal malam hari, resepsi, dan momen berkelas"
   },
   {
     "id": "w-8",
@@ -93,7 +146,15 @@
       "Lavender",
       "Citrus",
       "Vanilla"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional",
+      "luxury",
+      "viral_hits"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Rapat eksekutif, kerja kantoran rapi, dan acara formal"
   },
   {
     "id": "w-9",
@@ -105,7 +166,14 @@
       "Fruity",
       "Sweet",
       "Patchouli"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "luxury"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Kencan romantis, perayaan spesial, dan acara malam"
   },
   {
     "id": "w-10",
@@ -117,7 +185,14 @@
       "Fruity",
       "Sweet",
       "Citrus"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Hangout ceria bersama teman dan aktivitas luar ruangan"
   },
   {
     "id": "w-11",
@@ -129,7 +204,14 @@
       "Cherry",
       "Sweet",
       "Fruity"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas kasual harian, kencan siang, dan suasana santai"
   },
   {
     "id": "w-12",
@@ -141,7 +223,14 @@
       "Tropical",
       "Fruity",
       "Floral"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Liburan, jalan sore, dan momen kencan kasual"
   },
   {
     "id": "w-13",
@@ -153,7 +242,13 @@
       "Caramel",
       "Fruity",
       "Vanilla"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pertemuan dekat, kencan sore, dan acara semi-formal"
   },
   {
     "id": "w-14",
@@ -165,7 +260,14 @@
       "Tea",
       "Floral",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional",
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Ruang kerja ber-AC, aktivitas kantor tenang, dan harian rapi"
   },
   {
     "id": "w-15",
@@ -177,7 +279,14 @@
       "Fruity",
       "Sweet",
       "Gourmand"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Hangout malam, nonton konser, dan suasana kasual akrab"
   },
   {
     "id": "w-16",
@@ -189,7 +298,13 @@
       "Musk",
       "Powdery",
       "Woody"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Bekerja seharian di kantor, presentasi, dan tampil dewasa rapi"
   },
   {
     "id": "w-17",
@@ -201,7 +316,15 @@
       "Vanilla",
       "Sweet",
       "Powdery"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "luxury",
+      "new_trending"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Makan malam romantis, acara malam, dan cuaca sejuk"
   },
   {
     "id": "w-18",
@@ -213,7 +336,14 @@
       "Fruity",
       "Sweet",
       "Vanilla"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas kuliah, jalan santai, dan momen spesial sore hari"
   },
   {
     "id": "w-19",
@@ -225,7 +355,15 @@
       "White Floral",
       "Citrus",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional",
+      "daily_fresh",
+      "new_trending"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Kerja profesional, pertemuan bisnis, dan acara siang hari"
   },
   {
     "id": "w-20",
@@ -237,7 +375,14 @@
       "Floral",
       "Rose",
       "Powdery"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional",
+      "luxury"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Undangan resmi, acara keluarga, dan tampilan feminin anggun"
   },
   {
     "id": "w-21",
@@ -249,7 +394,14 @@
       "Musky",
       "Clean",
       "Floral"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Sehabis mandi, kerja harian di ruangan tertutup, dan santai"
   },
   {
     "id": "w-22",
@@ -261,7 +413,14 @@
       "Gourmand",
       "Vanilla",
       "Sweet"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "new_trending"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan santai di kafe, hangout sore, dan pencinta aroma manis"
   },
   {
     "id": "w-23",
@@ -273,7 +432,14 @@
       "Rose",
       "Floral",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kegiatan pagi hari, ibadah, dan suasana formal yang lembut"
   },
   {
     "id": "w-24",
@@ -285,7 +451,13 @@
       "Fresh",
       "Aquatic",
       "Citrus"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Cuaca panas terik, olahraga ringan, dan kesegaran sepanjang hari"
   },
   {
     "id": "w-25",
@@ -297,7 +469,15 @@
       "Fruity",
       "Floral",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "attraction",
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Segala suasana harian, kencan pertama, dan tampil percaya diri"
   },
   {
     "id": "w-26",
@@ -309,7 +489,14 @@
       "Tropical",
       "Citrus",
       "Floral"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "new_trending"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas outdoor siang hari, liburan, dan suasana segar ceria"
   },
   {
     "id": "m-1",
@@ -321,7 +508,14 @@
       "Aromatic",
       "Fresh",
       "Woody"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kerja harian, mobilitas tinggi, dan kesegaran maskulin rapi"
   },
   {
     "id": "m-2",
@@ -333,7 +527,15 @@
       "Aquatic",
       "Citrus",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional",
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kantor, kuliah, aktivitas siang hari, dan aman di segala cuaca"
   },
   {
     "id": "m-3",
@@ -345,7 +547,15 @@
       "Fresh Spicy",
       "Amber",
       "Citrus"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional",
+      "attraction",
+      "viral_hits"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Meeting penting, kencan malam hari, dan tampil karismatik"
   },
   {
     "id": "m-4",
@@ -357,7 +567,14 @@
       "Citrus",
       "Woody",
       "Aromatic"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kerja kantoran, berkendara, dan rutinitas harian yang rapi"
   },
   {
     "id": "m-5",
@@ -369,7 +586,14 @@
       "Vanilla",
       "Lavender",
       "Citrus"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "new_trending"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Hangout malam, kencan modern, dan acara sosial anak muda"
   },
   {
     "id": "m-6",
@@ -381,7 +605,14 @@
       "Fruity",
       "Aromatic",
       "Woody"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional",
+      "luxury"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Presentasi bisnis, setelan kemeja rapi, dan acara formal"
   },
   {
     "id": "m-7",
@@ -393,7 +624,13 @@
       "Sporty",
       "Citrus",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Olahraga, gym, aktivitas lapangan, dan keseharian aktif"
   },
   {
     "id": "m-8",
@@ -405,7 +642,13 @@
       "Aromatic",
       "Green",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas outdoor, olahraga pagi, dan cuaca tropis panas"
   },
   {
     "id": "m-9",
@@ -417,7 +660,14 @@
       "Marine",
       "Citrus",
       "Aquatic"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kerja seharian, aktivitas luar ruang, dan kesan segar tenang"
   },
   {
     "id": "m-10",
@@ -429,7 +679,14 @@
       "Aquatic",
       "Aromatic",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Ngantor harian, sehabis mandi pagi, dan gaya kasual bersih"
   },
   {
     "id": "m-11",
@@ -441,7 +698,14 @@
       "Woody",
       "Warm Spicy",
       "Smoky"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "luxury"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Acara malam hari, makan malam formal, dan suasana maskulin hangat"
   },
   {
     "id": "m-12",
@@ -453,7 +717,14 @@
       "Citrus",
       "Fresh Spicy",
       "Woody"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Produktivitas kerja pagi hingga sore dan aktivitas dinamis"
   },
   {
     "id": "m-13",
@@ -465,7 +736,14 @@
       "Warm Spicy",
       "Vanilla",
       "Woody"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional",
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Smart-casual kantor, ngopi sore, dan kencan santai"
   },
   {
     "id": "m-14",
@@ -477,7 +755,14 @@
       "Woody",
       "Aquatic",
       "Aromatic"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas kerja lapangan maupun ruang kantor dengan kesan kalem"
   },
   {
     "id": "m-15",
@@ -489,7 +774,13 @@
       "Tropical",
       "Floral",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Suasana santai akhir pekan, liburan, dan pemakaian harian rileks"
   },
   {
     "id": "m-16",
@@ -501,7 +792,13 @@
       "Green",
       "Aquatic",
       "Citrus"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Cuaca siang yang terik, kesegaran alami harian, dan kuliah"
   },
   {
     "id": "m-17",
@@ -513,7 +810,14 @@
       "Tobacco",
       "Warm Spicy",
       "Woody"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Jamuan bisnis malam, jas formal, dan kesan pria matang berwibawa"
   },
   {
     "id": "m-18",
@@ -525,7 +829,14 @@
       "Patchouli",
       "White Floral",
       "Spicy"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "new_trending"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pesta malam, kencan intens, dan tampil beda mencuri perhatian"
   },
   {
     "id": "p-1",
@@ -537,7 +848,13 @@
       "Rose",
       "Powdery",
       "Floral"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Keseharian di rumah, ibadah, dan aroma lembut menenangkan"
   },
   {
     "id": "p-2",
@@ -549,7 +866,13 @@
       "Lavender",
       "Herbal",
       "Aromatic"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Waktu istirahat, relaksasi sore, dan aktivitas santai harian"
   },
   {
     "id": "p-3",
@@ -561,7 +884,13 @@
       "Soapy",
       "Floral",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Wangi bersih sehabis mandi sepanjang hari untuk aktivitas kasual"
   },
   {
     "id": "p-4",
@@ -573,7 +902,14 @@
       "Clean",
       "Floral",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pakaian kerja rapi, kuliah, dan kesan bersih segar seharian"
   },
   {
     "id": "p-5",
@@ -585,7 +921,15 @@
       "Soft",
       "Sweet",
       "Cozy"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "attraction",
+      "new_trending"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Suasana dekat yang nyaman, ruangan ber-AC, dan harian lembut"
   },
   {
     "id": "p-6",
@@ -597,7 +941,13 @@
       "Clean",
       "Floral",
       "Powdery"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pemakaian harian ringan yang lembut dan tidak menyengat"
   },
   {
     "id": "p-7",
@@ -609,7 +959,14 @@
       "Aldehydic",
       "Powdery",
       "Floral"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury",
+      "professional"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Gala dinner, resepsi resmi, dan gaya klasik berkelas tinggi"
   },
   {
     "id": "p-8",
@@ -621,7 +978,14 @@
       "Powdery",
       "Soft",
       "Clean"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas santai harian, setelah mandi, dan wangi bedak lembut"
   },
   {
     "id": "u-1",
@@ -633,7 +997,15 @@
       "Coffee",
       "Vanilla",
       "Sweet"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "luxury",
+      "viral_hits"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Kencan malam hari, nongkrong di lounge/kafe, dan acara spesial"
   },
   {
     "id": "u-2",
@@ -645,7 +1017,15 @@
       "Amber",
       "Woody",
       "Warm Spicy"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury",
+      "attraction",
+      "viral_hits"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Pesta pernikahan, acara VIP, dan meninggalkan jejak mewah"
   },
   {
     "id": "u-3",
@@ -657,7 +1037,13 @@
       "Fruity",
       "Sweet",
       "Tropical"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas pagi-siang yang aktif, kuliah, dan jalan santai"
   },
   {
     "id": "u-4",
@@ -669,7 +1055,14 @@
       "Aquatic",
       "Floral",
       "Fresh"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "new_trending"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kesegaran harian sehabis mandi dan cuaca siang yang hangat"
   },
   {
     "id": "u-5",
@@ -681,7 +1074,14 @@
       "Warm Spicy",
       "Amber",
       "Citrus"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional",
+      "luxury"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Pertemuan eksekutif, busana formal, dan perayaan bergengsi"
   },
   {
     "id": "u-6",
@@ -693,7 +1093,15 @@
       "Sparkling",
       "Fruity",
       "Sweet"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction",
+      "luxury",
+      "new_trending"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pesta perayaan, makan malam spesial, dan tampil glamor ceria"
   },
   {
     "id": "u-7",
@@ -705,7 +1113,13 @@
       "Fruity",
       "Musky",
       "Sensual"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Momen romantis berdua dan acara kencan malam hari"
   },
   {
     "id": "u-8",
@@ -717,7 +1131,15 @@
       "Warm Spicy",
       "Amber",
       "Woody"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury",
+      "viral_hits",
+      "new_trending"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Acara besar, kondangan VIP, dan tampil eksklusif berwibawa"
   },
   {
     "id": "u-9",
@@ -729,7 +1151,13 @@
       "Spicy",
       "Smoky",
       "Oriental"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Acara keagamaan besar, malam hari, dan silaturahmi resmi"
   },
   {
     "id": "u-10",
@@ -741,7 +1169,13 @@
       "Oud",
       "Woody",
       "Balsamic"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Majelis resmi, ibadah Jumat/Hari Raya, dan acara malam mewah"
   },
   {
     "id": "u-11",
@@ -753,7 +1187,14 @@
       "Oud",
       "Vanilla",
       "Warm Spicy"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury",
+      "viral_hits"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Acara spesial malam hari, resepsi, dan pencinta oud manis hangat"
   },
   {
     "id": "u-12",
@@ -765,7 +1206,14 @@
       "Caramel",
       "Sweet",
       "Citrus"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "luxury"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Silaturahmi keluarga, kegiatan harian rapi, dan suasana hangat"
   },
   {
     "id": "u-13",
@@ -777,7 +1225,14 @@
       "Floral",
       "Musky",
       "Spiritual"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "luxury"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Ibadah harian, pengajian, dan ketenangan sepanjang hari"
   },
   {
     "id": "u-14",
@@ -789,7 +1244,14 @@
       "Aquatic",
       "Green",
       "Metallic"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh",
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Bekerja di kantor, aktivitas siang hari, dan kesan bersih modern"
   },
   {
     "id": "u-15",
@@ -801,7 +1263,13 @@
       "Musky",
       "Earthy",
       "Animalic"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Ibadah khusyuk, acara keagamaan, dan momen sakral istimewa"
   },
   {
     "id": "u-16",
@@ -813,6 +1281,14 @@
       "Leather",
       "Woody",
       "Warm Spicy"
-    ]
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional",
+      "luxury",
+      "new_trending"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pertemuan formal, jamuan malam, dan karakter maskulin tegas"
   }
 ]

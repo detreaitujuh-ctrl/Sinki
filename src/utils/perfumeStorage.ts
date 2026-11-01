@@ -1,15 +1,37 @@
 import { SUPABASE_STORAGE_BASE, getOwnerToken } from './assetStorage';
-import { PERFUMES_DATA, PerfumeItem, PerfumeCategory } from '../data/perfumes';
+import {
+  PERFUMES_DATA,
+  PerfumeItem,
+  PerfumeCategory,
+  CollectionCategoryKey,
+  PricePerMlRate,
+  COLLECTION_CATEGORIES,
+} from '../data/perfumes';
 
-export type { PerfumeItem, PerfumeCategory };
+export type { PerfumeItem, PerfumeCategory, CollectionCategoryKey, PricePerMlRate };
+export { COLLECTION_CATEGORIES };
 
-const PERFUMES_LOCAL_KEY = 'sinki_perfumes_catalog_v2';
+const PERFUMES_LOCAL_KEY = 'sinki_perfumes_catalog_v3';
 const PERFUMES_FILE_NAME = 'perfumes_catalog.json';
 const PERFUMES_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${PERFUMES_FILE_NAME}`;
 const SUPABASE_STORAGE_UPLOAD_URL =
   'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/perfumes_catalog.json';
 const SUPABASE_SERVICE_ROLE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
+
+const DEFAULT_BY_ID = new Map<string, PerfumeItem>(PERFUMES_DATA.map((p) => [p.id, p]));
+const DEFAULT_BY_NAME = new Map<string, PerfumeItem>(
+  PERFUMES_DATA.map((p) => [p.name.trim().toLowerCase(), p])
+);
+
+const VALID_COLLECTION_KEYS = new Set<string>([
+  'daily_fresh',
+  'professional',
+  'attraction',
+  'luxury',
+  'viral_hits',
+  'new_trending',
+]);
 
 /**
  * Menyinkronkan seluruh daftar parfum langsung ke Supabase Cloud Storage (sinki-media bucket).
@@ -35,13 +57,47 @@ export const syncPerfumesDirectlyToCloud = async (list: PerfumeItem[]): Promise<
 };
 
 /**
- * Normalisasi data parfum memastikan field isActive ada
+ * Normalisasi data parfum:
+ * - Memastikan field isActive ada
+ * - Memetakan otomatis 68 varian lama yang belum memiliki collectionCategories / pricePerMl (Opsi A)
+ * - Tetap menghormati pilihan kosong [] jika Admin memang sengaja mencabut semua kategori dari suatu varian
  */
 export const normalizePerfumes = (list: PerfumeItem[]): PerfumeItem[] => {
-  return list.map((item) => ({
-    ...item,
-    isActive: item.isActive !== false, // default true jika belum diset
-  }));
+  return list.map((item) => {
+    const fallback =
+      DEFAULT_BY_ID.get(item.id) || DEFAULT_BY_NAME.get((item.name || '').trim().toLowerCase());
+
+    let resolvedCategories: CollectionCategoryKey[];
+    if (Array.isArray(item.collectionCategories)) {
+      resolvedCategories = item.collectionCategories.filter((c) =>
+        VALID_COLLECTION_KEYS.has(c)
+      ) as CollectionCategoryKey[];
+    } else if (fallback?.collectionCategories) {
+      resolvedCategories = [...fallback.collectionCategories];
+    } else {
+      resolvedCategories = [];
+    }
+
+    const resolvedPrice: PricePerMlRate =
+      item.pricePerMl === 4000
+        ? 4000
+        : item.pricePerMl === 3000
+        ? 3000
+        : fallback?.pricePerMl || 3000;
+
+    const resolvedUsage =
+      item.usageRecommendation !== undefined
+        ? item.usageRecommendation
+        : fallback?.usageRecommendation || '';
+
+    return {
+      ...item,
+      isActive: item.isActive !== false,
+      collectionCategories: resolvedCategories,
+      pricePerMl: resolvedPrice,
+      usageRecommendation: resolvedUsage,
+    };
+  });
 };
 
 /**
@@ -91,9 +147,6 @@ export const fetchPerfumesFromServer = async (): Promise<PerfumeItem[]> => {
       if (Array.isArray(data) && data.length > 0) {
         const normalized = normalizePerfumes(data);
         setStoredPerfumes(normalized);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('sinki_perfumes_updated', { detail: normalized }));
-        }
         return normalized;
       }
     }
@@ -114,9 +167,6 @@ export const fetchPerfumesFromServer = async (): Promise<PerfumeItem[]> => {
       if (Array.isArray(data) && data.length > 0) {
         const normalized = normalizePerfumes(data);
         setStoredPerfumes(normalized);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('sinki_perfumes_updated', { detail: normalized }));
-        }
         return normalized;
       }
     }
@@ -133,11 +183,8 @@ export const fetchPerfumesFromServer = async (): Promise<PerfumeItem[]> => {
 export const savePerfumesToServer = async (list: PerfumeItem[]): Promise<PerfumeItem[]> => {
   const normalized = normalizePerfumes(list);
   setStoredPerfumes(normalized);
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('sinki_perfumes_updated', { detail: normalized }));
-  }
 
-  // 1. Coba simpan ke server Express jika Node aktif
+  // 1. Simpan ke server Express jika Node aktif
   const token = getOwnerToken();
   try {
     await fetch('/api/owner/update-perfumes', {
@@ -152,14 +199,14 @@ export const savePerfumesToServer = async (list: PerfumeItem[]): Promise<Perfume
     console.warn('Notice saving perfumes to server:', err);
   }
 
-  // 2. Selalu sinkronkan langsung ke Supabase Storage (kritis agar Cloudflare / static hosting terupdate permanen)
+  // 2. Selalu sinkronkan langsung ke Supabase Storage agar cloud publik langsung terupdate
   await syncPerfumesDirectlyToCloud(normalized);
 
   return normalized;
 };
 
 /**
- * Reset seluruh varian kembali ke 60 varian bawaan SINKI
+ * Reset seluruh varian kembali ke 68 varian bawaan SINKI
  */
 export const resetPerfumesToDefault = async (): Promise<PerfumeItem[]> => {
   return await savePerfumesToServer(PERFUMES_DATA);

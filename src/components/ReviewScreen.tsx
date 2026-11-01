@@ -345,13 +345,13 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           {/* Logo SINKI (Tekan 5x Berturut-turut untuk Membuka PIN Rahasia) */}
           <div
             onClick={handleLogoTap}
-            className="cursor-pointer select-none py-1 px-1.5 rounded-lg active:scale-95 transition-transform"
+            className="cursor-pointer select-none py-1 px-1.5 rounded-lg active:scale-95 transition-transform min-w-0"
             title="Ketuk logo 5x untuk akses pengelola"
           >
-            <h2 className="font-display text-sm font-extrabold text-white tracking-wider uppercase truncate">
+            <h2 className="font-heading text-[15px] sm:text-base font-bold text-white tracking-[0.06em] leading-[1.2] truncate">
               SINKI
             </h2>
-            <span className="text-[9.5px] font-mono text-slate-400 font-medium block -mt-0.5">
+            <span className="font-body text-[11px] text-slate-400 font-normal leading-tight block">
               Review Pembeli
             </span>
           </div>
@@ -365,9 +365,9 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                 setIsAdminMode(false);
                 onShowToast('Mode Pengelola dinonaktifkan.');
               }}
-              className="py-1 px-2 rounded-xl bg-red-600/30 border border-red-500/50 text-red-300 text-[9px] font-bold flex items-center gap-1 active:scale-95"
+              className="py-1 px-2 rounded-xl bg-red-600/30 border border-red-500/50 text-red-300 font-body text-[11.5px] font-semibold leading-tight flex items-center gap-1 active:scale-95"
             >
-              <Unlock size={11} />
+              <Unlock size={12} />
               <span>Keluar</span>
             </button>
           )}
@@ -376,9 +376,9 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           <button
             type="button"
             onClick={() => setIsWriteModalOpen(true)}
-            className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-black text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-black/30 shrink-0 border border-[#DFB76C]/40"
+            className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-xs leading-tight transition-all active:scale-95 shadow-md shadow-black/30 shrink-0 border border-[#DFB76C]/40"
           >
-            <MessageSquarePlus size={14} className="stroke-[2.5]" />
+            <MessageSquarePlus size={13} className="stroke-[2.2]" />
             <span>Beri Ulasan</span>
           </button>
         </div>
@@ -386,35 +386,37 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
 
       {/* Banner Mode Pengelola (Jika PIN Terverifikasi) */}
       {isAdminMode && (
-        <div className="px-3.5 py-2 bg-red-950/90 border-b border-red-500/40 flex items-center justify-between text-xs text-red-200 shrink-0">
-          <div className="flex items-center gap-1.5 text-[9.5px] font-medium">
+        <div className="px-3.5 py-2 bg-red-950/90 border-b border-red-500/40 flex items-center justify-between gap-2 font-body text-[11.5px] text-red-200 shrink-0">
+          <div className="flex items-center gap-1.5 font-normal">
             <ShieldAlert size={13} className="text-red-400 shrink-0" />
             <span>Mode Pengelola: Tekan tombol merah untuk hapus ulasan.</span>
           </div>
           <button
             onClick={handleResetToDefault}
-            className="flex items-center gap-1 text-[9.5px] text-[#DFB76C] underline font-semibold hover:text-white shrink-0 ml-2"
+            className="flex items-center gap-1 text-[11.5px] text-[#DFB76C] underline font-semibold hover:text-white shrink-0 ml-2"
           >
-            <RotateCcw size={10} />
+            <RotateCcw size={11} />
             <span>Reset 4 Ulasan</span>
           </button>
         </div>
       )}
 
       {/* 2. DAFTAR 4 BARIS ULASAN (NAMA + EMOT + ULASAN) */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-3.5 pb-24 space-y-3">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-3.5 pb-24 space-y-2.5">
         
         {/* Baris Ringkas: Judul & Badge Terverifikasi Asli */}
-        <div className="flex items-center justify-between px-1 pt-0.5">
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="font-display font-bold text-white tracking-wide">Testimoni Pembeli</span>
-            <span className="text-[9.5px] font-mono text-[#DFB76C] font-semibold bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
+        <div className="flex items-center justify-between gap-2 px-1 pt-0.5 flex-wrap">
+          <div className="flex items-center gap-2">
+            <h3 className="font-heading font-semibold text-[15px] leading-[1.22] text-white tracking-[-0.015em]">
+              Testimoni Pembeli
+            </h3>
+            <span className="font-body text-[11px] tabular-nums text-[#DFB76C] font-medium bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
               {reviews.length}/10 Slot
             </span>
           </div>
 
-          <span className="text-[10px] font-mono text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30 font-bold flex items-center gap-1 shadow-sm">
-            <CheckCircle2 size={11} className="text-emerald-400" />
+          <span className="font-body text-[11px] text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30 font-medium flex items-center gap-1 shadow-sm">
+            <CheckCircle2 size={11} className="text-emerald-400 shrink-0" />
             <span>Terverifikasi Asli</span>
           </span>
         </div>
@@ -422,14 +424,14 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         {/* Kolom Pencarian Ulasan (Icon Search) */}
         <div className="relative w-full">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            <Search size={14} className="text-[#DFB76C]" />
+            <Search size={15} className="text-[#DFB76C]" />
           </div>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari varian parfum, nama pembeli, atau ulasan..."
-            className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-[#141622]/95 border border-white/10 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#DFB76C] transition-colors shadow-sm"
+            className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#141622]/95 border border-white/10 font-body text-base sm:text-sm leading-normal font-normal text-white placeholder:text-slate-400 focus:outline-none focus:border-[#DFB76C] transition-colors shadow-sm"
           />
           {searchQuery && (
             <button
@@ -437,21 +439,21 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
               onClick={() => setSearchQuery('')}
               className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-white"
             >
-              <X size={13} />
+              <X size={14} />
             </button>
           )}
         </div>
 
         {/* Info Hasil Filter Pencarian */}
         {searchQuery.trim() && (
-          <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
+          <div className="flex items-center justify-between px-1 font-body text-xs text-slate-400">
             <span>
-              Ditemukan <strong className="text-[#DFB76C]">{filteredReviews.length}</strong> ulasan
+              Ditemukan <strong className="text-[#DFB76C] font-semibold tabular-nums">{filteredReviews.length}</strong> ulasan
             </span>
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="text-[#DFB76C] hover:underline"
+              className="text-[#DFB76C] font-medium hover:underline"
             >
               Reset
             </button>
@@ -462,38 +464,38 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         <div className="space-y-2">
           {displayedReviews.length === 0 ? (
             searchQuery.trim() ? (
-              <div className="p-5 rounded-2xl bg-[#141622]/80 border border-white/10 text-center space-y-2">
+              <div className="p-4 rounded-2xl bg-[#141622]/80 border border-white/10 text-center space-y-2 font-body">
                 <Search size={22} className="mx-auto text-slate-500" />
-                <p className="text-xs text-slate-300 font-medium">
-                  Tidak ada ulasan yang cocok dengan kata kunci <span className="text-[#DFB76C]">"{searchQuery}"</span>
+                <p className="text-sm text-slate-300 font-normal leading-[1.5]">
+                  Tidak ada ulasan yang cocok dengan kata kunci <span className="text-[#DFB76C] font-medium">"{searchQuery}"</span>
                 </p>
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="text-[11px] text-[#DFB76C] underline font-semibold"
+                  className="text-xs text-[#DFB76C] underline font-semibold"
                 >
                   Hapus Pencarian & Tampilkan Semua
                 </button>
               </div>
             ) : (
-              <div className="p-6 rounded-2xl bg-[#141622]/90 border border-white/10 text-center space-y-3.5 backdrop-blur-md shadow-lg">
-                <div className="w-12 h-12 rounded-2xl bg-[#C5A059]/15 border border-[#DFB76C]/30 flex items-center justify-center mx-auto text-2xl shadow-inner">
+              <div className="p-5 rounded-2xl bg-[#141622]/90 border border-white/10 text-center space-y-3 backdrop-blur-md shadow-lg">
+                <div className="w-11 h-11 rounded-2xl bg-[#C5A059]/15 border border-[#DFB76C]/30 flex items-center justify-center mx-auto text-xl shadow-inner">
                   ✨
                 </div>
                 <div className="space-y-1">
-                  <h3 className="font-display font-bold text-sm text-white">
+                  <h3 className="font-heading font-semibold text-lg leading-[1.25] text-white tracking-[-0.015em]">
                     Belum Ada Ulasan Pembeli
                   </h3>
-                  <p className="text-[11px] text-slate-300 max-w-xs mx-auto leading-relaxed">
+                  <p className="font-body text-sm text-slate-300 font-normal max-w-xs mx-auto leading-[1.5]">
                     Slot ulasan masih bersih. Jadilah yang pertama membagikan pengalaman aroma wewangian SINKI Anda!
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsWriteModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-black text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-black/30"
+                  className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-sm transition-all active:scale-95 shadow-md shadow-black/30"
                 >
-                  <MessageSquarePlus size={14} className="stroke-[2.5]" />
+                  <MessageSquarePlus size={15} className="stroke-[2.2]" />
                   <span>Tulis Ulasan Pertama</span>
                 </button>
               </div>
@@ -506,7 +508,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
               <div
                 key={rev.id}
                 onClick={() => setActiveBeamId((prev) => (prev === rev.id ? null : rev.id))}
-                className={`group relative p-2 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all cursor-pointer backdrop-blur-md overflow-hidden ${
+                className={`group relative p-2.5 rounded-2xl transition-all cursor-pointer backdrop-blur-md overflow-hidden ${
                   isActiveBeam
                     ? 'border-beam-active shadow-[0_4px_20px_rgba(223,183,108,0.22)]'
                     : isAdminMode
@@ -516,35 +518,35 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
               >
                 {/* Layer Konten (Di atas animasi border cahaya) */}
                 <div className="relative z-10 space-y-1">
-                  {/* Baris 1: Header Kompak 1 Garis (Emot, Nama, Centang, Varian, Label, dan Like) */}
-                  <div className="flex items-center justify-between gap-1.5">
-                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  {/* Baris 1: Header Kompak (Emot, Nama, Centang, Varian, Label, dan Like) */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       {/* Emot Bulat Mini & Ramping */}
-                      <div className="w-5.5 h-5.5 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-xs shrink-0 shadow-inner">
+                      <div className="w-6 h-6 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-xs shrink-0 shadow-inner">
                         {rev.emoji}
                       </div>
 
-                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                        <span className="font-display font-bold text-[11px] text-white truncate max-w-[110px] sm:max-w-[140px] drop-shadow-sm">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap font-body">
+                        <span className="font-heading font-semibold text-[13px] leading-tight text-white tracking-[-0.01em] truncate max-w-[130px] sm:max-w-[160px] drop-shadow-sm">
                           {rev.name}
                         </span>
-                        <CheckCircle2 size={10} className="text-emerald-400 shrink-0" />
+                        <CheckCircle2 size={11} className="text-emerald-400 shrink-0" />
                         {idx === 0 && !searchQuery && (
-                          <span className="text-[7px] font-bold text-amber-300 bg-amber-500/20 border border-amber-400/40 px-1 py-0.2 rounded-full shrink-0">
+                          <span className="text-[10.5px] font-medium text-amber-300 bg-amber-500/20 border border-amber-400/40 px-1.5 py-0.5 rounded-full leading-none shrink-0">
                             ★ Baru
                           </span>
                         )}
-                        <span className="text-[8px] font-mono text-zinc-300 bg-white/[0.08] px-1.5 py-0.2 rounded border border-white/10 truncate max-w-[110px] sm:max-w-[140px]">
+                        <span className="text-[11px] font-medium text-zinc-200 bg-white/[0.08] px-1.5 py-0.5 rounded-md border border-white/10 leading-tight truncate max-w-[140px] sm:max-w-[175px]">
                           {rev.variant}
                         </span>
-                        <span className="text-[8px] text-slate-400 shrink-0 hidden xs:inline">
+                        <span className="text-[11px] text-slate-400 shrink-0 hidden xs:inline">
                           • <span className="text-[#DFB76C] font-medium">{rev.emojiLabel}</span> • {rev.date}
                         </span>
                       </div>
                     </div>
 
                     {/* Tombol Hapus (Mode Admin) atau Like Apresiasi */}
-                    <div className="shrink-0 ml-1">
+                    <div className="shrink-0">
                       {isAdminMode ? (
                         <button
                           type="button"
@@ -552,10 +554,10 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                             e.stopPropagation();
                             handleDeleteReview(rev.id, rev.name);
                           }}
-                          className="py-0.5 px-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[8.5px] font-bold flex items-center gap-1 active:scale-95"
+                          className="py-1 px-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-body text-[11px] font-semibold leading-tight flex items-center gap-1 active:scale-95"
                           title="Hapus Ulasan Ini"
                         >
-                          <Trash2 size={10} />
+                          <Trash2 size={11} />
                           <span>Hapus</span>
                         </button>
                       ) : (
@@ -565,21 +567,21 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                             e.stopPropagation();
                             handleLike(rev.id);
                           }}
-                          className={`flex items-center gap-1 text-[8.5px] px-1.5 py-0.5 rounded-lg transition-colors active:scale-95 ${
+                          className={`flex items-center gap-1 font-body text-[11px] leading-tight px-2 py-0.5 rounded-lg transition-colors active:scale-95 ${
                             hasLiked
                               ? 'text-pink-400 bg-pink-500/15 border border-pink-500/30'
                               : 'text-slate-300 hover:text-white bg-white/10 border border-white/15'
                           }`}
                         >
                           <span>{hasLiked ? '💖' : '🤍'}</span>
-                          <span className="font-mono text-[8px] font-bold">{rev.likes}</span>
+                          <span className="font-medium tabular-nums">{rev.likes}</span>
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Baris 2: Komentar Pembeli Rapat, Rapi & Ramping (Tinggi Pendek, Lebar Tetap Penuh) */}
-                  <p className="text-[10px] sm:text-[10.5px] text-slate-200 font-normal leading-snug pl-7 pr-1 line-clamp-2">
+                  {/* Baris 2: Komentar Pembeli Nyaman Dibaca (Format Ramping Pendek) */}
+                  <p className="font-body text-[12.5px] sm:text-[13px] text-slate-200 font-normal leading-[1.45] pl-8 pr-1 line-clamp-2">
                     "{rev.comment}"
                   </p>
                 </div>
@@ -589,51 +591,51 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         </div>
 
         {/* Tombol Alternatif Tulis Ulasan (Mudah Ditekan) */}
-        <div className="pt-1 pb-1">
+        <div className="pt-0.5 pb-0.5">
           <button
             type="button"
             onClick={() => setIsWriteModalOpen(true)}
-            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-400/25 to-amber-500/20 hover:from-amber-500/30 hover:to-amber-400/30 border border-amber-400/50 text-amber-300 font-black text-xs flex items-center justify-center gap-2 transition-all active:scale-98 shadow-md"
+            className="w-full py-2 px-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-400/25 to-amber-500/20 hover:from-amber-500/30 hover:to-amber-400/30 border border-amber-400/50 text-amber-300 font-body font-semibold text-xs sm:text-[13px] flex items-center justify-center gap-2 transition-all active:scale-98 shadow-md"
           >
-            <MessageSquarePlus size={15} />
+            <MessageSquarePlus size={14} />
             <span>+ Bagikan Pengalaman & Ulasan Anda</span>
           </button>
         </div>
 
         {/* 3. DARI HATI SINKI (UCAPAN TERIMA KASIH & APRESIASI HANGAT) */}
-        <div className="mt-4 p-4 rounded-3xl bg-gradient-to-br from-[#1e2235] via-[#181a2b] to-[#131524] border border-white/10 shadow-2xl relative overflow-hidden text-center space-y-3 backdrop-blur-md">
+        <div className="mt-2.5 p-3.5 rounded-3xl bg-gradient-to-br from-[#1e2235] via-[#181a2b] to-[#131524] border border-white/10 shadow-2xl relative overflow-hidden text-center space-y-2 backdrop-blur-md">
           {/* Subtle Glow */}
           <div className="absolute top-0 right-0 w-36 h-36 bg-[#c5a059]/[0.08] rounded-full blur-2xl pointer-events-none" />
 
           {/* Kalimat Apresiasi & Sentuhan Hangat Pelanggan */}
-          <div className="space-y-2">
-            <h4 className="font-display font-extrabold text-base text-white leading-tight">
+          <div className="space-y-1">
+            <h4 className="font-heading font-bold text-[15px] text-white tracking-[-0.015em] leading-[1.25]">
               Dari Hati SINKI
             </h4>
-            <p className="text-xs text-slate-100 font-medium leading-relaxed max-w-sm mx-auto">
+            <p className="font-body text-xs sm:text-[13px] text-slate-100 font-normal leading-[1.48] max-w-sm mx-auto">
               Terima kasih banyak telah mempercayakan aroma terbaik Anda kepada{' '}
               <strong className="text-[#DFB76C] font-semibold">SINKI</strong>.
               Setiap tetes keharuman kami racik dengan ketulusan, dedikasi, dan kualitas bahan
               terbaik agar Anda selalu tampil percaya diri dan memikat di setiap momen berharga.
             </p>
-            <p className="text-[11px] text-zinc-300 font-medium italic">
+            <p className="font-body text-[11.5px] text-zinc-300 font-normal italic leading-[1.42]">
               "Kepuasan Anda adalah kebanggaan kami. Kami selalu menantikan kehadiran Anda
               kembali sebagai keluarga dan pelanggan setia SINKI."
             </p>
           </div>
 
           {/* Tagline Langganan */}
-          <div className="pt-1 text-[10.5px] font-mono text-emerald-300 bg-emerald-500/10 py-1.5 px-3 rounded-xl border border-emerald-500/20 inline-block">
+          <div className="pt-0.5 font-body text-[11px] font-medium text-emerald-300 bg-emerald-500/10 py-1 px-2.5 rounded-xl border border-emerald-500/20 inline-block">
             Semoga harimu selalu harum, bahagia, dan penuh pesona!
           </div>
 
           {/* Tombol Pesan Varian Lain (Navigasi ke Order) */}
           {onNavigateToOrder && (
-            <div className="pt-2">
+            <div className="pt-1">
               <button
                 type="button"
                 onClick={onNavigateToOrder}
-                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-transform active:scale-98 shadow-md shadow-black/30"
+                className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-xs sm:text-[13px] flex items-center justify-center gap-2 transition-transform active:scale-98 shadow-md shadow-black/30"
               >
                 <ShoppingBag size={14} />
                 <span>Pesan Varian Lain / Belanja Lagi</span>
@@ -653,17 +655,17 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-sm rounded-3xl bg-[#12141e] border border-white/15 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar"
+              className="relative w-full max-w-sm rounded-3xl bg-[#12141e] border border-white/15 p-4 sm:p-5 shadow-2xl space-y-3.5 max-h-[90vh] overflow-y-auto no-scrollbar"
             >
               {/* Header Modal */}
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">✍️</span>
+              <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">✍️</span>
                   <div>
-                    <h3 className="font-display font-bold text-sm text-white">
+                    <h3 className="font-heading font-bold text-[15px] sm:text-base leading-[1.25] text-white tracking-[-0.015em]">
                       Tulis Ulasan SINKI
                     </h3>
-                    <span className="text-[9.5px] text-slate-400">
+                    <span className="font-body text-[11px] text-slate-400 font-normal">
                       Bagikan pengalaman aroma Anda
                     </span>
                   </div>
@@ -678,10 +680,10 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
               </div>
 
               {/* Form */}
-              <form onSubmit={handleSubmitReview} className="space-y-3.5">
+              <form onSubmit={handleSubmitReview} className="space-y-3 font-body">
                 {/* Nama */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block">
+                  <label className="text-xs text-slate-200 font-medium block">
                     Nama *
                   </label>
                   <input
@@ -690,27 +692,27 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                     placeholder="Contoh: Rian Ardiansyah"
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#DFB76C]"
+                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 font-body text-base sm:text-sm leading-normal font-normal text-white placeholder:text-slate-500 focus:outline-none focus:border-[#DFB76C]"
                   />
                 </div>
 
                 {/* Pilihan Varian Parfum (Sistem 2-Langkah: Pilih Koleksi ➔ Pilih Varian) */}
-                <div className="space-y-2.5 p-2.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block">
+                <div className="space-y-2 p-2.5 rounded-2xl bg-white/[0.03] border border-white/10">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs text-slate-200 font-medium block">
                       Varian yang Diulas *
                     </label>
-                    <span className="text-[9.5px] font-semibold text-[#DFB76C] bg-[#C5A059]/15 px-2.5 py-0.5 rounded-full border border-[#DFB76C]/30 truncate max-w-[170px]">
+                    <span className="text-[11px] font-medium text-[#DFB76C] bg-[#C5A059]/15 px-2 py-0.5 rounded-full border border-[#DFB76C]/30 truncate max-w-[175px]">
                       {formVariant}
                     </span>
                   </div>
 
                   {/* LANGKAH 1: Pilih Koleksi (5 Tab Ramping Tanpa Icon) */}
                   <div>
-                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider block mb-1.5">
+                    <span className="text-[11px] text-slate-400 font-normal block mb-1">
                       1. Pilih Kategori Koleksi:
                     </span>
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="grid grid-cols-5 gap-1">
                       {[
                         { id: 'top11' as const, label: 'Bestseller' },
                         { id: 'women' as const, label: 'Women' },
@@ -734,13 +736,13 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                                 }
                               }
                             }}
-                            className={`py-2 px-1 rounded-xl text-center flex items-center justify-center border transition-all ${
+                            className={`py-1.5 px-0.5 rounded-xl text-center flex items-center justify-center border transition-all ${
                               isActive
-                                ? 'bg-[#C5A059]/30 border-[#DFB76C] text-white font-bold shadow-sm'
-                                : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20'
+                                ? 'bg-[#C5A059]/30 border-[#DFB76C] text-white font-semibold shadow-sm'
+                                : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 font-medium'
                             }`}
                           >
-                            <span className="text-[10px] truncate leading-tight font-medium">{tab.label}</span>
+                            <span className="text-[11px] truncate leading-tight">{tab.label}</span>
                           </button>
                         );
                       })}
@@ -749,7 +751,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
 
                   {/* LANGKAH 2: Pilih Nama Varian (Daftar Menjadi Pendek & Ringkas) */}
                   <div>
-                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider block mb-1">
+                    <span className="text-[11px] text-slate-400 font-normal block mb-1">
                       2. Pilih Nama Parfum (
                       {variantCategoryTab === 'top11' && '11 Varian Bestseller'}
                       {variantCategoryTab === 'women' && 'Varian Women'}
@@ -761,7 +763,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                     <select
                       value={formVariant}
                       onChange={(e) => setFormVariant(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#171926] border border-white/15 text-xs text-white focus:outline-none focus:border-[#DFB76C]"
+                      className="w-full px-3 py-2 rounded-xl bg-[#171926] border border-white/15 font-body text-base sm:text-sm leading-normal font-medium text-white focus:outline-none focus:border-[#DFB76C]"
                     >
                       {variantCategoryTab === 'top11' &&
                         TOP_11_DATA.map((p) => (
@@ -812,14 +814,14 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                 {/* Pilihan Kepuasan Aroma (1 Baris Ringkas & Ramping) */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block">
+                    <label className="text-xs sm:text-[13px] text-slate-200 font-medium block">
                       Kepuasan Aroma *
                     </label>
-                    <span className="text-[9px] font-mono text-[#DFB76C] font-semibold bg-[#C5A059]/15 px-2 py-0.5 rounded-md border border-[#DFB76C]/30">
+                    <span className="text-xs text-[#DFB76C] font-medium bg-[#C5A059]/15 px-2 py-0.5 rounded-md border border-[#DFB76C]/30">
                       {formEmoji} {formEmojiLabel}
                     </span>
                   </div>
-                  <div className="grid grid-cols-6 gap-1">
+                  <div className="grid grid-cols-6 gap-1.5">
                     {EMOJI_OPTIONS.map((item) => (
                       <button
                         key={item.emoji}
@@ -828,14 +830,14 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                           setFormEmoji(item.emoji);
                           setFormEmojiLabel(item.label);
                         }}
-                        className={`py-1.5 px-0.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all ${
+                        className={`py-1.5 px-0.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
                           formEmoji === item.emoji
-                            ? 'bg-[#C5A059]/25 border-[#DFB76C] text-white shadow-sm font-bold scale-[1.03]'
-                            : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20'
+                            ? 'bg-[#C5A059]/25 border-[#DFB76C] text-white shadow-sm font-semibold scale-[1.03]'
+                            : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 font-medium'
                         }`}
                       >
-                        <span className="text-sm">{item.emoji}</span>
-                        <span className="text-[8px] font-medium text-center leading-none">
+                        <span className="text-base leading-none">{item.emoji}</span>
+                        <span className="text-[11px] text-center leading-tight">
                           {item.label}
                         </span>
                       </button>
@@ -845,7 +847,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
 
                 {/* Isi Ulasan */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-wider block">
+                  <label className="text-xs sm:text-[13px] text-slate-200 font-medium block">
                     Ulasan & Kepuasan Aroma *
                   </label>
                   <textarea
@@ -854,12 +856,12 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                     placeholder="Ceritakan aroma, ketahanan wangi, dan kemasan parfum SINKI Anda..."
                     value={formComment}
                     onChange={(e) => setFormComment(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#DFB76C] resize-none"
+                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 font-body text-base sm:text-sm font-normal leading-[1.5] text-white placeholder:text-slate-500 focus:outline-none focus:border-[#DFB76C] resize-none"
                   />
                 </div>
 
                 {/* Info Jeda 1 Menit & Sensor Santun */}
-                <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-[9px] text-slate-400 leading-relaxed">
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-400 font-normal leading-[1.45]">
                   ℹ️ Ulasan akan langsung tampil di urutan teratas. Mohon gunakan bahasa yang
                   sopan. Terdapat jeda 1 menit antar pengiriman ulasan.
                 </div>
@@ -868,7 +870,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-black text-xs uppercase tracking-wider transition-all active:scale-98 shadow-md shadow-black/30"
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-body font-semibold text-sm transition-all active:scale-98 shadow-md shadow-black/30"
                 >
                   {isSubmitting ? 'Menyimpan Ulasan...' : 'Kirim Ulasan Sekarang'}
                 </button>
@@ -888,7 +890,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-xs rounded-3xl bg-[#12141e] border border-red-500/40 p-5 shadow-2xl space-y-4 text-center"
+              className="relative w-full max-w-xs rounded-3xl bg-[#12141e] border border-red-500/40 p-5 shadow-2xl space-y-3.5 text-center"
             >
               {/* Header */}
               <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto text-red-400">
@@ -896,16 +898,16 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
               </div>
 
               <div>
-                <h3 className="font-display font-extrabold text-sm text-white">
+                <h3 className="font-heading font-bold text-lg leading-[1.25] text-white tracking-[-0.015em]">
                   Akses Pengelola SINKI
                 </h3>
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="font-body text-xs text-slate-400 font-normal mt-1 leading-[1.45]">
                   Masukkan PIN untuk mengaktifkan fitur hapus ulasan.
                 </p>
               </div>
 
               {/* Form PIN */}
-              <form onSubmit={handleVerifyPin} className="space-y-3">
+              <form onSubmit={handleVerifyPin} className="space-y-3 font-body">
                 <input
                   type="password"
                   maxLength={8}
@@ -916,24 +918,24 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                     setPinInput(e.target.value);
                     setPinError('');
                   }}
-                  className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/15 text-center text-sm font-mono tracking-widest text-white focus:outline-none focus:border-red-400"
+                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/15 text-center text-base sm:text-sm font-medium tabular-nums tracking-widest text-white focus:outline-none focus:border-red-400"
                 />
 
                 {pinError && (
-                  <p className="text-[10px] text-red-400 font-medium">{pinError}</p>
+                  <p className="text-xs text-red-400 font-medium">{pinError}</p>
                 )}
 
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => setIsAdminModalOpen(false)}
-                    className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold"
+                    className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-medium"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all active:scale-95"
+                    className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-all active:scale-95"
                   >
                     Buka Kunci
                   </button>
