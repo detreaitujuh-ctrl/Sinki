@@ -43,6 +43,7 @@ import {
   Video,
   Volume2,
   VolumeX,
+  Palette,
 } from 'lucide-react';
 
 import { AnalyticsView } from './AnalyticsView';
@@ -132,6 +133,16 @@ import {
   extractInstagramHandle,
   formatWhatsAppUrl,
 } from '../utils/socialStorage';
+import {
+  LuxuryThemeId,
+  LuxuryThemeConfig,
+  LUXURY_THEMES,
+  getStoredTheme,
+  fetchThemeFromServer,
+  saveThemeToServer,
+  resetThemeToDefault,
+  applyThemeToDocument,
+} from '../utils/themeStorage';
 
 interface DimensiSinkiScreenProps {
   onExitToPublic: () => void;
@@ -153,6 +164,7 @@ interface DimensiSinkiScreenProps {
   tickerConfig?: TickerConfig;
   perfumes?: PerfumeItem[];
   socialLinks?: SocialLinks;
+  luxuryTheme?: LuxuryThemeConfig;
   onAssetsUpdated: (newLogo: string | null, newChibi: string | null) => void;
   onQrisUpdated: (newQris: string | null) => void;
   onTop11PhotoUpdated: (variantId: string, newPhoto: string) => void;
@@ -171,6 +183,7 @@ interface DimensiSinkiScreenProps {
   onTickerUpdated?: (newTicker: TickerConfig) => void;
   onPerfumesUpdated?: (newList: PerfumeItem[]) => void;
   onSocialLinksUpdated?: (newLinks: SocialLinks) => void;
+  onThemeUpdated?: (newTheme: LuxuryThemeConfig) => void;
 }
 
 type MenuKey =
@@ -204,6 +217,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   tickerConfig,
   perfumes,
   socialLinks: propSocialLinks,
+  luxuryTheme: propLuxuryTheme,
   onAssetsUpdated,
   onQrisUpdated,
   onTop11PhotoUpdated,
@@ -215,7 +229,62 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   onTickerUpdated,
   onPerfumesUpdated,
   onSocialLinksUpdated,
+  onThemeUpdated,
 }) => {
+  // Luxury Architectural 5-Color Theme State
+  const [selectedThemeId, setSelectedThemeId] = useState<LuxuryThemeId>(
+    () => propLuxuryTheme?.id || getStoredTheme().id
+  );
+  const [isSavingTheme, setIsSavingTheme] = useState(false);
+
+  useEffect(() => {
+    if (propLuxuryTheme?.id) {
+      setSelectedThemeId(propLuxuryTheme.id);
+      applyThemeToDocument(propLuxuryTheme.id);
+    }
+  }, [propLuxuryTheme?.id]);
+
+  useEffect(() => {
+    fetchThemeFromServer().then((cfg) => {
+      if (cfg?.id) {
+        setSelectedThemeId(cfg.id);
+        onThemeUpdated?.(cfg);
+      }
+    });
+  }, []);
+
+  const handleSelectLuxuryTheme = async (themeId: LuxuryThemeId) => {
+    if (isSavingTheme) return;
+    setSelectedThemeId(themeId);
+    applyThemeToDocument(themeId);
+    setIsSavingTheme(true);
+    try {
+      const saved = await saveThemeToServer(themeId);
+      onThemeUpdated?.(saved);
+      const found = LUXURY_THEMES.find((t) => t.id === themeId);
+      onShowToast(`Tema "${found?.name || themeId}" aktif di seluruh website!`);
+    } finally {
+      setIsSavingTheme(false);
+    }
+  };
+
+  const handleResetLuxuryTheme = async () => {
+    if (isSavingTheme) return;
+    setSelectedThemeId('champagne-gold');
+    applyThemeToDocument('champagne-gold');
+    setIsSavingTheme(true);
+    try {
+      const saved = await resetThemeToDefault();
+      onThemeUpdated?.(saved);
+      onShowToast('Tema dikembalikan ke Champagne Gold (Default Signature).');
+    } finally {
+      setIsSavingTheme(false);
+    }
+  };
+
+  const activeThemeMeta =
+    LUXURY_THEMES.find((t) => t.id === selectedThemeId) || LUXURY_THEMES[0];
+
   // Hero Video & Poster Crossfade State
   const [heroMediaType, setHeroMediaType] = useState<'image' | 'video'>(() => propHeroMediaType || getStoredHeroMediaType());
   const [heroVideoUrl, setHeroVideoUrl] = useState<string>(() => propHeroVideoUrl || getStoredHeroVideoUrl() || '');
@@ -1089,16 +1158,51 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   // LATAR BELAKANG ELEGAN HAUTE PARFUMERIE (TERLIHAT, MEWAH & TIDAK MENGGANGGU)
   // ========================================================
   const AdminLuxuryBackground: React.FC = () => (
-    <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,#131726_0%,#0c0e18_45%,#06070b_100%)]">
-      {/* 1. Ambient Golden Blooms - Warm Champagne Highlights */}
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[850px] h-[380px] bg-gradient-to-b from-amber-400/[0.14] via-amber-500/[0.05] to-transparent rounded-full blur-[100px]" />
-      <div className="absolute top-1/4 -right-20 w-[550px] h-[550px] bg-amber-400/[0.08] rounded-full blur-[130px]" />
-      <div className="absolute -bottom-24 -left-20 w-[600px] h-[600px] bg-gradient-to-tr from-amber-700/[0.08] via-amber-600/[0.04] to-transparent rounded-full blur-[130px]" />
-
-      {/* 2. Haute Parfumerie Gold Hairline Drafting Grid with Soft Vignette Mask */}
+    <div
+      className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+      style={{
+        background:
+          'radial-gradient(ellipse 120% 80% at 50% -10%, var(--arch-card-top) 0%, var(--arch-canvas-mid) 48%, var(--arch-canvas-bot) 100%)',
+      }}
+    >
+      {/* 0. Ethereal Haute Parfumerie Silk Smoke Wisps (Tinted by Active Luxury Theme) */}
       <div
-        className="absolute inset-0 bg-[linear-gradient(to_right,rgba(217,170,75,0.065)_1px,transparent_1px),linear-gradient(to_bottom,rgba(217,170,75,0.065)_1px,transparent_1px)] bg-[size:44px_44px]"
+        className="absolute inset-0 pointer-events-none opacity-30"
         style={{
+          background:
+            'linear-gradient(140deg, var(--arch-gold-soft) 0%, var(--arch-gold-bright) 35%, var(--arch-gold) 75%, var(--arch-gold-deep) 100%)',
+          WebkitMaskImage: 'url("/assets/smoke/sinki-canvas-smoke.webp")',
+          maskImage: 'url("/assets/smoke/sinki-canvas-smoke.webp")',
+          WebkitMaskSize: 'cover',
+          maskSize: 'cover',
+          WebkitMaskPosition: 'center',
+          maskPosition: 'center',
+          WebkitMaskRepeat: 'no-repeat',
+          maskRepeat: 'no-repeat',
+        }}
+      />
+
+      {/* 1. Ambient Metallic Blooms */}
+      <div
+        className="absolute -top-32 left-1/2 -translate-x-1/2 w-[850px] h-[380px] rounded-full blur-[100px]"
+        style={{ background: 'var(--arch-glow-tl)' }}
+      />
+      <div
+        className="absolute top-1/4 -right-20 w-[550px] h-[550px] rounded-full blur-[130px]"
+        style={{ background: 'var(--arch-badge-bg-soft)' }}
+      />
+      <div
+        className="absolute -bottom-24 -left-20 w-[600px] h-[600px] rounded-full blur-[130px]"
+        style={{ background: 'var(--arch-glow-br)' }}
+      />
+
+      {/* 2. Haute Parfumerie Metallic Hairline Drafting Grid with Soft Vignette Mask */}
+      <div
+        className="absolute inset-0 bg-[size:44px_44px]"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, var(--arch-border-faint) 1px, transparent 1px), linear-gradient(to bottom, var(--arch-border-faint) 1px, transparent 1px)',
+          opacity: 0.4,
           maskImage: 'radial-gradient(ellipse 90% 80% at 50% 35%, black 40%, rgba(0,0,0,0.45) 75%, transparent 100%)',
           WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at 50% 35%, black 40%, rgba(0,0,0,0.45) 75%, transparent 100%)',
         }}
@@ -1106,7 +1210,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
       {/* 3. Watermark Geometris Flacon Parfumerie (Terlihat Jelas tapi Halus di Belakang Konten) */}
       <svg
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[780px] h-[780px] max-w-none text-amber-400/[0.075] pointer-events-none select-none"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[780px] h-[780px] max-w-none pointer-events-none select-none opacity-[0.08]"
+        style={{ color: 'var(--arch-gold)' }}
         viewBox="0 0 500 500"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -1178,17 +1283,17 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   // ========================================================
   if (!isAuthenticated) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#08090e] font-body flex flex-col items-center justify-center p-4 text-slate-100 select-none overflow-hidden">
+      <div className="fixed inset-0 z-50 bg-[#060609] sinki-admin-calm font-body flex flex-col items-center justify-center p-4 text-slate-100 select-none overflow-hidden">
         <AdminLuxuryBackground />
 
-        <div className="relative z-10 w-full max-w-sm rounded-3xl bg-[#0f1118]/95 backdrop-blur-xl border border-amber-500/35 p-6 sm:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.85)] text-center space-y-5">
+        <div className="relative z-10 w-full max-w-sm rounded-[10px] sinki-arch-modal backdrop-blur-xl border p-6 sm:p-7 text-center space-y-5">
           {/* Sinki Lock Emblem */}
-          <div className="relative mx-auto w-14 h-14 rounded-2xl bg-black/60 border border-amber-500/40 p-3 flex items-center justify-center shadow-lg">
-            <Lock className="w-7 h-7 text-amber-300 drop-shadow-[0_2px_8px_rgba(245,186,73,0.4)]" />
+          <div className="relative mx-auto w-14 h-14 rounded-[8px] sinki-arch-subbox border p-3 flex items-center justify-center shadow-lg">
+            <Lock className="w-7 h-7 text-[#E8C782] drop-shadow-[0_2px_8px_rgba(212,175,106,0.4)]" />
           </div>
 
           <div>
-            <span className="text-xs tracking-[0.14em] text-amber-400/90 uppercase font-semibold block mb-1">
+            <span className="text-xs tracking-[0.14em] text-[#D4AF6A] uppercase font-semibold block mb-1">
               SINKI PARFUM · DEFINE YOUR PRESENCE
             </span>
             <h1 className="font-heading text-2xl font-bold tracking-[0.06em] leading-[1.2] text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5C2] via-[#E8B960] to-[#B3791B]">
@@ -1211,7 +1316,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 setPinError('');
               }}
               autoFocus
-              className="w-full py-2.5 px-4 rounded-xl bg-black/50 border border-amber-500/30 text-center tabular-nums text-xl font-semibold tracking-[0.35em] text-amber-200 focus:outline-none focus:border-amber-400 placeholder:tracking-normal placeholder:text-slate-500 placeholder:text-sm transition-colors"
+              className="w-full py-2.5 px-4 rounded-[8px] sinki-arch-input border text-center tabular-nums text-xl font-semibold tracking-[0.35em] text-[#F3E6C8] focus:outline-none placeholder:tracking-normal placeholder:text-slate-500 placeholder:text-sm transition-colors"
             />
 
             {pinError && (
@@ -1222,7 +1327,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
             <button
               type="submit"
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-110 active:scale-98 text-slate-950 font-semibold text-sm transition-all shadow-md shadow-amber-950/40"
+              className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-110 active:scale-98 text-slate-950 font-semibold text-sm transition-all shadow-md shadow-black/50"
             >
               Buka Dimensi Sinki
             </button>
@@ -1230,7 +1335,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
           <button
             onClick={onExitToPublic}
-            className="text-xs text-slate-400 hover:text-amber-300 font-medium transition-colors"
+            className="text-xs text-slate-400 hover:text-[#E8C782] font-medium transition-colors"
           >
             ← Kembali ke Website Publik
           </button>
@@ -1303,7 +1408,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   // 2. TAMPILAN DASHBOARD PROFESIONAL: ADAPTIVE DESKTOP + MOBILE
   // ========================================================
   return (
-    <div className="fixed inset-0 z-50 bg-[#08090e] text-slate-100 flex flex-col lg:flex-row overflow-hidden font-body select-none">
+    <div className="fixed inset-0 z-50 bg-[#060609] sinki-admin-calm text-slate-100 flex flex-col lg:flex-row overflow-hidden font-body select-none">
       {/* Latar Belakang Elegan Haute Parfumerie (Terlihat, Mewah & Tidak Mengganggu) */}
       <AdminLuxuryBackground />
 
@@ -1319,19 +1424,19 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           SIDEBAR KIRI (DESKTOP: Pinned Permanen; MOBILE: Slide Drawer)
          ======================================================== */}
       <aside
-        className={`fixed lg:static top-0 bottom-0 left-0 z-50 w-72 lg:w-64 xl:w-72 bg-[#0d0f17] border-r border-white/10 flex flex-col justify-between p-4 sm:p-5 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none lg:translate-x-0 ${
+        className={`fixed lg:static top-0 bottom-0 left-0 z-50 w-72 lg:w-64 xl:w-72 sinki-arch-modal border-r flex flex-col justify-between p-4 sm:p-5 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none lg:translate-x-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="space-y-5">
           {/* Top Brand Block */}
-          <div className="flex items-center justify-between pb-4 border-b border-white/10">
+          <div className="flex items-center justify-between pb-4 border-b border-[#D4AF6A]/20">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-black/60 border border-amber-500/35 p-1.5 flex items-center justify-center shadow-md shrink-0">
+              <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border p-1.5 flex items-center justify-center shadow-md shrink-0">
                 {currentLogo ? (
                   <img src={currentLogo} alt="Logo" className="w-full h-full object-contain" />
                 ) : (
-                  <Sparkles size={20} className="text-amber-400" />
+                  <Sparkles size={20} className="text-[#E8C782]" />
                 )}
               </div>
               <div>
@@ -1347,7 +1452,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             {/* Mobile Close Button */}
             <button
               onClick={() => setIsSidebarOpen(false)}
-              className="lg:hidden w-7 h-7 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center"
+              className="lg:hidden w-7 h-7 rounded-[6px] sinki-arch-subbox border hover:border-[#D4AF6A]/55 text-slate-400 hover:text-white flex items-center justify-center"
             >
               <X size={16} />
             </button>
@@ -1357,7 +1462,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           <nav className="space-y-4 overflow-y-auto no-scrollbar max-h-[calc(100vh-210px)] pr-1">
             {navGroups.map((group, gIdx) => (
               <div key={gIdx} className="space-y-1.5">
-                <span className="text-xs font-semibold text-amber-400/90 px-2 block">
+                <span className="text-xs font-semibold text-[#D4AF6A] px-2 block">
                   {group.groupTitle}
                 </span>
                 <div className="space-y-1">
@@ -1372,21 +1477,21 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           setActiveMenu(item.id as MenuKey);
                           setIsSidebarOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between py-2 px-3 rounded-xl text-xs sm:text-sm font-medium transition-all active:scale-98 ${
+                        className={`w-full flex items-center justify-between py-2 px-3 rounded-[8px] text-xs sm:text-sm font-medium transition-all active:scale-98 ${
                           isActive
-                            ? 'bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm font-semibold'
+                            ? 'sinki-arch-card-selected text-[#F3E6C8] border font-semibold'
                             : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <Icon size={15} className={isActive ? 'text-amber-400' : 'text-slate-400'} />
+                          <Icon size={15} className={isActive ? 'text-[#E8C782]' : 'text-slate-400'} />
                           <span>{item.label}</span>
                         </div>
                         {item.badge && (
                           <span
-                            className={`text-xs tabular-nums px-2 py-0.5 rounded-full font-semibold leading-none ${
+                            className={`text-xs tabular-nums px-2 py-0.5 rounded-[4px] font-semibold leading-none ${
                               isActive
-                                ? 'bg-amber-500/25 text-amber-200'
+                                ? 'bg-[#D4AF6A]/25 text-[#F3E6C8]'
                                 : 'bg-white/5 text-slate-400'
                             }`}
                           >
@@ -1403,7 +1508,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         </div>
 
         {/* Sidebar Footer with Status & Logout */}
-        <div className="pt-4 border-t border-white/10 space-y-3">
+        <div className="pt-4 border-t border-[#D4AF6A]/20 space-y-3">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -1416,7 +1521,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
           <button
             onClick={onExitToPublic}
-            className="w-full py-2 px-3 rounded-xl bg-red-950/30 hover:bg-red-950/50 border border-red-500/30 text-red-300 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all"
+            className="w-full py-2 px-3 rounded-[8px] bg-red-950/30 hover:bg-red-950/50 border border-red-500/35 text-red-300 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all"
           >
             <LogOut size={14} />
             <span>Kunci & Keluar</span>
@@ -1429,12 +1534,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
          ======================================================== */}
       <main className="relative z-10 flex-1 flex flex-col h-full overflow-y-auto no-scrollbar">
         {/* TOP BAR HEADER */}
-        <header className="sticky top-0 z-30 bg-[#0d0f17]/90 backdrop-blur-md px-4 sm:px-6 py-3 border-b border-white/10 flex items-center justify-between">
+        <header className="sticky top-0 z-30 sinki-arch-header backdrop-blur-md px-4 sm:px-6 py-3 border-b flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             {/* Hamburger Button (Mobile only) */}
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="lg:hidden w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 flex items-center justify-center text-amber-300 active:scale-95 transition-all shrink-0"
+              className="lg:hidden w-8 h-8 rounded-[6px] sinki-arch-subbox border hover:border-[#D4AF6A]/55 flex items-center justify-center text-[#E8C782] active:scale-95 transition-all shrink-0"
               title="Buka Menu"
             >
               <ChevronRight size={16} />
@@ -1443,7 +1548,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             {/* Breadcrumb Display */}
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-400">
-                <span className="font-heading font-bold text-amber-400 shrink-0">DIMENSI-SINKI</span>
+                <span className="font-heading font-bold text-[#E8C782] shrink-0">DIMENSI-SINKI</span>
                 <span>/</span>
                 <span className="text-slate-200 font-medium truncate">{menuLabels[activeMenu]}</span>
               </div>
@@ -1456,7 +1561,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             <button
               onClick={handlePurgeAndSyncCache}
               disabled={isPurgingCache}
-              className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-[8px] bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/35 text-cyan-300 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
               title="Bersihkan cache browser & sinkronkan ulang seluruh data publik"
             >
               <RefreshCw size={13} className={isPurgingCache ? 'animate-spin' : ''} />
@@ -1465,24 +1570,42 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               </span>
             </button>
 
+            {/* Pintasan Tema Warna Luxury */}
+            <button
+              type="button"
+              onClick={() => setActiveMenu('settings')}
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-[8px] sinki-arch-subbox hover:border-[#D4AF6A]/65 border text-[#E8C782] text-xs font-semibold transition-all active:scale-95"
+              title={`Tema Aktif: ${activeThemeMeta.name} — Klik untuk ganti warna tema`}
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-[3px] shrink-0"
+                style={{
+                  backgroundColor: activeThemeMeta.brightHex,
+                  boxShadow: `0 0 6px ${activeThemeMeta.accentHex}`,
+                }}
+              />
+              <Palette size={13} />
+              <span className="hidden md:inline">{activeThemeMeta.name}</span>
+            </button>
+
             {/* Live Web Preview Shortcut */}
             <button
               onClick={onExitToPublic}
-              className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold transition-all active:scale-95"
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-[8px] sinki-arch-subbox hover:border-[#D4AF6A]/65 border text-[#E8C782] text-xs font-semibold transition-all active:scale-95"
               title="Buka Website Publik"
             >
               <Eye size={14} />
               <span className="hidden sm:inline">Lihat Web Publik</span>
             </button>
 
-            <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-amber-300 shadow-inner">
+            <div className="p-2 rounded-[8px] sinki-arch-subbox border text-[#E8C782] shadow-inner">
               <Bell size={15} />
             </div>
           </div>
         </header>
 
         {/* HORIZONTAL LUXURY ADMIN TAB BAR (Responsive on Mobile & Desktop) */}
-        <div className="sticky top-[53px] z-20 bg-[#0a0c14]/95 backdrop-blur-md border-b border-white/10 px-3 sm:px-6 py-2 shadow-md">
+        <div className="sticky top-[53px] z-20 bg-[#09090d]/95 backdrop-blur-md border-b border-[#D4AF6A]/25 px-3 sm:px-6 py-2 shadow-md">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -1492,19 +1615,19 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => setActiveMenu(item.id as MenuKey)}
-                  className={`flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm whitespace-nowrap transition-all shrink-0 active:scale-95 select-none ${
+                  className={`flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-[8px] text-xs sm:text-sm whitespace-nowrap transition-all shrink-0 active:scale-95 select-none ${
                     isActive
-                      ? 'bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-amber-600/25 text-amber-200 border border-amber-500/50 shadow-[0_2px_12px_rgba(245,186,73,0.18)] font-semibold ring-1 ring-amber-400/20'
+                      ? 'sinki-arch-card-selected text-[#F3E6C8] border font-semibold'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] border border-transparent font-medium'
                   }`}
                 >
-                  <Icon size={14} className={isActive ? 'text-amber-400' : 'text-slate-400'} />
+                  <Icon size={14} className={isActive ? 'text-[#E8C782]' : 'text-slate-400'} />
                   <span>{item.label}</span>
                   {item.badge && (
                     <span
-                      className={`text-xs tabular-nums px-1.5 py-0.5 rounded-full font-semibold leading-none ${
+                      className={`text-xs tabular-nums px-1.5 py-0.5 rounded-[4px] font-semibold leading-none ${
                         isActive
-                          ? 'bg-amber-400/30 text-amber-200 border border-amber-400/40'
+                          ? 'bg-[#D4AF6A]/25 text-[#F3E6C8] border border-[#D4AF6A]/40'
                           : 'bg-white/5 text-slate-400'
                       }`}
                     >
@@ -1526,13 +1649,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           {activeMenu === 'dashboard' && (
             <>
               {/* Welcome Banner */}
-              <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#121422] to-[#16192a] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+              <div className="p-5 sm:p-6 rounded-[10px] sinki-arch-card border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-amber-400 uppercase tracking-[0.12em] font-semibold">
+                    <span className="text-xs text-[#E8C782] uppercase tracking-[0.12em] font-semibold">
                       Portal Pengelola
                     </span>
-                    <Crown size={15} className="text-amber-400" />
+                    <Crown size={15} className="text-[#E8C782]" />
                   </div>
                   <h1 className="font-heading text-2xl sm:text-3xl font-bold leading-[1.2] text-white mt-1 tracking-[-0.015em]">
                     Selamat Datang, Owner
@@ -1542,7 +1665,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2.5 bg-black/40 border border-white/10 px-3.5 py-2.5 rounded-2xl shrink-0 self-start sm:self-auto">
+                <div className="flex items-center gap-2.5 sinki-arch-subbox border px-3.5 py-2.5 rounded-[8px] shrink-0 self-start sm:self-auto">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                   <div className="text-right">
                     <div className="text-xs sm:text-sm font-semibold text-white">
@@ -1558,14 +1681,73 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
               </div>
 
+              {/* BAR CEPAT: 5 PILIHAN WARNA TEMA LUXURY ARCHITECTURAL */}
+              <div className="p-4 sm:p-5 rounded-[10px] sinki-arch-card border flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border flex items-center justify-center text-[#E8C782] shrink-0">
+                    <Palette size={19} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-heading text-sm sm:text-base font-semibold text-white leading-[1.25]">
+                        Tema Warna Website & Admin
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-[5px] bg-[#D4AF6A]/15 border border-[#D4AF6A]/35 text-[11px] font-semibold text-[#E8C782]">
+                        {activeThemeMeta.name}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">
+                      Klik salah satu dari 5 palet mewah untuk mengubah suasana seluruh website secara instan.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
+                  {LUXURY_THEMES.map((theme) => {
+                    const isSelected = selectedThemeId === theme.id;
+                    return (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        disabled={isSavingTheme}
+                        onClick={() => handleSelectLuxuryTheme(theme.id)}
+                        className={`py-1.5 px-2.5 rounded-[8px] border text-xs font-semibold flex items-center gap-2 transition-all active:scale-95 ${
+                          isSelected
+                            ? 'sinki-arch-card-selected text-white'
+                            : 'sinki-arch-subbox text-slate-300 hover:text-white'
+                        }`}
+                        title={`${theme.name} — ${theme.subtitle}`}
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-[4px] border shrink-0"
+                          style={{
+                            background: `linear-gradient(135deg, ${theme.softHex} 0%, ${theme.accentHex} 100%)`,
+                            borderColor: theme.brightHex,
+                          }}
+                        />
+                        <span className="hidden xl:inline">{theme.name.split(' ')[0]}</span>
+                        {isSelected && <Check size={12} className="text-[#E8C782] shrink-0" />}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setActiveMenu('settings')}
+                    className="py-1.5 px-2.5 rounded-[8px] sinki-arch-subbox border text-xs font-medium text-[#E8C782] hover:text-white transition-colors shrink-0"
+                  >
+                    Detail →
+                  </button>
+                </div>
+              </div>
+
               {/* 4 GRID KARTU METRIK STATISTIK (DESKTOP: 4 KOLOM, MOBILE: 2 KOLOM) */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
                 <div
                   onClick={() => setActiveMenu('content')}
-                  className="p-4 sm:p-5 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/40 cursor-pointer transition-all active:scale-98 shadow-lg group space-y-2"
+                  className="p-4 sm:p-5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 group space-y-2"
                 >
-                  <div className="flex items-center justify-between text-slate-400 group-hover:text-amber-300">
-                    <FileText size={20} className="text-amber-400" />
+                  <div className="flex items-center justify-between text-slate-400 group-hover:text-[#E8C782]">
+                    <FileText size={20} className="text-[#E8C782]" />
                     <ChevronRight size={14} />
                   </div>
                   <div>
@@ -1577,10 +1759,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                 <div
                   onClick={() => setActiveMenu('media')}
-                  className="p-4 sm:p-5 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/40 cursor-pointer transition-all active:scale-98 shadow-lg group space-y-2"
+                  className="p-4 sm:p-5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 group space-y-2"
                 >
-                  <div className="flex items-center justify-between text-slate-400 group-hover:text-amber-300">
-                    <ImageIcon size={20} className="text-amber-400" />
+                  <div className="flex items-center justify-between text-slate-400 group-hover:text-[#E8C782]">
+                    <ImageIcon size={20} className="text-[#E8C782]" />
                     <ChevronRight size={14} />
                   </div>
                   <div>
@@ -1592,10 +1774,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                 <div
                   onClick={() => setActiveMenu('banner')}
-                  className="p-4 sm:p-5 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/40 cursor-pointer transition-all active:scale-98 shadow-lg group space-y-2"
+                  className="p-4 sm:p-5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 group space-y-2"
                 >
-                  <div className="flex items-center justify-between text-slate-400 group-hover:text-amber-300">
-                    <Sliders size={20} className="text-amber-400" />
+                  <div className="flex items-center justify-between text-slate-400 group-hover:text-[#E8C782]">
+                    <Sliders size={20} className="text-[#E8C782]" />
                     <ChevronRight size={14} />
                   </div>
                   <div>
@@ -1607,10 +1789,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                 <div
                   onClick={() => setActiveMenu('reviews')}
-                  className="p-4 sm:p-5 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/40 cursor-pointer transition-all active:scale-98 shadow-lg group space-y-2"
+                  className="p-4 sm:p-5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 group space-y-2"
                 >
-                  <div className="flex items-center justify-between text-slate-400 group-hover:text-amber-300">
-                    <MessageSquare size={20} className="text-amber-400" />
+                  <div className="flex items-center justify-between text-slate-400 group-hover:text-[#E8C782]">
+                    <MessageSquare size={20} className="text-[#E8C782]" />
                     <ChevronRight size={14} />
                   </div>
                   <div>
@@ -1625,18 +1807,18 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div
                   onClick={() => setActiveMenu('analytics')}
-                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#171a2b] via-[#1c2035] to-[#141624] border border-amber-500/35 hover:border-amber-400/60 cursor-pointer transition-all active:scale-98 shadow-xl flex flex-col justify-between gap-3 group"
+                  className="p-4 sm:p-5 rounded-[10px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 flex flex-col justify-between gap-3 group"
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shrink-0">
+                    <div className="w-12 h-12 rounded-[8px] sinki-arch-subbox border flex items-center justify-center text-[#E8C782] group-hover:scale-105 transition-transform shrink-0">
                       <BarChart3 size={24} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold text-amber-300">
+                        <span className="text-xs font-semibold text-[#E8C782]">
                           Grafik & Analitik Pengunjung
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30 flex items-center gap-1 leading-tight">
+                        <span className="px-2 py-0.5 rounded-[5px] bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30 flex items-center gap-1 leading-tight">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                           Live
                         </span>
@@ -1650,7 +1832,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-amber-300 group-hover:text-amber-200 self-end shrink-0 pt-2.5 border-t border-white/5 w-full justify-between">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#E8C782] group-hover:text-[#F3E6C8] self-end shrink-0 pt-2.5 border-t border-[#D4AF6A]/15 w-full justify-between">
                     <span className="text-xs text-slate-400 font-normal">Pantau pertumbuhan website</span>
                     <span className="flex items-center gap-1">
                       Buka Grafik Penuh <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
@@ -1660,10 +1842,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                 <div
                   onClick={() => setActiveMenu('security')}
-                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0f1b1a] via-[#132322] to-[#0d161a] border border-emerald-500/35 hover:border-emerald-400/60 cursor-pointer transition-all active:scale-98 shadow-xl flex flex-col justify-between gap-3 group"
+                  className="p-4 sm:p-5 rounded-[10px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 flex flex-col justify-between gap-3 group"
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
+                    <div className="w-12 h-12 rounded-[8px] bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
                       <ShieldCheck size={24} />
                     </div>
                     <div>
@@ -1671,7 +1853,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <span className="text-xs font-semibold text-emerald-300">
                           Keamanan & Kesehatan Sistem
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30 flex items-center gap-1 leading-tight">
+                        <span className="px-2 py-0.5 rounded-[5px] bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30 flex items-center gap-1 leading-tight">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                           Optimal 100%
                         </span>
@@ -1685,7 +1867,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-300 group-hover:text-emerald-200 self-end shrink-0 pt-2.5 border-t border-white/5 w-full justify-between">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-300 group-hover:text-emerald-200 self-end shrink-0 pt-2.5 border-t border-[#D4AF6A]/15 w-full justify-between">
                     <span className="text-xs text-slate-400 font-normal">Website Cepat & Terlindungi</span>
                     <span className="flex items-center gap-1">
                       Buka Pusat Keamanan <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
@@ -1697,7 +1879,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               {/* QUICK ACTIONS (DESKTOP: 3 KOLOM) */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <SlidersHorizontal size={15} className="text-amber-400" />
+                  <SlidersHorizontal size={15} className="text-[#E8C782]" />
                   <h3 className="font-heading text-base font-semibold leading-[1.25] text-white">
                     Pintasan Manajemen Cepat
                   </h3>
@@ -1706,10 +1888,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                   <div
                     onClick={() => setActiveMenu('variants')}
-                    className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/40 flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
+                    className="p-4 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
+                      <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border flex items-center justify-center text-[#E8C782] shrink-0">
                         <Package size={18} />
                       </div>
                       <div>
@@ -1721,15 +1903,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </span>
                       </div>
                     </div>
-                    <ArrowRight size={15} className="text-amber-400 shrink-0" />
+                    <ArrowRight size={15} className="text-[#E8C782] shrink-0" />
                   </div>
 
                   <div
                     onClick={() => setActiveMenu('media')}
-                    className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/40 flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
+                    className="p-4 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
+                      <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border flex items-center justify-center text-[#E8C782] shrink-0">
                         <Upload size={18} />
                       </div>
                       <div>
@@ -1739,15 +1921,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </span>
                       </div>
                     </div>
-                    <ArrowRight size={15} className="text-amber-400 shrink-0" />
+                    <ArrowRight size={15} className="text-[#E8C782] shrink-0" />
                   </div>
 
                   <div
                     onClick={() => setActiveMenu('banner')}
-                    className="p-4 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/40 flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
+                    className="p-4 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
+                      <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border flex items-center justify-center text-[#E8C782] shrink-0">
                         <Sliders size={18} />
                       </div>
                       <div>
@@ -1757,7 +1939,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </span>
                       </div>
                     </div>
-                    <ArrowRight size={15} className="text-amber-400 shrink-0" />
+                    <ArrowRight size={15} className="text-[#E8C782] shrink-0" />
                   </div>
                 </div>
               </div>
@@ -1771,8 +1953,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-heading text-xl font-bold leading-[1.25] text-amber-300 flex items-center gap-2 tracking-[-0.015em]">
-                    <BarChart3 size={20} className="text-amber-400 shrink-0" />
+                  <h2 className="font-heading text-xl font-bold leading-[1.25] text-[#F3E6C8] flex items-center gap-2 tracking-[-0.015em]">
+                    <BarChart3 size={20} className="text-[#E8C782] shrink-0" />
                     <span>Statistik & Grafik Pengunjung SINKI</span>
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
@@ -1781,7 +1963,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-[#0e111d] border border-white/10 p-2 sm:p-4 shadow-xl">
+              <div className="rounded-[10px] sinki-arch-card border p-2 sm:p-4">
                 <AnalyticsView onShowToast={onShowToast} pin="1995" isCompact={false} />
               </div>
             </div>
@@ -1794,7 +1976,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-heading text-xl font-bold leading-[1.25] text-amber-300 tracking-[-0.015em]">
+                  <h2 className="font-heading text-xl font-bold leading-[1.25] text-[#F3E6C8] tracking-[-0.015em]">
                     Katalog Varian & 6 Kategori Collection ({perfumesList.length})
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-[1.45]">
@@ -1816,14 +1998,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       }));
                       setIsAddingPerfume(true);
                     }}
-                    className="py-2 px-3.5 rounded-lg bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-105 text-slate-950 font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+                    className="py-2 px-3.5 rounded-[6px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
                   >
                     <Plus size={15} />
                     <span>Tambah Varian Baru</span>
                   </button>
                   <button
                     onClick={handleResetPerfumes}
-                    className="py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs sm:text-sm font-medium border border-white/10 flex items-center gap-1.5 transition-colors"
+                    className="py-2 px-3 rounded-[6px] sinki-arch-subbox hover:border-[#D4AF6A]/55 text-slate-300 hover:text-white text-xs sm:text-sm font-medium border flex items-center gap-1.5 transition-colors"
                     title="Reset ke 68 Varian Bawaan"
                   >
                     <RotateCcw size={13} />
@@ -1833,7 +2015,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               </div>
 
               {/* 6 COLLECTION CATEGORY FILTER CARDS (ARCHITECTURAL ANTI-CAPSULE) */}
-              <div className="p-4 rounded-xl bg-[#0e111d] border border-white/10 space-y-3.5">
+              <div className="p-4 rounded-[8px] sinki-arch-card border space-y-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-heading text-sm font-semibold text-slate-200">
                     Filter 6 Kategori Halaman Collection
@@ -1849,7 +2031,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           }));
                           setIsAddingPerfume(true);
                         }}
-                        className="py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 flex items-center gap-1 transition-colors"
+                        className="py-1.5 px-2.5 rounded-[6px] text-xs font-semibold sinki-arch-subbox hover:border-[#D4AF6A]/65 text-[#E8C782] border flex items-center gap-1 transition-colors"
                       >
                         <Plus size={12} />
                         <span>
@@ -1861,10 +2043,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <button
                       type="button"
                       onClick={() => setPerfumeCategoryFilter('all')}
-                      className={`py-1.5 px-2.5 rounded-lg text-xs font-semibold border transition-colors tabular-nums ${
+                      className={`py-1.5 px-2.5 rounded-[6px] text-xs font-semibold border transition-colors tabular-nums ${
                         perfumeCategoryFilter === 'all'
-                          ? 'bg-amber-400 text-slate-950 border-amber-400'
-                          : 'bg-white/5 text-slate-300 border-white/10 hover:text-white'
+                          ? 'bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 border-[#E8C782]'
+                          : 'sinki-arch-subbox text-slate-300 hover:text-white'
                       }`}
                     >
                       Semua Varian ({perfumesList.length})
@@ -1888,10 +2070,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         onClick={() =>
                           setPerfumeCategoryFilter((prev) => (prev === cat.id ? 'all' : cat.id))
                         }
-                        className={`text-left p-2.5 rounded-lg border transition-all flex flex-col justify-between min-h-[64px] ${
+                        className={`text-left p-2.5 rounded-[6px] border transition-all flex flex-col justify-between min-h-[64px] ${
                           isSelected
-                            ? 'bg-amber-500/15 border-amber-400 text-white shadow-sm'
-                            : 'bg-[#131724] border-white/10 hover:border-amber-500/40 text-slate-200'
+                            ? 'sinki-arch-card-selected text-white shadow-sm'
+                            : 'sinki-arch-subbox hover:border-[#D4AF6A]/55 text-slate-200'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-1">
@@ -1900,7 +2082,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           </span>
                           <span
                             className={`text-xs tabular-nums ${
-                              isSelected ? 'text-amber-300 font-semibold' : 'text-slate-400'
+                              isSelected ? 'text-[#E8C782] font-semibold' : 'text-slate-400'
                             }`}
                           >
                             {count}
@@ -1915,15 +2097,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
 
                 {/* Search & Base Gender Filter Row */}
-                <div className="flex flex-col sm:flex-row gap-2.5 pt-2 border-t border-white/10">
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-2 border-t border-[#D4AF6A]/20">
                   <div className="relative flex-1">
-                    <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#D4AF6A]/80" />
                     <input
                       type="text"
                       value={perfumeSearchQuery}
                       onChange={(e) => setPerfumeSearchQuery(e.target.value)}
                       placeholder="Cari nama varian, karakter aroma, atau rekomendasi penggunaan..."
-                      className="w-full py-2 pl-9 pr-8 rounded-lg bg-black/50 border border-white/10 text-base sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400 transition-all"
+                      className="w-full py-2 pl-9 pr-8 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white placeholder:text-slate-500 focus:outline-none transition-all"
                     />
                     {perfumeSearchQuery && (
                       <button
@@ -1952,10 +2134,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           onClick={() =>
                             setPerfumeCategoryFilter((prev) => (prev === gCat ? 'all' : gCat))
                           }
-                          className={`shrink-0 py-1.5 px-2.5 rounded-lg text-xs font-semibold border transition-colors tabular-nums ${
+                          className={`shrink-0 py-1.5 px-2.5 rounded-[6px] text-xs font-semibold border transition-colors tabular-nums ${
                             isSel
-                              ? 'bg-white/20 text-white border-white/40'
-                              : 'bg-white/5 text-slate-400 hover:text-white border-white/10'
+                              ? 'sinki-arch-card-selected text-[#F3E6C8]'
+                              : 'sinki-arch-subbox text-slate-400 hover:text-white'
                           }`}
                         >
                           {labels[gCat]} ({count})
@@ -2008,10 +2190,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     return (
                       <div
                         key={item.id}
-                        className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+                        className={`p-4 rounded-[8px] border transition-all flex flex-col justify-between gap-3 ${
                           isItemActive
-                            ? 'bg-[#0f111a] border-white/10 hover:border-amber-500/35'
-                            : 'bg-[#0d0e14] border-rose-500/25 opacity-75'
+                            ? 'sinki-arch-card sinki-arch-card-interactive'
+                            : 'bg-[#0b0b0f] border-rose-500/25 opacity-75'
                         }`}
                       >
                         <div className="space-y-2">
@@ -2019,7 +2201,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-1.5 text-xs tabular-nums">
-                                <span className="text-amber-300 font-semibold">
+                                <span className="text-[#E8C782] font-semibold">
                                   {item.categoryLabel}
                                 </span>
                                 <span className="text-slate-600">·</span>
@@ -2046,7 +2228,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleOpenEditPerfume(item)}
-                                className="p-1.5 rounded-md bg-white/5 hover:bg-amber-500/20 text-slate-300 hover:text-amber-300 border border-white/10 transition-colors"
+                                className="p-1.5 rounded-[5px] sinki-arch-subbox hover:border-[#D4AF6A]/65 text-slate-300 hover:text-[#E8C782] border transition-colors"
                                 title="Edit Info & Kategori"
                               >
                                 <Edit size={14} />
@@ -2054,7 +2236,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleTogglePerfumeStatus(item.id)}
-                                className={`p-1.5 rounded-md border transition-colors ${
+                                className={`p-1.5 rounded-[5px] border transition-colors ${
                                   isItemActive
                                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20'
                                     : 'bg-rose-500/10 text-rose-400 border-rose-500/25 hover:bg-rose-500/20'
@@ -2070,7 +2252,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleDeletePerfume(item.id, item.name)}
-                                className="p-1.5 rounded-md bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-white/10 transition-colors"
+                                className="p-1.5 rounded-[5px] sinki-arch-subbox hover:bg-red-500/20 hover:border-red-500/40 text-slate-400 hover:text-red-400 border transition-colors"
                                 title="Hapus Varian Permanen"
                               >
                                 <Trash2 size={14} />
@@ -2079,7 +2261,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           </div>
 
                           {/* Character & Usage Recommendation */}
-                          <div className="text-xs space-y-1 bg-black/30 p-2.5 rounded-lg border border-white/[0.06] leading-[1.45]">
+                          <div className="text-xs space-y-1 sinki-arch-subbox p-2.5 rounded-[6px] border leading-[1.45]">
                             <p className="text-slate-200">
                               <span className="text-slate-400">Karakter: </span>
                               {item.tagline || '-'}
@@ -2094,13 +2276,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </div>
 
                         {/* Assigned Collection Categories + Quick Remove from Active Category */}
-                        <div className="pt-2 border-t border-white/[0.06] flex flex-col gap-2">
+                        <div className="pt-2 border-t border-[#D4AF6A]/15 flex flex-col gap-2">
                           <div className="flex flex-wrap items-center gap-1.5 text-xs">
                             <span className="text-slate-400">Collection:</span>
                             {itemCats.length === 0 ? (
                               <span className="text-slate-500 italic">Belum masuk kategori</span>
                             ) : (
-                              <span className="text-amber-200/90 font-medium">
+                              <span className="text-[#F3E6C8] font-medium">
                                 {itemCats
                                   .map(
                                     (cid) =>
@@ -2117,7 +2299,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               onClick={() =>
                                 handleRemoveFromCurrentCategory(item, activeSixCatFilter.id)
                               }
-                              className="w-full py-1.5 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                              className="w-full py-1.5 px-2.5 rounded-[6px] bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                             >
                               <X size={12} />
                               <span>Keluarkan dari {activeSixCatFilter.title}</span>
@@ -2132,8 +2314,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               {/* MODAL EDIT VARIAN */}
               {editingPerfume && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm font-body">
-                  <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-xl bg-[#0f1118] border border-white/15 p-5 shadow-2xl space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-[10px] sinki-arch-modal border p-5 space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-[#D4AF6A]/20">
                       <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                         Edit Varian & Kategori Collection
                       </h3>
@@ -2158,7 +2340,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             onChange={(e) =>
                               setEditingPerfume({ ...editingPerfume, name: e.target.value })
                             }
-                            className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                            className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                           />
                         </div>
 
@@ -2174,7 +2356,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                 category: e.target.value as PerfumeCategory,
                               })
                             }
-                            className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                            className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                           >
                             <option value="unisex">Unisex</option>
                             <option value="men">Men</option>
@@ -2199,10 +2381,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                 onClick={() =>
                                   setEditingPerfume({ ...editingPerfume, pricePerMl: rate })
                                 }
-                                className={`py-2 px-3 rounded-lg border text-xs sm:text-sm tabular-nums font-semibold transition-colors ${
+                                className={`py-2 px-3 rounded-[6px] border text-xs sm:text-sm tabular-nums font-semibold transition-colors ${
                                   selected
-                                    ? 'bg-amber-400/20 border-amber-400 text-amber-200'
-                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-white'
+                                    ? 'sinki-arch-card-selected text-[#F3E6C8]'
+                                    : 'sinki-arch-subbox text-slate-400 hover:text-white'
                                 }`}
                               >
                                 Rp {rate.toLocaleString('id-ID')} / ml
@@ -2235,14 +2417,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                     ),
                                   })
                                 }
-                                className={`p-2 rounded-lg border text-left flex items-center justify-between text-xs transition-colors ${
+                                className={`p-2 rounded-[6px] border text-left flex items-center justify-between text-xs transition-colors ${
                                   checked
-                                    ? 'bg-amber-500/20 border-amber-400 text-white font-semibold'
-                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-slate-200'
+                                    ? 'sinki-arch-card-selected text-white font-semibold'
+                                    : 'sinki-arch-subbox text-slate-400 hover:text-slate-200'
                                 }`}
                               >
                                 <span>{cat.title}</span>
-                                {checked && <Check size={13} className="text-amber-300 shrink-0" />}
+                                {checked && <Check size={13} className="text-[#E8C782] shrink-0" />}
                               </button>
                             );
                           })}
@@ -2272,14 +2454,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                     ),
                                   })
                                 }
-                                className={`p-2 rounded-lg border text-left flex items-center justify-between text-xs transition-colors ${
+                                className={`p-2 rounded-[6px] border text-left flex items-center justify-between text-xs transition-colors ${
                                   checked
-                                    ? 'bg-amber-500/20 border-amber-400 text-white font-semibold'
-                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-slate-200'
+                                    ? 'sinki-arch-card-selected text-white font-semibold'
+                                    : 'sinki-arch-subbox text-slate-400 hover:text-slate-200'
                                 }`}
                               >
                                 <span>{cat.title}</span>
-                                {checked && <Check size={13} className="text-amber-300 shrink-0" />}
+                                {checked && <Check size={13} className="text-[#E8C782] shrink-0" />}
                               </button>
                             );
                           })}
@@ -2297,7 +2479,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             setEditingPerfume({ ...editingPerfume, tagline: e.target.value })
                           }
                           placeholder="Contoh: Calabrian Bergamot & Sichuan Pepper"
-                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                         />
                       </div>
 
@@ -2315,7 +2497,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             })
                           }
                           placeholder="Contoh: Aktivitas harian, rapat formal, atau kencan malam"
-                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                         />
                       </div>
 
@@ -2328,7 +2510,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           value={editingAccordsStr}
                           onChange={(e) => setEditingAccordsStr(e.target.value)}
                           placeholder="Fresh Spicy, Amber, Citrus"
-                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                         />
                       </div>
 
@@ -2336,13 +2518,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setEditingPerfume(null)}
-                          className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
+                          className="flex-1 py-2 rounded-[6px] bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
-                          className="flex-1 py-2 rounded-lg bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-sm"
+                          className="flex-1 py-2 rounded-[6px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 font-semibold text-sm"
                         >
                           Simpan Perubahan
                         </button>
@@ -2355,8 +2537,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               {/* MODAL TAMBAH VARIAN BARU */}
               {isAddingPerfume && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm font-body">
-                  <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-xl bg-[#0f1118] border border-white/15 p-5 shadow-2xl space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-[10px] sinki-arch-modal border p-5 space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-[#D4AF6A]/20">
                       <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                         Tambah Varian Baru ke Katalog & Collection
                       </h3>
@@ -2382,7 +2564,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             onChange={(e) =>
                               setNewPerfumeForm({ ...newPerfumeForm, name: e.target.value })
                             }
-                            className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                            className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                           />
                         </div>
 
@@ -2398,7 +2580,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                 category: e.target.value as PerfumeCategory,
                               })
                             }
-                            className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                            className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                           >
                             <option value="unisex">Unisex</option>
                             <option value="men">Men</option>
@@ -2423,10 +2605,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                 onClick={() =>
                                   setNewPerfumeForm({ ...newPerfumeForm, pricePerMl: rate })
                                 }
-                                className={`py-2 px-3 rounded-lg border text-xs sm:text-sm tabular-nums font-semibold transition-colors ${
+                                className={`py-2 px-3 rounded-[6px] border text-xs sm:text-sm tabular-nums font-semibold transition-colors ${
                                   selected
-                                    ? 'bg-amber-400/20 border-amber-400 text-amber-200'
-                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-white'
+                                    ? 'sinki-arch-card-selected text-[#F3E6C8]'
+                                    : 'sinki-arch-subbox text-slate-400 hover:text-white'
                                 }`}
                               >
                                 Rp {rate.toLocaleString('id-ID')} / ml
@@ -2457,14 +2639,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                     ),
                                   })
                                 }
-                                className={`p-2 rounded-lg border text-left flex items-center justify-between text-xs transition-colors ${
+                                className={`p-2 rounded-[6px] border text-left flex items-center justify-between text-xs transition-colors ${
                                   checked
-                                    ? 'bg-amber-500/20 border-amber-400 text-white font-semibold'
-                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-slate-200'
+                                    ? 'sinki-arch-card-selected text-white font-semibold'
+                                    : 'sinki-arch-subbox text-slate-400 hover:text-slate-200'
                                 }`}
                               >
                                 <span>{cat.title}</span>
-                                {checked && <Check size={13} className="text-amber-300 shrink-0" />}
+                                {checked && <Check size={13} className="text-[#E8C782] shrink-0" />}
                               </button>
                             );
                           })}
@@ -2492,14 +2674,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                     ),
                                   })
                                 }
-                                className={`p-2 rounded-lg border text-left flex items-center justify-between text-xs transition-colors ${
+                                className={`p-2 rounded-[6px] border text-left flex items-center justify-between text-xs transition-colors ${
                                   checked
-                                    ? 'bg-amber-500/20 border-amber-400 text-white font-semibold'
-                                    : 'bg-black/40 border-white/10 text-slate-400 hover:text-slate-200'
+                                    ? 'sinki-arch-card-selected text-white font-semibold'
+                                    : 'sinki-arch-subbox text-slate-400 hover:text-slate-200'
                                 }`}
                               >
                                 <span>{cat.title}</span>
-                                {checked && <Check size={13} className="text-amber-300 shrink-0" />}
+                                {checked && <Check size={13} className="text-[#E8C782] shrink-0" />}
                               </button>
                             );
                           })}
@@ -2517,7 +2699,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           onChange={(e) =>
                             setNewPerfumeForm({ ...newPerfumeForm, tagline: e.target.value })
                           }
-                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                         />
                       </div>
 
@@ -2535,7 +2717,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               usageRecommendation: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                         />
                       </div>
 
@@ -2550,7 +2732,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           onChange={(e) =>
                             setNewPerfumeForm({ ...newPerfumeForm, accordsStr: e.target.value })
                           }
-                          className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                         />
                       </div>
 
@@ -2558,13 +2740,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setIsAddingPerfume(false)}
-                          className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
+                          className="flex-1 py-2 rounded-[6px] bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
-                          className="flex-1 py-2 rounded-lg bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-sm"
+                          className="flex-1 py-2 rounded-[6px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 font-semibold text-sm"
                         >
                           Tambah Sekarang
                         </button>
@@ -2577,7 +2759,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               {/* MODAL KONFIRMASI HAPUS VARIAN PERMANEN */}
               {deleteConfirmPerfume && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm font-body">
-                  <div className="w-full max-w-sm rounded-xl bg-[#0f1118] border border-rose-500/35 p-5 shadow-2xl space-y-4">
+                  <div className="w-full max-w-sm rounded-[10px] sinki-arch-modal border border-rose-500/40 p-5 space-y-4">
                     <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
                       <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                         Hapus Varian Parfum?
@@ -2599,14 +2781,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmPerfume(null)}
-                        className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
+                        className="flex-1 py-2 rounded-[6px] bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
                       >
                         Batal
                       </button>
                       <button
                         type="button"
                         onClick={confirmDeletePerfumeNow}
-                        className="flex-1 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm"
+                        className="flex-1 py-2 rounded-[6px] bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm"
                       >
                         Ya, Hapus Permanen
                       </button>
@@ -2618,8 +2800,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               {/* MODAL KONFIRMASI RESET KE 68 VARIAN DEFAULT */}
               {isResetPerfumesConfirmOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm font-body">
-                  <div className="w-full max-w-sm rounded-xl bg-[#0f1118] border border-amber-500/35 p-5 shadow-2xl space-y-4">
-                    <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                  <div className="w-full max-w-sm rounded-[10px] sinki-arch-modal border p-5 space-y-4">
+                    <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF6A]/20">
                       <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                         Reset Katalog Default?
                       </h3>
@@ -2638,14 +2820,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       <button
                         type="button"
                         onClick={() => setIsResetPerfumesConfirmOpen(false)}
-                        className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
+                        className="flex-1 py-2 rounded-[6px] bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
                       >
                         Batal
                       </button>
                       <button
                         type="button"
                         onClick={confirmResetPerfumesNow}
-                        className="flex-1 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-sm"
+                        className="flex-1 py-2 rounded-[6px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 font-semibold text-sm"
                       >
                         Ya, Reset Katalog
                       </button>
@@ -2662,7 +2844,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           {activeMenu === 'media' && (
             <div className="space-y-6 font-body">
               <div>
-                <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
+                <h2 className="font-heading text-xl font-bold text-[#F3E6C8] tracking-[-0.015em] leading-[1.25]">
                   Media, Video & Visual Identitas
                 </h2>
                 <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
@@ -2671,7 +2853,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               </div>
 
               {/* SUB-TABS NAVIGATOR KHUSUS MEDIA */}
-              <div className="flex items-center gap-1.5 p-1.5 bg-black/60 rounded-2xl border border-white/10 overflow-x-auto no-scrollbar scroll-smooth">
+              <div className="flex items-center gap-1.5 p-1.5 sinki-arch-bar rounded-[8px] border overflow-x-auto no-scrollbar scroll-smooth">
                 {[
                   { id: 'all', label: '🌐 Semua Bagian' },
                   { id: 'video', label: '🎬 Video Sinematik 9:16' },
@@ -2684,9 +2866,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       key={st.id}
                       type="button"
                       onClick={() => setMediaSubTab(st.id as any)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                      className={`px-3.5 py-1.5 rounded-[6px] text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
                         isCur
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md'
+                          ? 'bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 shadow-md'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`}
                     >
@@ -2714,10 +2896,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
               {/* KARTU UTAMA: VIDEO SINEMATIK BERANDA & EFEK TRANSISI MEMUDAR */}
               {(mediaSubTab === 'all' || mediaSubTab === 'video') && (
-                <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#131625] via-[#0f121d] to-[#0a0c14] border border-amber-500/35 shadow-2xl space-y-5">
+                <div className="p-5 sm:p-6 rounded-[10px] sinki-arch-card border space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(223,183,108,0.25)]">
+                    <div className="w-12 h-12 rounded-[8px] sinki-arch-subbox text-[#E8C782] border flex items-center justify-center shadow-[0_0_15px_rgba(212,175,106,0.2)]">
                       <Film size={24} />
                     </div>
                     <div>
@@ -2725,7 +2907,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <h3 className="font-heading font-semibold text-base sm:text-lg text-white tracking-[-0.015em] leading-[1.25]">
                           Video Sinematik Beranda & Transisi Botol
                         </h3>
-                        <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${
+                        <span className={`px-2.5 py-0.5 rounded-[5px] text-xs font-semibold border ${
                           heroMediaType === 'video' && heroVideoUrl
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                             : 'bg-slate-500/20 text-slate-400 border-slate-500/30'
@@ -2740,13 +2922,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   </div>
 
                   {/* Mode Selector Toggle */}
-                  <div className="flex items-center bg-black/60 p-1 rounded-2xl border border-white/10 shrink-0">
+                  <div className="flex items-center sinki-arch-bar p-1 rounded-[8px] border shrink-0">
                     <button
                       type="button"
                       onClick={() => handleToggleMediaType('video')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 ${
                         heroMediaType === 'video'
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md'
+                          ? 'bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 shadow-md'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -2756,9 +2938,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <button
                       type="button"
                       onClick={() => handleToggleMediaType('image')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 ${
                         heroMediaType === 'image'
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md'
+                          ? 'bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 shadow-md'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -2769,10 +2951,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
 
                 {/* Info Card: Jawaban Pertanyaan Penggantian Video */}
-                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200/90 leading-[1.5] flex items-start gap-2.5">
-                  <Sparkles size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                <div className="p-3.5 rounded-[8px] sinki-arch-subbox border text-xs text-[#F3E6C8]/90 leading-[1.5] flex items-start gap-2.5">
+                  <Sparkles size={16} className="text-[#E8C782] shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-semibold text-amber-300">Bagaimana Cara Kerja Gambar & Video?</span>
+                    <span className="font-semibold text-[#E8C782]">Bagaimana Cara Kerja Gambar & Video?</span>
                     <p className="text-slate-300 mt-0.5">
                       Saat website dibuka, pengunjung langsung melihat gambar cover botol tanpa layar hitam. Begitu video siap, gambar botol memudar mulus masuk ke video. <strong className="font-semibold text-white">Ketika Anda mengganti video baru</strong>, sistem otomatis mengambil frame awal video baru tersebut sebagai cover! Anda juga tetap bisa mengunggah cover foto khusus jika diinginkan.
                     </p>
@@ -2782,10 +2964,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 {/* Grid 2 Kolom: Video Preview & Pengaturan */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Kolom 1: Live Video & Fade Simulation Player */}
-                  <div className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-3">
+                  <div className="p-4 rounded-[8px] sinki-arch-subbox border space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs sm:text-sm font-semibold text-white flex items-center gap-1.5">
-                        <Play size={14} className="text-amber-400" />
+                        <Play size={14} className="text-[#E8C782]" />
                         <span>Pratinjau Video & Simulasi Memudar</span>
                       </span>
 
@@ -2796,7 +2978,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             setIsTestingFade(true);
                             setTimeout(() => setIsTestingFade(false), 2400);
                           }}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold transition-all active:scale-95"
+                          className="px-2.5 py-1 rounded-[6px] sinki-arch-subbox hover:border-[#D4AF6A]/65 text-[#E8C782] border text-xs font-semibold transition-all active:scale-95"
                         >
                           {isTestingFade ? '✨ Memudar Masuk...' : 'Uji Efek Memudar'}
                         </button>
@@ -2804,15 +2986,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     {/* Switcher Ukuran Frame Pratinjau */}
-                    <div className="flex items-center justify-between gap-1.5 p-1.5 bg-black/60 rounded-xl border border-white/10 text-xs">
+                    <div className="flex items-center justify-between gap-1.5 p-1.5 sinki-arch-bar rounded-[8px] border text-xs">
                       <span className="text-xs text-slate-400 font-medium px-1.5 shrink-0 hidden sm:inline">Ukuran Frame:</span>
                       <div className="grid grid-cols-4 gap-1 flex-1">
                         <button
                           type="button"
                           onClick={() => setAdminPreviewRatio('9:16')}
-                          className={`py-1.5 px-1.5 rounded-lg font-semibold text-xs transition-all text-center ${
+                          className={`py-1.5 px-1.5 rounded-[6px] font-semibold text-xs transition-all text-center ${
                             adminPreviewRatio === '9:16'
-                              ? 'bg-amber-400 text-slate-950 shadow-sm'
+                              ? 'bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 shadow-sm'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300'
                           }`}
                         >
@@ -2821,9 +3003,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setAdminPreviewRatio('full')}
-                          className={`py-1.5 px-1.5 rounded-lg font-semibold text-xs transition-all text-center ${
+                          className={`py-1.5 px-1.5 rounded-[6px] font-semibold text-xs transition-all text-center ${
                             adminPreviewRatio === 'full'
-                              ? 'bg-amber-400 text-slate-950 shadow-sm'
+                              ? 'bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 shadow-sm'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300'
                           }`}
                         >
@@ -2832,9 +3014,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setAdminPreviewRatio('1:1')}
-                          className={`py-1.5 px-1.5 rounded-lg font-semibold text-xs transition-all text-center ${
+                          className={`py-1.5 px-1.5 rounded-[6px] font-semibold text-xs transition-all text-center ${
                             adminPreviewRatio === '1:1'
-                              ? 'bg-amber-400 text-slate-950 shadow-sm'
+                              ? 'bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 shadow-sm'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300'
                           }`}
                         >
@@ -2843,9 +3025,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setAdminPreviewRatio('16:9')}
-                          className={`py-1.5 px-1.5 rounded-lg font-semibold text-xs transition-all text-center ${
+                          className={`py-1.5 px-1.5 rounded-[6px] font-semibold text-xs transition-all text-center ${
                             adminPreviewRatio === '16:9'
-                              ? 'bg-amber-400 text-slate-950 shadow-sm'
+                              ? 'bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 shadow-sm'
                               : 'bg-white/5 hover:bg-white/10 text-slate-300'
                           }`}
                         >
@@ -2854,13 +3036,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex justify-center items-center py-2 bg-black/40 rounded-2xl border border-white/5 min-h-[300px]">
+                    <div className="flex justify-center items-center py-2 bg-[#07070a] rounded-[8px] border border-[#D4AF6A]/15 min-h-[300px]">
                       <div
-                        className={`relative rounded-2xl overflow-hidden bg-black border border-white/20 shadow-2xl transition-all duration-300 flex items-center justify-center ${
+                        className={`relative rounded-[8px] overflow-hidden bg-black border border-[#D4AF6A]/35 shadow-2xl transition-all duration-300 flex items-center justify-center ${
                           adminPreviewRatio === '9:16'
                             ? 'h-[340px] w-[190px]'
                             : adminPreviewRatio === 'full'
-                            ? 'h-[350px] w-[195px] ring-2 ring-amber-500/30'
+                            ? 'h-[350px] w-[195px] ring-2 ring-[#D4AF6A]/30'
                             : adminPreviewRatio === '1:1'
                             ? 'h-[250px] w-[250px]'
                             : 'h-[180px] w-full max-w-[320px]'
@@ -2914,7 +3096,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                     EAU DE PARFUM
                                   </span>
                                 </div>
-                                <div className="p-1 rounded-lg bg-black/60 backdrop-blur-xs text-[10px] text-center text-amber-300/90 font-body font-medium">
+                                <div className="p-1 rounded-[5px] bg-black/60 backdrop-blur-xs text-[10px] text-center text-[#E8C782] font-body font-medium">
                                   Live Preview Beranda
                                 </div>
                               </div>
@@ -2952,7 +3134,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   {/* Kolom 2: Upload Video & Pengaturan Cover */}
                   <div className="space-y-4">
                     {/* Form Upload Video File */}
-                    <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3">
+                    <div className="p-4 rounded-[8px] sinki-arch-subbox border space-y-3">
                       <span className="text-xs sm:text-sm font-semibold text-white block">
                         Unggah File Video (.mp4 / .webm)
                       </span>
@@ -2962,7 +3144,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           type="button"
                           disabled={isUploadingVideo}
                           onClick={() => heroVideoInputRef.current?.click()}
-                          className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:brightness-105 text-slate-950 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all disabled:opacity-50"
+                          className="flex-1 py-2.5 px-3 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all disabled:opacity-50"
                         >
                           <Upload size={14} />
                           <span>{isUploadingVideo ? 'Mengunggah Video...' : 'Pilih File Video Baru'}</span>
@@ -2974,7 +3156,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     {/* Form URL Video Langsung */}
-                    <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-2.5">
+                    <div className="p-4 rounded-[8px] sinki-arch-subbox border space-y-2.5">
                       <span className="text-xs sm:text-sm font-semibold text-white block">
                         Atau Gunakan Tautan URL Video Langsung
                       </span>
@@ -2984,13 +3166,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           value={videoUrlInput}
                           onChange={(e) => setVideoUrlInput(e.target.value)}
                           placeholder="https://.../video.mp4"
-                          className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-white/15 text-base sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                          className="flex-1 px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm text-white placeholder:text-slate-500 focus:outline-none"
                         />
                         <button
                           type="button"
                           disabled={isUploadingVideo || !videoUrlInput.trim()}
                           onClick={handleSaveVideoUrl}
-                          className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/15 transition-all active:scale-95 disabled:opacity-50"
+                          className="px-3.5 py-2 rounded-[8px] sinki-arch-subbox hover:border-[#D4AF6A]/65 text-white font-semibold text-xs sm:text-sm border transition-all active:scale-95 disabled:opacity-50"
                         >
                           Simpan
                         </button>
@@ -2998,7 +3180,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     {/* Pengaturan Gambar Cover (Poster yang memudar) */}
-                    <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3">
+                    <div className="p-4 rounded-[8px] sinki-arch-subbox border space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="text-xs sm:text-sm font-semibold text-white block">
@@ -3011,7 +3193,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-black border border-white/15 shrink-0">
+                        <div className="w-16 h-16 rounded-[8px] overflow-hidden bg-black border border-[#D4AF6A]/30 shrink-0">
                           {heroVideoPoster || currentChibi ? (
                             <img
                               src={heroVideoPoster || currentChibi || ''}
@@ -3032,7 +3214,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                 type="button"
                                 disabled={isExtractingFrame}
                                 onClick={handleExtractFrameNow}
-                                className="py-1.5 px-2.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-all"
+                                className="py-1.5 px-2.5 rounded-[6px] sinki-arch-subbox hover:border-[#D4AF6A]/65 text-[#E8C782] border text-xs font-semibold transition-all"
                               >
                                 {isExtractingFrame ? 'Mengambil Frame...' : '📷 Ambil Frame dari Video Ini'}
                               </button>
@@ -3041,7 +3223,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             <button
                               type="button"
                               onClick={() => heroPosterInputRef.current?.click()}
-                              className="py-1.5 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all"
+                              className="py-1.5 px-2.5 rounded-[6px] bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all"
                             >
                               Ganti Foto Cover Kustom
                             </button>
@@ -3056,22 +3238,22 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
 
                 {/* BARIS KONTROL LAYOUT: POSISI FOKUS BOTOL & RASIO TAMPILAN */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-black/60 border border-amber-500/25 space-y-4">
+                <div className="p-4 sm:p-5 rounded-[8px] sinki-arch-subbox border space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <SlidersHorizontal size={16} className="text-amber-400" />
+                      <SlidersHorizontal size={16} className="text-[#E8C782]" />
                       <span className="font-heading text-sm font-semibold text-white tracking-[-0.01em]">
                         Pengaturan Layout & Posisi Video Beranda
                       </span>
                     </div>
-                    <span className="text-xs font-medium text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-md">
+                    <span className="text-xs font-medium text-[#E8C782] bg-[#D4AF6A]/15 border border-[#D4AF6A]/35 px-2.5 py-0.5 rounded-[5px]">
                       Live Fitting
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                     {/* 1. Mode Fitting Layar */}
-                    <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <div className="space-y-1.5 p-3 rounded-[8px] bg-[#0a0a0e]/80 border border-[#D4AF6A]/15">
                       <span className="text-xs font-semibold text-slate-200 block">
                         1. Mode Tampilan Layar (Fit)
                       </span>
@@ -3079,10 +3261,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => handleUpdateLayoutSetting('heroVideoFit', 'cover')}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition-all ${
+                          className={`py-2 px-2.5 rounded-[6px] text-xs font-semibold transition-all ${
                             heroVideoFit === 'cover'
-                              ? 'bg-amber-400 text-slate-950 shadow-md'
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                              ? 'bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 shadow-md'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-[#D4AF6A]/20'
                           }`}
                         >
                           Cover (Penuh)
@@ -3090,10 +3272,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => handleUpdateLayoutSetting('heroVideoFit', 'contain')}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition-all ${
+                          className={`py-2 px-2.5 rounded-[6px] text-xs font-semibold transition-all ${
                             heroVideoFit === 'contain'
-                              ? 'bg-amber-400 text-slate-950 shadow-md'
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                              ? 'bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 shadow-md'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-[#D4AF6A]/20'
                           }`}
                         >
                           Contain (Utuh)
@@ -3107,7 +3289,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     {/* 2. Posisi Fokus Kamera (Vertical Alignment) */}
-                    <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <div className="space-y-1.5 p-3 rounded-[8px] bg-[#0a0a0e]/80 border border-[#D4AF6A]/15">
                       <span className="text-xs font-semibold text-slate-200 block">
                         2. Titik Fokus Botol (Posisi)
                       </span>
@@ -3120,10 +3302,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               key={pos}
                               type="button"
                               onClick={() => handleUpdateLayoutSetting('heroVideoPosition', pos)}
-                              className={`py-2 px-1.5 rounded-xl text-xs font-semibold transition-all ${
+                              className={`py-2 px-1.5 rounded-[6px] text-xs font-semibold transition-all ${
                                 isSel
-                                  ? 'bg-amber-400 text-slate-950 shadow-md'
-                                  : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                                  ? 'bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 shadow-md'
+                                  : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-[#D4AF6A]/20'
                               }`}
                             >
                               {labels[pos]}
@@ -3137,13 +3319,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     {/* 3. Ketinggian Area Panggung (Hero Height) */}
-                    <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <div className="space-y-1.5 p-3 rounded-[8px] bg-[#0a0a0e]/80 border border-[#D4AF6A]/15">
                       <div className="flex items-center justify-between gap-1">
                         <span className="text-xs font-semibold text-slate-200 block">
                           3. Ketinggian Panggung Beranda
                         </span>
                         {heroHeightMode === 'full' && (
-                          <span className="text-xs font-medium text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
+                          <span className="text-xs font-medium text-[#E8C782] bg-[#D4AF6A]/20 px-1.5 py-0.5 rounded-[4px] border border-[#D4AF6A]/35">
                             Penuh
                           </span>
                         )}
@@ -3162,10 +3344,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               key={hm}
                               type="button"
                               onClick={() => handleUpdateLayoutSetting('heroHeightMode', hm)}
-                              className={`py-2 px-1.5 rounded-xl text-xs tabular-nums font-semibold transition-all text-center ${
+                              className={`py-2 px-1.5 rounded-[6px] text-xs tabular-nums font-semibold transition-all text-center ${
                                 isSel
-                                  ? 'bg-amber-400 text-slate-950 shadow-md'
-                                  : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                                  ? 'bg-gradient-to-r from-[#DFB76C] to-[#C5A059] text-slate-950 shadow-md'
+                                  : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-[#D4AF6A]/20'
                               }`}
                             >
                               {labels[hm]}
@@ -3188,7 +3370,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               {(mediaSubTab === 'all' || mediaSubTab === 'identity') && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Kartu Foto Utama Beranda */}
-                  <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
+                  <div className="p-5 rounded-[10px] sinki-arch-card border space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
@@ -3196,7 +3378,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </h3>
                         <span className="text-xs text-slate-400">Foto botol panggung depan</span>
                       </div>
-                      <label className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-semibold text-xs cursor-pointer active:scale-95 transition-all">
+                      <label className="py-1.5 px-3 rounded-[6px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 font-semibold text-xs cursor-pointer active:scale-95 transition-all">
                         <span>Ganti Foto</span>
                         <input
                           type="file"
@@ -3207,7 +3389,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       </label>
                     </div>
 
-                    <div className="relative h-56 rounded-2xl overflow-hidden bg-black/60 border border-white/10 flex items-center justify-center">
+                    <div className="relative h-56 rounded-[8px] overflow-hidden sinki-arch-subbox border flex items-center justify-center">
                       {currentChibi ? (
                         <img
                           src={currentChibi}
@@ -3221,7 +3403,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   </div>
 
                   {/* Kartu Logo Resmi & Barcode QRIS */}
-                  <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
+                  <div className="p-5 rounded-[10px] sinki-arch-card border space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
@@ -3232,16 +3414,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-2 text-center">
+                      <div className="p-3 rounded-[8px] sinki-arch-subbox border space-y-2 text-center">
                         <span className="text-xs font-semibold text-slate-300 block">Logo SINKI</span>
-                        <div className="h-28 rounded-xl bg-black/60 border border-white/5 p-2 flex items-center justify-center">
+                        <div className="h-28 rounded-[6px] bg-[#08080b] border border-[#D4AF6A]/20 p-2 flex items-center justify-center">
                           {currentLogo ? (
                             <img src={currentLogo} alt="Logo" className="w-full h-full object-contain" />
                           ) : (
-                            <Sparkles size={24} className="text-amber-400" />
+                            <Sparkles size={24} className="text-[#E8C782]" />
                           )}
                         </div>
-                        <label className="block py-1.5 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer">
+                        <label className="block py-1.5 px-2.5 rounded-[6px] bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer">
                           <span>Ganti Logo</span>
                           <input
                             type="file"
@@ -3252,16 +3434,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </label>
                       </div>
 
-                      <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-2 text-center">
+                      <div className="p-3 rounded-[8px] sinki-arch-subbox border space-y-2 text-center">
                         <span className="text-xs font-semibold text-slate-300 block">Barcode QRIS</span>
-                        <div className="h-28 rounded-xl bg-black/60 border border-white/5 p-2 flex items-center justify-center">
+                        <div className="h-28 rounded-[6px] bg-[#08080b] border border-[#D4AF6A]/20 p-2 flex items-center justify-center">
                           {currentQris ? (
                             <img src={currentQris} alt="QRIS" className="w-full h-full object-contain" />
                           ) : (
                             <span className="text-xs text-slate-500">QRIS Standar</span>
                           )}
                         </div>
-                        <label className="block py-1.5 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer">
+                        <label className="block py-1.5 px-2.5 rounded-[6px] bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer">
                           <span>Ganti QRIS</span>
                           <input
                             type="file"
@@ -3288,11 +3470,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   />
 
               {/* MASTER TOGGLE PANGGUNG 3D */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#141724] to-[#0e1017] border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+              <div className="p-4 sm:p-5 rounded-[10px] sinki-arch-card border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+                  <div className={`w-11 h-11 rounded-[8px] flex items-center justify-center transition-all ${
                     isHeroStageEnabled
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_12px_rgba(223,183,108,0.3)]'
+                      ? 'sinki-arch-subbox text-[#E8C782] border shadow-[0_0_12px_rgba(212,175,106,0.25)]'
                       : 'bg-white/5 text-slate-400 border border-white/10'
                   }`}>
                     <Sparkles size={22} />
@@ -3302,7 +3484,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       <span className="font-heading text-sm sm:text-base font-semibold text-white tracking-[-0.015em]">
                         Sakelar Master Panggung 3D Beranda
                       </span>
-                      <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${
+                      <span className={`px-2 py-0.5 rounded-[5px] text-xs font-semibold border ${
                         isHeroStageEnabled
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                           : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
@@ -3321,7 +3503,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 <button
                   type="button"
                   onClick={handleToggleStageEnabled}
-                  className={`px-4 py-2 rounded-xl font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shrink-0 ${
+                  className={`px-4 py-2 rounded-[8px] font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shrink-0 ${
                     isHeroStageEnabled
                       ? 'bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40'
                       : 'bg-gradient-to-r from-[#DFB76C] to-[#c29849] hover:brightness-110 text-slate-950 shadow-md'
@@ -3333,18 +3515,18 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* 1. Pemilihan Efek Panggung 3D */}
-                <div className="p-5 rounded-3xl bg-[#0e111d] border border-amber-500/30 space-y-3.5">
+                <div className="p-5 rounded-[10px] sinki-arch-card border space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-heading font-semibold text-base text-amber-300 tracking-[-0.015em] leading-[1.25] flex items-center gap-1.5">
-                        <Sparkles size={15} />
+                      <h3 className="font-heading font-semibold text-base text-[#F3E6C8] tracking-[-0.015em] leading-[1.25] flex items-center gap-1.5">
+                        <Sparkles size={15} className="text-[#E8C782]" />
                         <span>Efek Panggung 3D Beranda (4 Pilihan)</span>
                       </h3>
                       <p className="text-xs text-slate-400 mt-0.5">
                         Pilih efek gerakan botol parfum saat bertransisi otomatis
                       </p>
                     </div>
-                    <span className="text-xs px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/40">
+                    <span className="text-xs px-2.5 py-0.5 rounded-[5px] bg-[#D4AF6A]/20 text-[#E8C782] font-semibold border border-[#D4AF6A]/40">
                       Aktif
                     </span>
                   </div>
@@ -3357,16 +3539,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           key={eff.id}
                           type="button"
                           onClick={() => handleSelectStageEffect(eff.id)}
-                          className={`p-3 rounded-2xl border text-left transition-all ${
+                          className={`p-3 rounded-[8px] border text-left transition-all ${
                             isSelected
-                              ? 'bg-gradient-to-br from-amber-500/25 to-amber-700/15 border-amber-400 text-white shadow-[0_0_15px_rgba(223,183,108,0.25)]'
-                              : 'bg-black/50 border-white/10 hover:border-amber-500/30 text-slate-300'
+                              ? 'sinki-arch-card-selected text-white'
+                              : 'sinki-arch-subbox hover:border-[#D4AF6A]/50 text-slate-300'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs sm:text-sm font-semibold text-amber-200">{eff.name}</span>
+                            <span className="text-xs sm:text-sm font-semibold text-[#F3E6C8]">{eff.name}</span>
                             {isSelected && (
-                              <span className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center">
+                              <span className="w-4 h-4 rounded-[4px] bg-[#E8C782] text-slate-950 flex items-center justify-center">
                                 <Check size={10} className="stroke-[3]" />
                               </span>
                             )}
@@ -3381,18 +3563,18 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
 
                 {/* 2. Upload 4 Botol PNG 3D */}
-                <div className="p-5 rounded-3xl bg-[#0e111d] border border-amber-500/30 space-y-3.5">
+                <div className="p-5 rounded-[10px] sinki-arch-card border space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-heading font-semibold text-base text-amber-300 tracking-[-0.015em] leading-[1.25] flex items-center gap-1.5">
-                        <Crown size={15} />
+                      <h3 className="font-heading font-semibold text-base text-[#F3E6C8] tracking-[-0.015em] leading-[1.25] flex items-center gap-1.5">
+                        <Crown size={15} className="text-[#E8C782]" />
                         <span>4 Slot Botol Parfum 3D (PNG Transparan)</span>
                       </h3>
                       <p className="text-xs text-slate-400 mt-0.5">
                         Slide bergantian setiap 4 detik di panggung tengah beranda
                       </p>
                     </div>
-                    <span className="text-xs text-amber-200/90 tabular-nums font-medium">
+                    <span className="text-xs text-[#F3E6C8]/90 tabular-nums font-medium">
                       4 Botol
                     </span>
                   </div>
@@ -3406,10 +3588,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       return (
                         <div
                           key={idx}
-                          className="p-2.5 rounded-xl bg-black/60 border border-white/10 flex flex-col justify-between space-y-2 text-center"
+                          className="p-2.5 rounded-[8px] sinki-arch-subbox border flex flex-col justify-between space-y-2 text-center"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-xs tabular-nums font-semibold text-amber-300">
+                            <span className="text-xs tabular-nums font-semibold text-[#E8C782]">
                               #{idx + 1}
                             </span>
                             {isCustom && (
@@ -3419,7 +3601,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             )}
                           </div>
 
-                          <div className="h-20 rounded-lg bg-gradient-to-b from-[#181a24] to-[#0f1118] border border-white/10 flex items-center justify-center overflow-hidden p-1">
+                          <div className="h-20 rounded-[6px] bg-gradient-to-b from-[#141419] to-[#0a0a0d] border border-[#D4AF6A]/20 flex items-center justify-center overflow-hidden p-1">
                             {bottleUrl ? (
                               <img
                                 src={bottleUrl}
@@ -3437,7 +3619,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               setSelectedHeroBottleIdx(idx);
                               heroBottleInputRef.current?.click();
                             }}
-                            className="w-full py-1.5 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/30 text-amber-300 text-xs font-semibold transition-all flex items-center justify-center gap-1"
+                            className="w-full py-1.5 px-2 rounded-[6px] bg-[#D4AF6A]/15 hover:bg-[#D4AF6A] hover:text-slate-950 border border-[#D4AF6A]/35 text-[#E8C782] text-xs font-semibold transition-all flex items-center justify-center gap-1"
                           >
                             <Upload size={11} />
                             <span>Ganti PNG</span>
@@ -3461,7 +3643,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           {activeMenu === 'banner' && (
             <div className="space-y-6 font-body">
               <div>
-                <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
+                <h2 className="font-heading text-xl font-bold text-[#F3E6C8] tracking-[-0.015em] leading-[1.25]">
                   Teks Berjalan & Konfigurasi Harga
                 </h2>
                 <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
@@ -3471,14 +3653,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* KOLOM KIRI: TEKS BERJALAN & FONT */}
-                <div className="p-5 sm:p-6 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
+                <div className="p-5 sm:p-6 rounded-[10px] sinki-arch-card border space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                       Teks Berjalan Beranda (Marquee)
                     </h3>
                     <button
                       onClick={handleResetTicker}
-                      className="text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1"
+                      className="text-xs font-medium text-slate-400 hover:text-[#F3E6C8] flex items-center gap-1"
                     >
                       <RotateCcw size={12} />
                       <span>Reset</span>
@@ -3494,7 +3676,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       value={tickerForm.text}
                       onChange={(e) => setTickerForm({ ...tickerForm, text: e.target.value })}
                       placeholder="Masukkan slogan atau teks promo..."
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                      className="w-full px-3.5 py-2.5 rounded-[8px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                     />
                   </div>
 
@@ -3510,15 +3692,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           <div
                             key={font.id}
                             onClick={() => setTickerForm({ ...tickerForm, font: font.id })}
-                            className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                            className={`p-3 rounded-[8px] border cursor-pointer transition-all ${
                               isSelected
-                                ? 'bg-amber-500/20 border-amber-400 text-white'
-                                : 'bg-black/30 border-white/10 text-slate-400 hover:border-white/20'
+                                ? 'sinki-arch-card-selected text-white'
+                                : 'sinki-arch-subbox text-slate-400 hover:border-[#D4AF6A]/50'
                             }`}
                           >
                             <div className="flex items-center justify-between text-xs sm:text-sm">
                               <span className="font-semibold">{font.name}</span>
-                              {isSelected && <Check size={13} className="text-amber-400 shrink-0" />}
+                              {isSelected && <Check size={13} className="text-[#E8C782] shrink-0" />}
                             </div>
                             <span className="text-xs text-slate-400 block mt-1 line-clamp-1">
                               {font.desc}
@@ -3531,11 +3713,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                   {/* LIVE SIMULATION CARD */}
                   <div className="pt-2">
-                    <span className="text-xs font-medium text-amber-300 block mb-1.5">
+                    <span className="text-xs font-medium text-[#E8C782] block mb-1.5">
                       Simulasi Tampilan Beranda:
                     </span>
-                    <div className="p-3 rounded-2xl bg-black/60 border border-amber-500/25 overflow-hidden text-center">
-                      <span className="font-heading font-semibold text-amber-200 text-sm tracking-[0.02em] animate-pulse">
+                    <div className="p-3 rounded-[8px] sinki-arch-bar border overflow-hidden text-center">
+                      <span className="font-heading font-semibold text-[#F3E6C8] text-sm tracking-[0.02em] animate-pulse">
                         "{tickerForm.text}"
                       </span>
                     </div>
@@ -3544,14 +3726,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <button
                     onClick={handleSaveTicker}
                     disabled={isSavingTicker}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-sm shadow-md active:scale-98 transition-all"
+                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 font-semibold text-sm shadow-md active:scale-98 transition-all"
                   >
                     {isSavingTicker ? 'Menyimpan...' : 'Simpan Teks Berjalan'}
                   </button>
                 </div>
 
                 {/* KOLOM KANAN: KONFIGURASI HARGA BOTOL */}
-                <div className="p-5 sm:p-6 rounded-3xl bg-[#0e111d] border border-white/10 space-y-4">
+                <div className="p-5 sm:p-6 rounded-[10px] sinki-arch-card border space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                       Pengaturan Tarif & Harga
@@ -3560,8 +3742,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   </div>
 
                   <div className="space-y-3.5">
-                    <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                      <label className="text-xs font-semibold text-amber-300 block">
+                    <div className="p-3.5 rounded-[8px] sinki-arch-subbox border space-y-1">
+                      <label className="text-xs font-semibold text-[#E8C782] block">
                         Botol Non-Premium 30ml (IDR):
                       </label>
                       <input
@@ -3576,12 +3758,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             },
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-base sm:text-sm tabular-nums text-white focus:outline-none focus:border-amber-400"
+                        className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm tabular-nums text-white focus:outline-none"
                       />
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                      <label className="text-xs font-semibold text-amber-300 block">
+                    <div className="p-3.5 rounded-[8px] sinki-arch-subbox border space-y-1">
+                      <label className="text-xs font-semibold text-[#E8C782] block">
                         Botol Non-Premium 50ml (IDR):
                       </label>
                       <input
@@ -3596,13 +3778,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             },
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-base sm:text-sm tabular-nums text-white focus:outline-none focus:border-amber-400"
+                        className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm tabular-nums text-white focus:outline-none"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                        <label className="text-xs font-semibold text-amber-300 block truncate">
+                      <div className="p-3 rounded-[8px] sinki-arch-subbox border space-y-1">
+                        <label className="text-xs font-semibold text-[#E8C782] block truncate">
                           Tarif Premium/ml:
                         </label>
                         <input
@@ -3614,12 +3796,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               premiumRatePerMl: Number(e.target.value) || 0,
                             })
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-base sm:text-sm tabular-nums text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm tabular-nums text-white focus:outline-none"
                         />
                       </div>
 
-                      <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                        <label className="text-xs font-semibold text-amber-300 block truncate">
+                      <div className="p-3 rounded-[8px] sinki-arch-subbox border space-y-1">
+                        <label className="text-xs font-semibold text-[#E8C782] block truncate">
                           Tarif Mykonos/ml:
                         </label>
                         <input
@@ -3631,13 +3813,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               mykonosRatePerMl: Number(e.target.value) || 0,
                             })
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-base sm:text-sm tabular-nums text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm tabular-nums text-white focus:outline-none"
                         />
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                      <label className="text-xs font-semibold text-amber-300 block">
+                    <div className="p-3.5 rounded-[8px] sinki-arch-subbox border space-y-1">
+                      <label className="text-xs font-semibold text-[#E8C782] block">
                         Min. Belanja Gratis Ongkir (IDR):
                       </label>
                       <input
@@ -3649,7 +3831,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             minFreeShipping: Number(e.target.value) || 0,
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-base sm:text-sm tabular-nums text-white focus:outline-none focus:border-amber-400"
+                        className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm tabular-nums text-white focus:outline-none"
                       />
                     </div>
                   </div>
@@ -3657,7 +3839,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <button
                     onClick={handleSavePricing}
                     disabled={isSavingPricing}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-sm shadow-md active:scale-98 transition-all"
+                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 font-semibold text-sm shadow-md active:scale-98 transition-all"
                   >
                     {isSavingPricing ? 'Menyimpan...' : 'Simpan Perubahan Harga'}
                   </button>
@@ -3673,7 +3855,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             <div className="space-y-4 font-body">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
+                  <h2 className="font-heading text-xl font-bold text-[#F3E6C8] tracking-[-0.015em] leading-[1.25]">
                     Konten Website & Edukasi ({articlesList.length})
                   </h2>
                   <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
@@ -3683,7 +3865,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                 <button
                   onClick={() => setIsAddingArticle(true)}
-                  className="py-2 px-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-md self-start sm:self-auto"
+                  className="py-2 px-3.5 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-md self-start sm:self-auto"
                 >
                   <Plus size={15} />
                   <span>Buat Konten Baru</span>
@@ -3695,11 +3877,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 {articlesList.map((art) => (
                   <div
                     key={art.id}
-                    className="p-5 rounded-2xl bg-[#0e111d] border border-white/10 hover:border-amber-500/30 transition-all space-y-3 flex flex-col justify-between"
+                    className="p-5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border transition-all space-y-3 flex flex-col justify-between"
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-semibold">
+                        <span className="px-2 py-0.5 rounded-[5px] bg-[#D4AF6A]/20 text-[#E8C782] font-semibold">
                           {art.categoryLabel}
                         </span>
                         <span className="text-slate-400 tabular-nums">{art.date}</span>
@@ -3710,7 +3892,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2.5 border-t border-white/5 text-xs text-slate-400">
+                    <div className="flex items-center justify-between pt-2.5 border-t border-[#D4AF6A]/15 text-xs text-slate-400">
                       <span>Penulis: {art.author}</span>
                       <button
                         onClick={() => handleDeleteArticle(art.id, art.title)}
@@ -3727,9 +3909,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               {/* MODAL TAMBAH ARTIKEL */}
               {isAddingArticle && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in font-body">
-                  <div className="w-full max-w-lg rounded-3xl bg-[#0f1118] border border-white/15 p-6 shadow-2xl space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                      <h3 className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
+                  <div className="w-full max-w-lg rounded-[10px] sinki-arch-modal border p-6 shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-[#D4AF6A]/20">
+                      <h3 className="font-heading font-semibold text-base text-[#F3E6C8] tracking-[-0.015em] leading-[1.25]">
                         Tulis Konten / Tips Baru
                       </h3>
                       <button
@@ -3751,7 +3933,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           placeholder="Contoh: Cara Membuat Parfum Tahan Lebih Lama"
                           value={newTitle}
                           onChange={(e) => setNewTitle(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                         />
                       </div>
 
@@ -3762,7 +3944,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <select
                           value={newCategory}
                           onChange={(e) => setNewCategory(e.target.value as any)}
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                         >
                           <option value="tips">Tips Perawatan</option>
                           <option value="men">Panduan Pria</option>
@@ -3782,7 +3964,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           placeholder="Tuliskan isi panduan atau artikel di sini..."
                           value={newContent}
                           onChange={(e) => setNewContent(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 resize-none leading-[1.5]"
+                          className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none resize-none leading-[1.5]"
                         />
                       </div>
 
@@ -3790,13 +3972,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setIsAddingArticle(false)}
-                          className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium text-slate-300"
+                          className="flex-1 py-2 rounded-[8px] bg-[#14141a] hover:bg-[#1c1c24] text-sm font-medium text-slate-300"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
-                          className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 font-semibold text-sm"
+                          className="flex-1 py-2 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] text-slate-950 font-semibold text-sm"
                         >
                           Terbitkan Sekarang
                         </button>
@@ -3815,7 +3997,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             <div className="space-y-4 font-body">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
+                  <h2 className="font-heading text-xl font-bold text-[#F3E6C8] tracking-[-0.015em] leading-[1.25]">
                     Moderasi Ulasan Pembeli ({reviewsList.length}/10 Slot)
                   </h2>
                   <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
@@ -3825,7 +4007,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
                 <button
                   onClick={handleResetReviews}
-                  className="py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs sm:text-sm font-medium border border-white/10 flex items-center gap-1.5 self-start sm:self-auto"
+                  className="py-1.5 px-3 rounded-[8px] sinki-arch-subbox border hover:border-[#D4AF6A]/55 text-slate-300 hover:text-white text-xs sm:text-sm font-medium flex items-center gap-1.5 self-start sm:self-auto"
                 >
                   <RotateCcw size={13} />
                   <span>Kosongkan Semua Ulasan</span>
@@ -3833,7 +4015,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               </div>
 
               {reviewsList.length === 0 ? (
-                <div className="p-8 rounded-2xl bg-[#0e111d] border border-white/10 text-center space-y-2">
+                <div className="p-8 rounded-[8px] sinki-arch-card border text-center space-y-2">
                   <p className="text-sm text-slate-400 leading-[1.5]">
                     Belum ada ulasan yang masuk. Kotak ulasan saat ini kosong dan siap menampung ulasan baru dari pengunjung hingga 10 slot.
                   </p>
@@ -3843,7 +4025,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   {reviewsList.map((rev) => (
                     <div
                       key={rev.id}
-                      className="p-4 sm:p-5 rounded-2xl bg-[#0e111d] border border-white/10 space-y-3 flex flex-col justify-between"
+                      className="p-4 sm:p-5 rounded-[8px] sinki-arch-card border space-y-3 flex flex-col justify-between"
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -3853,20 +4035,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                               <span className="font-heading font-semibold text-sm text-white block tracking-[-0.01em]">
                                 {rev.name}
                               </span>
-                              <span className="text-xs text-amber-300 font-medium">{rev.emojiLabel}</span>
+                              <span className="text-xs text-[#E8C782] font-medium">{rev.emojiLabel}</span>
                             </div>
                           </div>
 
                           <button
                             onClick={() => handleDeleteReview(rev.id, rev.name)}
-                            className="py-1 px-2.5 rounded-lg bg-red-600/30 hover:bg-red-600/50 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all"
+                            className="py-1 px-2.5 rounded-[6px] bg-red-600/30 hover:bg-red-600/50 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all"
                           >
                             <Trash2 size={12} />
                             <span>Hapus</span>
                           </button>
                         </div>
 
-                        <div className="text-xs text-slate-300 bg-white/5 px-2.5 py-0.5 rounded-md inline-block font-medium">
+                        <div className="text-xs text-[#F3E6C8] bg-[#D4AF6A]/10 px-2.5 py-0.5 rounded-[5px] inline-block font-medium">
                           Varian: {rev.variant}
                         </div>
 
@@ -3875,7 +4057,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-white/5 tabular-nums">
+                      <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-[#D4AF6A]/15 tabular-nums">
                         <span>{rev.date}</span>
                         <span>❤️ {rev.likes} Apresiasi</span>
                       </div>
@@ -3899,27 +4081,158 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
           {activeMenu === 'settings' && (
             <div className="space-y-4 font-body">
               <div>
-                <h2 className="font-heading text-xl font-bold text-amber-300 tracking-[-0.015em] leading-[1.25]">
+                <h2 className="font-heading text-xl font-bold text-[#F3E6C8] tracking-[-0.015em] leading-[1.25]">
                   Pengaturan & Brand SINKI
                 </h2>
                 <p className="text-sm text-slate-400 mt-0.5 leading-[1.45]">
-                  Status proteksi akun, hak cipta resmi, dan tautan akses.
+                  Pilih warna tema Luxury Architectural, kelola tautan resmi, dan pantau status proteksi akun.
                 </p>
               </div>
 
-              {/* KARTU KELOLA AKUN MEDIA SOSIAL & MARKETPLACE RESMI */}
-              <div className="p-5 sm:p-6 rounded-3xl bg-[#0e111d] border border-amber-500/30 shadow-2xl relative overflow-hidden space-y-5">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/[0.05] rounded-full blur-3xl pointer-events-none" />
-
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+              {/* STUDIO 5 PILIHAN WARNA TEMA LUXURY ARCHITECTURAL */}
+              <div className="p-5 sm:p-6 rounded-[10px] sinki-arch-card border shadow-2xl space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#D4AF6A]/20 pb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-pink-500/20 to-amber-500/20 border border-white/15 flex items-center justify-center shadow-inner">
-                      <Share2 size={20} className="text-amber-300" />
+                    <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border flex items-center justify-center shadow-inner shrink-0">
+                      <Palette size={20} className="text-[#E8C782]" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading text-base sm:text-lg font-semibold text-white tracking-[-0.015em] leading-[1.25] flex flex-wrap items-center gap-2">
+                        <span>5 Pilihan Warna Tema Luxury Architectural</span>
+                        <span className="font-body text-xs text-[#E8C782] bg-[#D4AF6A]/15 px-2.5 py-0.5 rounded-[5px] border border-[#D4AF6A]/35 font-semibold">
+                          Aktif: {activeThemeMeta.name}
+                        </span>
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-[1.45]">
+                        Ubah nuansa garis metalik, pendaran sudut kotak, dan aksen tombol di seluruh halaman pengunjung maupun dashboard admin tanpa mengubah ukuran kotak.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleResetLuxuryTheme}
+                    disabled={isSavingTheme || selectedThemeId === 'champagne-gold'}
+                    className="py-1.5 px-3 rounded-[8px] sinki-arch-subbox border hover:border-[#D4AF6A]/55 disabled:opacity-45 text-slate-300 hover:text-white text-xs sm:text-sm font-medium flex items-center gap-1.5 active:scale-95 transition-all self-start sm:self-auto shrink-0"
+                    title="Kembalikan ke tema bawaan Champagne Gold"
+                  >
+                    <RotateCcw size={12} />
+                    <span>Default Champagne Gold</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                  {LUXURY_THEMES.map((theme) => {
+                    const isSelected = selectedThemeId === theme.id;
+                    return (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        disabled={isSavingTheme}
+                        onClick={() => handleSelectLuxuryTheme(theme.id)}
+                        className="group text-left p-3.5 rounded-[8px] border transition-all duration-200 active:scale-[0.98] flex flex-col justify-between gap-3 relative overflow-hidden"
+                        style={{
+                          background: `radial-gradient(125% 95% at 0% 0%, ${theme.accentHex}29 0%, transparent 70%), linear-gradient(180deg, ${theme.surfaceHex} 0%, ${theme.canvasHex} 100%)`,
+                          borderColor: isSelected ? theme.brightHex : `${theme.accentHex}59`,
+                          boxShadow: isSelected
+                            ? `0 10px 26px rgba(0,0,0,0.75), 0 0 18px ${theme.accentHex}33, inset 0 1px 0 0 ${theme.softHex}45`
+                            : `0 6px 18px rgba(0,0,0,0.55), inset 0 1px 0 0 ${theme.softHex}22`,
+                        }}
+                      >
+                        <div className="space-y-2.5 w-full">
+                          {/* Top Row: Swatch Trio + Selected Check */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="w-5 h-5 rounded-[5px] border"
+                                style={{
+                                  backgroundColor: theme.surfaceHex,
+                                  borderColor: theme.accentHex,
+                                }}
+                              />
+                              <span
+                                className="w-5 h-5 rounded-[5px] border"
+                                style={{
+                                  background: `linear-gradient(135deg, ${theme.softHex} 0%, ${theme.accentHex} 100%)`,
+                                  borderColor: theme.brightHex,
+                                }}
+                              />
+                            </div>
+
+                            {isSelected ? (
+                              <span
+                                className="px-2 py-0.5 rounded-[4px] text-[10.5px] font-semibold flex items-center gap-1"
+                                style={{
+                                  backgroundColor: `${theme.accentHex}2E`,
+                                  color: theme.softHex,
+                                  border: `1px solid ${theme.brightHex}75`,
+                                }}
+                              >
+                                <Check size={11} />
+                                Aktif
+                              </span>
+                            ) : (
+                              <span
+                                className="px-2 py-0.5 rounded-[4px] text-[10.5px] font-medium"
+                                style={{
+                                  backgroundColor: 'rgba(255,255,255,0.04)',
+                                  color: theme.brightHex,
+                                  border: `1px solid ${theme.accentHex}38`,
+                                }}
+                              >
+                                {theme.badge}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Theme Title & Description */}
+                          <div>
+                            <div
+                              className="font-heading text-sm font-semibold leading-tight"
+                              style={{ color: isSelected ? theme.softHex : '#ffffff' }}
+                            >
+                              {theme.name}
+                            </div>
+                            <p className="text-[11.5px] text-slate-300/90 mt-1 leading-[1.4]">
+                              {theme.subtitle}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Mini Architectural Box Preview Bar */}
+                        <div
+                          className="w-full py-1.5 px-2.5 rounded-[6px] flex items-center justify-between text-[11px] font-semibold"
+                          style={{
+                            backgroundColor: `${theme.canvasHex}CC`,
+                            border: `1px solid ${theme.accentHex}66`,
+                            color: theme.brightHex,
+                          }}
+                        >
+                          <span>Preview Kotak</span>
+                          <span
+                            className="w-2 h-2 rounded-[2px]"
+                            style={{ backgroundColor: theme.brightHex }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* KARTU KELOLA AKUN MEDIA SOSIAL & MARKETPLACE RESMI */}
+              <div className="p-5 sm:p-6 rounded-[10px] sinki-arch-card border shadow-2xl relative overflow-hidden space-y-5">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4AF6A]/[0.05] rounded-full blur-3xl pointer-events-none" />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#D4AF6A]/20 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border flex items-center justify-center shadow-inner">
+                      <Share2 size={20} className="text-[#E8C782]" />
                     </div>
                     <div>
                       <h3 className="font-heading text-base sm:text-lg font-semibold text-white tracking-[-0.015em] leading-[1.25] flex flex-wrap items-center gap-2">
                         <span>Kelola Akun Media Sosial & Toko Resmi</span>
-                        <span className="font-body text-xs text-cyan-300 bg-cyan-500/15 px-2.5 py-0.5 rounded-md border border-cyan-500/30 font-semibold">
+                        <span className="font-body text-xs text-[#E8C782] bg-[#D4AF6A]/15 px-2.5 py-0.5 rounded-[5px] border border-[#D4AF6A]/35 font-semibold">
                           Live Sync
                         </span>
                       </h3>
@@ -3934,7 +4247,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       type="button"
                       onClick={handleResetSocial}
                       disabled={isSavingSocial}
-                      className="py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs sm:text-sm font-medium flex items-center gap-1.5 active:scale-95 transition-all"
+                      className="py-1.5 px-3 rounded-[8px] sinki-arch-subbox border hover:border-[#D4AF6A]/55 text-slate-300 hover:text-white text-xs sm:text-sm font-medium flex items-center gap-1.5 active:scale-95 transition-all"
                       title="Kembalikan tautan ke akun default"
                     >
                       <RotateCcw size={12} />
@@ -3946,7 +4259,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 <form onSubmit={handleSaveSocial} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* 1. AKUN TIKTOK (FOKUS UTAMA OWNER) */}
-                    <div className="p-4 rounded-2xl bg-black/40 border border-cyan-500/30 space-y-2.5 shadow-md hover:border-cyan-400/50 transition-colors">
+                    <div className="p-4 rounded-[8px] bg-[#0a0a0e]/85 border border-cyan-500/30 space-y-2.5 shadow-md hover:border-cyan-400/50 transition-colors">
                       <div className="flex items-center justify-between gap-2">
                         <label className="text-xs sm:text-sm font-semibold text-cyan-300 flex items-center gap-2">
                           <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
@@ -3956,7 +4269,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           </svg>
                           <span>Akun / Link Profil TikTok *</span>
                         </label>
-                        <span className="text-xs text-cyan-300 font-medium bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 truncate max-w-[140px]">
+                        <span className="text-xs text-cyan-300 font-medium bg-cyan-500/10 px-2 py-0.5 rounded-[4px] border border-cyan-500/20 truncate max-w-[140px]">
                           {extractTikTokHandle(socialForm.tiktok)}
                         </span>
                       </div>
@@ -3966,12 +4279,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         value={socialForm.tiktok}
                         onChange={(e) => setSocialForm({ ...socialForm, tiktok: e.target.value })}
                         placeholder="Contoh: @sinkiofficial atau https://www.tiktok.com/@sinkiofficial"
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-cyan-500/40 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                        className="w-full px-3 py-2.5 rounded-[8px] bg-[#0d0d12] border border-cyan-500/40 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
                       />
 
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-400 leading-[1.4]">
-                          💡 Bisa ketik <span className="text-cyan-300 bg-white/5 px-1.5 py-0.5 rounded font-medium">@nama_baru</span> atau link lengkap.
+                          💡 Bisa ketik <span className="text-cyan-300 bg-white/5 px-1.5 py-0.5 rounded-[4px] font-medium">@nama_baru</span> atau link lengkap.
                         </span>
                         <a
                           href={formatTikTokUrl(socialForm.tiktok)}
@@ -3987,7 +4300,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     {/* 2. AKUN INSTAGRAM */}
-                    <div className="p-4 rounded-2xl bg-black/40 border border-pink-500/30 space-y-2.5 shadow-md hover:border-pink-400/50 transition-colors">
+                    <div className="p-4 rounded-[8px] bg-[#0a0a0e]/85 border border-pink-500/30 space-y-2.5 shadow-md hover:border-pink-400/50 transition-colors">
                       <div className="flex items-center justify-between gap-2">
                         <label className="text-xs sm:text-sm font-semibold text-pink-300 flex items-center gap-2">
                           <div className="w-4 h-4 rounded bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center p-0.5 shrink-0">
@@ -3997,7 +4310,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           </div>
                           <span>Akun / Link Profil Instagram</span>
                         </label>
-                        <span className="text-xs text-pink-300 font-medium bg-pink-500/10 px-2 py-0.5 rounded border border-pink-500/20 truncate max-w-[140px]">
+                        <span className="text-xs text-pink-300 font-medium bg-pink-500/10 px-2 py-0.5 rounded-[4px] border border-pink-500/20 truncate max-w-[140px]">
                           {extractInstagramHandle(socialForm.instagram)}
                         </span>
                       </div>
@@ -4007,7 +4320,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         value={socialForm.instagram}
                         onChange={(e) => setSocialForm({ ...socialForm, instagram: e.target.value })}
                         placeholder="Contoh: @sinki_official atau https://www.instagram.com/sinki_official"
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-pink-500/40 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/50"
+                        className="w-full px-3 py-2.5 rounded-[8px] bg-[#0d0d12] border border-pink-500/40 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/50"
                       />
 
                       <div className="flex items-center justify-between text-xs">
@@ -4027,13 +4340,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     {/* 3. WHATSAPP HOTLINE VIP */}
-                    <div className="p-4 rounded-2xl bg-black/40 border border-emerald-500/30 space-y-2.5 shadow-md hover:border-emerald-400/50 transition-colors">
+                    <div className="p-4 rounded-[8px] bg-[#0a0a0e]/85 border border-emerald-500/30 space-y-2.5 shadow-md hover:border-emerald-400/50 transition-colors">
                       <div className="flex items-center justify-between gap-2">
                         <label className="text-xs sm:text-sm font-semibold text-emerald-300 flex items-center gap-2">
                           <MessageCircle size={15} className="text-emerald-400 shrink-0" />
                           <span>WhatsApp Hotline VIP & Order</span>
                         </label>
-                        <span className="text-xs text-emerald-300 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        <span className="text-xs text-emerald-300 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-[4px] border border-emerald-500/20">
                           Aktif
                         </span>
                       </div>
@@ -4043,7 +4356,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         value={socialForm.whatsapp}
                         onChange={(e) => setSocialForm({ ...socialForm, whatsapp: e.target.value })}
                         placeholder="Contoh: 081398677610 atau https://wa.me/6281398677610"
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#141624] border border-emerald-500/40 text-base sm:text-sm tabular-nums text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/50"
+                        className="w-full px-3 py-2.5 rounded-[8px] bg-[#0d0d12] border border-emerald-500/40 text-base sm:text-sm tabular-nums text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/50"
                       />
 
                       <div className="flex items-center justify-between text-xs">
@@ -4063,10 +4376,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     {/* 4. SHOPEE & TOKOPEDIA */}
-                    <div className="p-4 rounded-2xl bg-black/40 border border-amber-500/30 space-y-2.5 shadow-md hover:border-amber-400/50 transition-colors">
+                    <div className="p-4 rounded-[8px] bg-[#0a0a0e]/85 border border-[#D4AF6A]/35 space-y-2.5 shadow-md hover:border-[#E8C782]/55 transition-colors">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs sm:text-sm font-semibold text-amber-300 flex items-center gap-2">
-                          <ShoppingBag size={15} className="text-amber-400 shrink-0" />
+                        <label className="text-xs sm:text-sm font-semibold text-[#E8C782] flex items-center gap-2">
+                          <ShoppingBag size={15} className="text-[#E8C782] shrink-0" />
                           <span>Shopee & Tokopedia Official</span>
                         </label>
                       </div>
@@ -4077,14 +4390,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           value={socialForm.shopee}
                           onChange={(e) => setSocialForm({ ...socialForm, shopee: e.target.value })}
                           placeholder="Link Toko Shopee (https://shopee.co.id/...)"
-                          className="w-full px-3 py-2 rounded-xl bg-[#141624] border border-white/10 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none"
                         />
                         <input
                           type="text"
                           value={socialForm.tokopedia}
                           onChange={(e) => setSocialForm({ ...socialForm, tokopedia: e.target.value })}
                           placeholder="Link Toko Tokopedia (https://tokopedia.com/...)"
-                          className="w-full px-3 py-2 rounded-xl bg-[#141624] border border-white/10 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                          className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -4098,7 +4411,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <button
                       type="submit"
                       disabled={isSavingSocial}
-                      className="w-full sm:w-auto py-2.5 px-6 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-110 disabled:opacity-50 text-slate-950 font-semibold text-sm transition-all active:scale-95 shadow-lg shadow-black/40 flex items-center justify-center gap-2 shrink-0 border border-[#DFB76C]/40"
+                      className="w-full sm:w-auto py-2.5 px-6 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-110 disabled:opacity-50 text-slate-950 font-semibold text-sm transition-all active:scale-95 shadow-lg shadow-black/40 flex items-center justify-center gap-2 shrink-0 border border-[#DFB76C]/40"
                     >
                       <Save size={15} className="stroke-[2.2]" />
                       <span>{isSavingSocial ? 'Menyimpan ke Cloud...' : 'Simpan Perubahan Tautan'}</span>
@@ -4108,49 +4421,49 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-3">
+                <div className="p-5 rounded-[10px] sinki-arch-card border space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-heading text-sm font-semibold text-white block">Status Keamanan:</span>
                     <button
                       onClick={() => setActiveMenu('security')}
-                      className="text-xs font-semibold text-amber-300 hover:underline flex items-center gap-1"
+                      className="text-xs font-semibold text-[#E8C782] hover:underline flex items-center gap-1"
                     >
                       <span>Lihat Detail Guard</span>
                       <ChevronRight size={12} />
                     </button>
                   </div>
                   <div className="space-y-2 text-xs sm:text-sm">
-                    <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
+                    <div className="p-3 rounded-[8px] sinki-arch-subbox border flex items-center justify-between">
                       <span className="text-slate-300">Autentikasi PIN Server:</span>
                       <span className="text-emerald-400 font-semibold">Aktif & Terproteksi</span>
                     </div>
-                    <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
+                    <div className="p-3 rounded-[8px] sinki-arch-subbox border flex items-center justify-between">
                       <span className="text-slate-300">Proteksi Brute-Force:</span>
                       <span className="text-emerald-400 font-semibold">Rate Limiter Aktif</span>
                     </div>
-                    <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between">
+                    <div className="p-3 rounded-[8px] sinki-arch-subbox border flex items-center justify-between">
                       <span className="text-slate-300">Token Sesi 24 Jam:</span>
-                      <span className="text-amber-300 font-semibold">Terverifikasi</span>
+                      <span className="text-[#E8C782] font-semibold">Terverifikasi</span>
                     </div>
                   </div>
 
                   <button
                     onClick={() => setActiveMenu('security')}
-                    className="w-full mt-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600/30 via-emerald-500/20 to-amber-500/20 hover:from-emerald-600/40 hover:to-amber-500/30 border border-emerald-500/30 text-emerald-300 hover:text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-98"
+                    className="w-full mt-2 py-2.5 px-3 rounded-[8px] bg-gradient-to-r from-emerald-600/25 via-[#D4AF6A]/15 to-[#A07C3A]/20 hover:from-emerald-600/35 hover:to-[#D4AF6A]/30 border border-[#D4AF6A]/35 text-emerald-300 hover:text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-98"
                   >
                     <ShieldCheck size={14} />
                     <span>Buka Pusat Keamanan & Kesehatan Lengkap →</span>
                   </button>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-[#0e111d] border border-white/10 space-y-3">
+                <div className="p-5 rounded-[10px] sinki-arch-card border space-y-3">
                   <span className="font-heading text-sm font-semibold text-white block">Hak Cipta & Brand:</span>
-                  <div className="p-3 rounded-xl bg-black/40 border border-white/5 text-slate-300 text-xs sm:text-sm leading-[1.5]">
+                  <div className="p-3 rounded-[8px] sinki-arch-subbox border text-slate-300 text-xs sm:text-sm leading-[1.5]">
                     © 2026 SINKI Parfums. All Rights Reserved. Define Your Presence.
                   </div>
                   <div className="pt-2">
                     <span className="text-xs text-slate-400 block mb-1">Tautan Akses Rahasia:</span>
-                    <span className="text-amber-300 text-xs sm:text-sm font-medium block bg-black/40 p-2.5 rounded-xl border border-white/5">
+                    <span className="text-[#E8C782] text-xs sm:text-sm font-medium block sinki-arch-subbox p-2.5 rounded-[8px] border">
                       /dimensi-sinki
                     </span>
                   </div>
@@ -4162,7 +4475,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         </div>
 
         {/* BOTTOM NAVIGATION MOBILE ONLY (DESKTOP: HIDDEN) */}
-        <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-[#0d0f17]/95 border-t border-white/10 backdrop-blur-md px-3 py-2 flex items-center justify-around z-30 shadow-2xl font-body">
+        <nav className="lg:hidden fixed bottom-0 inset-x-0 sinki-arch-header border-t backdrop-blur-md px-3 py-2 flex items-center justify-around z-30 shadow-2xl font-body">
           {navItems.slice(0, 5).map((item) => {
             const Icon = item.icon;
             const isActive = activeMenu === item.id;
@@ -4171,12 +4484,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 key={item.id}
                 onClick={() => setActiveMenu(item.id as MenuKey)}
                 className={`flex flex-col items-center gap-1 text-xs font-medium transition-colors ${
-                  isActive ? 'text-amber-400 font-semibold' : 'text-slate-400 hover:text-slate-200'
+                  isActive ? 'text-[#E8C782] font-semibold' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 <Icon size={16} />
                 <span>{item.label.split(' ')[0]}</span>
-                {isActive && <span className="w-1 h-1 rounded-full bg-amber-400 -mt-0.5" />}
+                {isActive && <span className="w-1 h-1 rounded-full bg-[#E8C782] -mt-0.5" />}
               </button>
             );
           })}

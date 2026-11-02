@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
@@ -21,6 +21,7 @@ import {
 } from '../data/perfumes';
 import { getStoredPerfumes, fetchPerfumesFromServer, PerfumeItem } from '../utils/perfumeStorage';
 import { PerfumeDetailModal } from './PerfumeDetailModal';
+import { Category3DIcon } from './CollectionScreen';
 import {
   ReviewItem,
   INITIAL_4_REVIEWS,
@@ -128,16 +129,19 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   const [likedReviews, setLikedReviews] = useState<string[]>([]);
-  // Efek Cahaya Berjalan Interaktif (Pilihan 3) saat disentuh / di-like
+  // Efek Cahaya Berjalan Interaktif & Expand Komentar Panjang saat diketuk
   const [activeBeamId, setActiveBeamId] = useState<string | null>(null);
+  const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
 
-  // Modal Tulis Ulasan
+  // Modal Tulis Ulasan (Alur A: Varian tersembunyi di awal, muncul saat kategori diklik, ringkas kembali setelah dipilih)
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
-  const [variantCategoryTab, setVariantCategoryTab] = useState<CollectionCategoryKey>('daily_fresh');
+  const [variantCategoryTab, setVariantCategoryTab] = useState<CollectionCategoryKey | null>(null);
+  const [selectedCategoryKey, setSelectedCategoryKey] = useState<CollectionCategoryKey | null>(null);
+  const variantListScrollRef = useRef<HTMLDivElement | null>(null);
   const [formName, setFormName] = useState('');
   const [formEmoji, setFormEmoji] = useState('😍');
   const [formEmojiLabel, setFormEmojiLabel] = useState('Puas');
-  const [formVariant, setFormVariant] = useState(TOP_11_DATA[0].name);
+  const [formVariant, setFormVariant] = useState('');
   const [formComment, setFormComment] = useState('');
   const [selectedPerfumeForDetail, setSelectedPerfumeForDetail] = useState<PerfumeItem | null>(null);
 
@@ -165,16 +169,25 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
     }
   };
 
-  // Auto-open modal jika dipanggil dari kartu Collection atau Top 11
+  // Auto-open modal jika dipanggil dari kartu Collection atau Top 11 & tandai kategori terpilih (varian tetap ringkas di awal)
   useEffect(() => {
     if (initialVariant) {
       setFormVariant(initialVariant);
+      const matched = perfumesCatalog.find(
+        (p) => p.name.toLowerCase() === initialVariant.trim().toLowerCase()
+      );
+      if (matched?.collectionCategories && matched.collectionCategories.length > 0) {
+        setSelectedCategoryKey(matched.collectionCategories[0]);
+      } else {
+        setSelectedCategoryKey(null);
+      }
+      setVariantCategoryTab(null);
       setIsWriteModalOpen(true);
       if (onClearTargetVariant) {
         onClearTargetVariant();
       }
     }
-  }, [initialVariant]);
+  }, [initialVariant, perfumesCatalog]);
 
   // Jeda 1 Menit (Cooldown Anti-Spam)
   const [lastSubmitTime, setLastSubmitTime] = useState<number>(() => {
@@ -275,8 +288,16 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
     e.preventDefault();
 
     // 1. Validasi Input Dasar
-    if (!formName.trim() || !formComment.trim()) {
-      onShowToast('Mohon lengkapi nama dan ulasan Anda');
+    if (!formName.trim()) {
+      onShowToast('Mohon isi nama Anda terlebih dahulu');
+      return;
+    }
+    if (!formVariant.trim()) {
+      onShowToast('Mohon pilih kategori & varian parfum terlebih dahulu');
+      return;
+    }
+    if (!formComment.trim()) {
+      onShowToast('Mohon tulis ulasan singkat Anda');
       return;
     }
 
@@ -334,6 +355,9 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
       setIsWriteModalOpen(false);
       setFormName('');
       setFormComment('');
+      setFormVariant('');
+      setSelectedCategoryKey(null);
+      setVariantCategoryTab(null);
       onShowToast(`Ulasan Anda berhasil dipublikasikan seketika! ${formEmoji}`);
     } catch (err) {
       console.error(err);
@@ -357,17 +381,14 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
   const displayedReviews = filteredReviews.slice(0, MAX_REVIEWS_LIMIT);
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] text-slate-100 overflow-hidden sinki-screen-soft-fade">
-      {/* Pendar Cahaya Emas Halus & Tipis */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/[0.07] rounded-full blur-[110px] pointer-events-none" />
-
+    <div className="relative w-full h-full flex flex-col sinki-arch-canvas text-slate-100 overflow-hidden sinki-screen-soft-fade">
       {/* 1. HEADER ATAS DENGAN TOMBOL "BERI ULASAN" DI POJOK KANAN ATAS YANG SANGAT JELAS & TERANG */}
-      <div className="relative z-30 px-3.5 pt-3 pb-2.5 shrink-0 bg-[#12141a]/95 border-b border-white/10 backdrop-blur-md flex items-center justify-between gap-2 shadow-sm">
+      <div className="relative z-30 px-3.5 pt-3 pb-2.5 shrink-0 sinki-arch-header border-b backdrop-blur-md flex items-center justify-between gap-2">
         {/* Kiri: Tombol Back & Logo SINKI (Tekan 5x untuk Akses PIN) */}
         <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={onBackToHome}
-            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-200 hover:text-white transition-colors active:scale-95 shrink-0"
+            className="w-8 h-8 rounded-[6px] sinki-arch-subbox hover:border-[#E8C782]/60 border flex items-center justify-center text-[#E8C782] hover:text-white transition-colors active:scale-95 shrink-0"
             title="Kembali ke Beranda"
           >
             <ArrowLeft size={16} />
@@ -376,7 +397,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           {/* Logo SINKI (Tekan 5x Berturut-turut untuk Membuka PIN Rahasia) */}
           <div
             onClick={handleLogoTap}
-            className="cursor-pointer select-none py-1 px-1.5 rounded-lg active:scale-95 transition-transform min-w-0"
+            className="cursor-pointer select-none py-1 px-1.5 rounded-[6px] active:scale-95 transition-transform min-w-0"
             title="Ketuk logo 5x untuk akses pengelola"
           >
             <h2 className="font-heading text-[15px] sm:text-base font-bold text-white tracking-[0.06em] leading-[1.2] truncate">
@@ -396,7 +417,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                 setIsAdminMode(false);
                 onShowToast('Mode Pengelola dinonaktifkan.');
               }}
-              className="py-1 px-2 rounded-xl bg-red-600/30 border border-red-500/50 text-red-300 font-body text-[11.5px] font-semibold leading-tight flex items-center gap-1 active:scale-95"
+              className="py-1 px-2 rounded-[8px] bg-red-600/30 border border-red-500/50 text-red-300 font-body text-[11.5px] font-semibold leading-tight flex items-center gap-1 active:scale-95"
             >
               <Unlock size={12} />
               <span>Keluar</span>
@@ -406,8 +427,11 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           {/* TOMBOL BERI ULASAN (CHAMPAGNE GOLD) */}
           <button
             type="button"
-            onClick={() => setIsWriteModalOpen(true)}
-            className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-xs leading-tight transition-all active:scale-95 shadow-md shadow-black/30 shrink-0 border border-[#DFB76C]/40"
+            onClick={() => {
+              setVariantCategoryTab(null);
+              setIsWriteModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-xs leading-tight transition-all active:scale-95 shadow-md shadow-black/30 shrink-0 border border-[#DFB76C]/40"
           >
             <MessageSquarePlus size={13} className="stroke-[2.2]" />
             <span>Beri Ulasan</span>
@@ -432,49 +456,44 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         </div>
       )}
 
-      {/* 2. DAFTAR 4 BARIS ULASAN (NAMA + EMOT + ULASAN) */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-3.5 pb-24 space-y-2.5">
+      {/* 2. DAFTAR ULASAN RAMPING (MUAT BANYAK ULASAN) */}
+      <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-2 pb-20 space-y-1.5">
         
-        {/* Baris Ringkas: Judul & Badge Terverifikasi Asli */}
-        <div className="flex items-center justify-between gap-2 px-1 pt-0.5 flex-wrap">
-          <div className="flex items-center gap-2">
-            <h3 className="font-heading font-semibold text-[15px] leading-[1.22] text-white tracking-[-0.015em]">
-              Testimoni Pembeli
-            </h3>
+        {/* Label Terverifikasi Asli + Kolom Pencarian Ulasan Ramping */}
+        <div className="sinki-heading-anim space-y-1.5">
+          <div className="flex items-center justify-end px-0.5">
+            <span className="font-body text-[10.5px] text-emerald-300 font-medium inline-flex items-center gap-1">
+              <CheckCircle2 size={11} className="text-emerald-400 shrink-0" />
+              <span>Terverifikasi Asli</span>
+            </span>
           </div>
 
-          <span className="font-body text-[11px] text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30 font-medium flex items-center gap-1 shadow-sm">
-            <CheckCircle2 size={11} className="text-emerald-400 shrink-0" />
-            <span>Terverifikasi Asli</span>
-          </span>
-        </div>
-
-        {/* Kolom Pencarian Ulasan (Icon Search) */}
-        <div className="relative w-full">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            <Search size={15} className="text-[#DFB76C]" />
+          <div className="relative w-full">
+            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+              <Search size={13} className="text-[#DFB76C]" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari varian parfum, nama pembeli, atau ulasan..."
+              className="w-full pl-8 pr-7 py-1.5 rounded-[8px] sinki-arch-input border font-body text-xs leading-normal font-normal text-white placeholder:text-slate-400 focus:outline-none transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-white"
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari varian parfum, nama pembeli, atau ulasan..."
-            className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#141622]/95 border border-white/10 font-body text-base sm:text-sm leading-normal font-normal text-white placeholder:text-slate-400 focus:outline-none focus:border-[#DFB76C] transition-colors shadow-sm"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-white"
-            >
-              <X size={14} />
-            </button>
-          )}
         </div>
 
         {/* Info Hasil Filter Pencarian */}
         {searchQuery.trim() && (
-          <div className="flex items-center justify-between px-1 font-body text-xs text-slate-400">
+          <div className="flex items-center justify-between px-1 font-body text-[11px] text-slate-400">
             <span>
               Ditemukan <strong className="text-[#DFB76C] font-semibold tabular-nums">{filteredReviews.length}</strong> ulasan
             </span>
@@ -488,11 +507,11 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           </div>
         )}
 
-        {/* DAFTAR ULASAN (MAKSIMAL 10 SLOT TERBARU BERGANTIAN - FORMAT RAMPING PENDEK) */}
-        <div className="space-y-2">
+        {/* DAFTAR ULASAN ULTRA-RAMPING (LEBAR PENUH, TINGGI PENDEK 2 BARIS) */}
+        <div className="space-y-1.5">
           {displayedReviews.length === 0 ? (
             searchQuery.trim() ? (
-              <div className="p-4 rounded-2xl bg-[#141622]/80 border border-white/10 text-center space-y-2 font-body">
+              <div className="sinki-cascade-row-0 p-4 rounded-[8px] sinki-arch-card border text-center space-y-2 font-body">
                 <Search size={22} className="mx-auto text-slate-500" />
                 <p className="text-sm text-slate-300 font-normal leading-[1.5]">
                   Tidak ada ulasan yang cocok dengan kata kunci <span className="text-[#DFB76C] font-medium">"{searchQuery}"</span>
@@ -506,8 +525,8 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="p-5 rounded-2xl bg-[#141622]/90 border border-white/10 text-center space-y-3 backdrop-blur-md shadow-lg">
-                <div className="w-11 h-11 rounded-2xl bg-[#C5A059]/15 border border-[#DFB76C]/30 flex items-center justify-center mx-auto text-xl shadow-inner">
+              <div className="sinki-cascade-row-0 p-5 rounded-[8px] sinki-arch-card border text-center space-y-3">
+                <div className="w-11 h-11 rounded-[8px] bg-[#C5A059]/15 border border-[#DFB76C]/35 flex items-center justify-center mx-auto text-xl shadow-inner">
                   ✨
                 </div>
                 <div className="space-y-1">
@@ -520,8 +539,11 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setIsWriteModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-sm transition-all active:scale-95 shadow-md shadow-black/30"
+                  onClick={() => {
+                    setVariantCategoryTab(null);
+                    setIsWriteModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 py-2 px-4 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-sm transition-all active:scale-95 shadow-md shadow-black/30"
                 >
                   <MessageSquarePlus size={15} className="stroke-[2.2]" />
                   <span>Tulis Ulasan Pertama</span>
@@ -531,54 +553,60 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           ) : displayedReviews.map((rev, idx) => {
             const hasLiked = likedReviews.includes(rev.id);
             const isActiveBeam = activeBeamId === rev.id || (idx === 0 && (!activeBeamId || activeBeamId === rev.id));
+            const isExpanded = expandedReviewId === rev.id;
+            const cascadeDelayMs = Math.min(idx * 75, 450);
 
             return (
               <div
                 key={rev.id}
-                onClick={() => setActiveBeamId((prev) => (prev === rev.id ? null : rev.id))}
-                style={{
-                  animation: `sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) ${Math.min(idx * 50, 300)}ms both`,
-                  willChange: 'transform, opacity, filter',
+                onClick={() => {
+                  setActiveBeamId((prev) => (prev === rev.id ? null : rev.id));
+                  setExpandedReviewId((prev) => (prev === rev.id ? null : rev.id));
                 }}
-                className={`group relative p-2.5 rounded-2xl cursor-pointer backdrop-blur-md overflow-hidden sinki-cushion-press ${
+                style={{
+                  animation: `sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) ${cascadeDelayMs}ms both`,
+                  willChange: 'transform, opacity, filter',
+                  backfaceVisibility: 'hidden',
+                  WebkitBackfaceVisibility: 'hidden',
+                }}
+                className={`group relative w-full px-2.5 py-1.5 rounded-[8px] cursor-pointer overflow-hidden sinki-cushion-press ${
                   isActiveBeam
-                    ? 'border-beam-active shadow-[0_4px_20px_rgba(223,183,108,0.22)]'
+                    ? 'border-beam-active'
                     : isAdminMode
-                    ? 'bg-gradient-to-b from-[#181a28]/95 to-[#12141e]/95 border border-red-500/50 shadow-lg shadow-red-950/20'
-                    : 'bg-gradient-to-b from-[#181a28]/95 to-[#12141e]/95 border border-white/10 hover:border-[#DFB76C]/40 shadow-[0_2px_8px_rgba(0,0,0,0.35)]'
+                    ? 'sinki-arch-card border border-red-500/50'
+                    : 'sinki-arch-card sinki-arch-card-interactive border'
                 }`}
               >
-                {/* Layer Konten (Di atas animasi border cahaya) */}
-                <div className="relative z-10 space-y-1">
-                  {/* Baris 1: Header Kompak (Emot, Nama, Centang, Varian, Label, dan Like) */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {/* Emot Bulat Mini & Ramping */}
-                      <div className="w-6 h-6 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-xs shrink-0 shadow-inner">
-                        {rev.emoji}
-                      </div>
-
-                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap font-body">
-                        <span className="font-heading font-semibold text-[13px] leading-tight text-white tracking-[-0.01em] truncate max-w-[130px] sm:max-w-[160px] drop-shadow-sm">
-                          {rev.name}
-                        </span>
-                        <CheckCircle2 size={11} className="text-emerald-400 shrink-0" />
-                        {idx === 0 && !searchQuery && (
-                          <span className="text-[10.5px] font-medium text-amber-300 bg-amber-500/20 border border-amber-400/40 px-1.5 py-0.5 rounded-full leading-none shrink-0">
-                            ★ Baru
-                          </span>
-                        )}
-                        <span className="text-[11px] font-medium text-zinc-200 bg-white/[0.08] px-1.5 py-0.5 rounded-md border border-white/10 leading-tight truncate max-w-[140px] sm:max-w-[175px]">
-                          {rev.variant}
-                        </span>
-                        <span className="text-[11px] text-slate-400 shrink-0 hidden xs:inline">
-                          • <span className="text-[#DFB76C] font-medium">{rev.emojiLabel}</span> • {rev.date}
-                        </span>
-                      </div>
+                {/* Konten Ultra-Ramping 2 Baris (Lebar 100%, Tinggi Sangat Pendek) */}
+                <div className="relative z-10 space-y-0.5">
+                  {/* Baris 1: Emot + Nama + Varian + Ambil Aroma + Like */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1 min-w-0 flex-1 font-body text-[11px] leading-tight">
+                      <span className="text-xs leading-none shrink-0">{rev.emoji}</span>
+                      <span className="font-heading font-semibold text-white truncate max-w-[95px] sm:max-w-[130px]">
+                        {rev.name}
+                      </span>
+                      <CheckCircle2 size={9.5} className="text-emerald-400 shrink-0" />
+                      <span aria-hidden="true" className="text-slate-600 shrink-0">·</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenPerfumeDetailByName(rev.variant);
+                        }}
+                        className="text-[#DFB76C] hover:text-[#FFF0CA] font-medium truncate inline-flex items-center gap-0.5 min-w-0 cursor-pointer"
+                        title={`Lihat varian ${rev.variant}`}
+                      >
+                        <span className="truncate">{rev.variant}</span>
+                        <ChevronRight size={10} className="shrink-0 opacity-80" />
+                      </button>
                     </div>
 
-                    {/* Tombol Hapus (Mode Admin) atau Like Apresiasi */}
-                    <div className="shrink-0">
+                    {/* Kanan: Waktu + Like / Hapus */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="font-body text-[10px] text-slate-500 hidden xs:inline">
+                        {rev.date}
+                      </span>
                       {isAdminMode ? (
                         <button
                           type="button"
@@ -586,10 +614,10 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                             e.stopPropagation();
                             handleDeleteReview(rev.id, rev.name);
                           }}
-                          className="py-1 px-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-body text-[11px] font-semibold leading-tight flex items-center gap-1 active:scale-95"
+                          className="py-0.5 px-1.5 rounded-[4px] bg-red-600 hover:bg-red-500 text-white font-body text-[10px] font-semibold leading-none flex items-center gap-0.5 active:scale-95"
                           title="Hapus Ulasan Ini"
                         >
-                          <Trash2 size={11} />
+                          <Trash2 size={9.5} />
                           <span>Hapus</span>
                         </button>
                       ) : (
@@ -599,62 +627,46 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                             e.stopPropagation();
                             handleLike(rev.id);
                           }}
-                          className={`flex items-center gap-1 font-body text-[11px] leading-tight px-2 py-0.5 rounded-lg transition-colors active:scale-95 ${
+                          className={`flex items-center gap-0.5 font-body text-[10px] leading-none px-1.5 py-0.5 rounded-[4px] transition-colors active:scale-95 ${
                             hasLiked
-                              ? 'text-pink-400 bg-pink-500/15 border border-pink-500/30'
-                              : 'text-slate-300 hover:text-white bg-white/10 border border-white/15'
+                              ? 'text-pink-400 bg-pink-500/15'
+                              : 'text-slate-300 hover:text-white bg-white/[0.06]'
                           }`}
                         >
-                          <span>{hasLiked ? '💖' : '🤍'}</span>
+                          <span className="text-[9.5px]">{hasLiked ? '💖' : '🤍'}</span>
                           <span className="font-medium tabular-nums">{rev.likes}</span>
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Baris 2: Komentar Pembeli Nyaman Dibaca (Format Ramping Pendek) */}
-                  <p className="font-body text-[12.5px] sm:text-[13px] text-slate-200 font-normal leading-[1.45] pl-8 pr-1 line-clamp-2">
+                  {/* Baris 2: Komentar 1 Baris Padat (Ketuk kotak jika ingin baca komentar panjang penuh) */}
+                  <p
+                    className={`font-body text-[11px] text-slate-300 font-normal leading-[1.3] pl-4 pr-1 ${
+                      isExpanded ? '' : 'line-clamp-1'
+                    }`}
+                  >
                     "{rev.comment}"
                   </p>
-
-                  {/* Baris 3: Tab Tindakan Cepat - Ambil Aroma Ini (100% Persis Menu Collection) */}
-                  <div className="pt-2 mt-1.5 border-t border-white/[0.07] flex items-center justify-between gap-2 pl-2">
-                    <span className="font-body text-[11px] text-slate-400 font-normal truncate">
-                      Varian diulas: <strong className="text-[#DFB76C] font-semibold">{rev.variant}</strong>
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenPerfumeDetailByName(rev.variant);
-                      }}
-                      className="font-body py-1.5 px-2.5 rounded-md bg-white/[0.05] hover:bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#E2C27F] hover:text-[#F3E6C8] text-[11.5px] font-semibold leading-none flex items-center gap-1 shrink-0 sinki-cushion-press-sm"
-                    >
-                      <span>Ambil Aroma Ini</span>
-                      <ChevronRight size={12} className="text-[#DFB76C]" />
-                    </button>
-                  </div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Tombol Alternatif Tulis Ulasan (Mudah Ditekan) */}
-        <div className="pt-0.5 pb-0.5">
-          <button
-            type="button"
-            onClick={() => setIsWriteModalOpen(true)}
-            className="w-full py-2 px-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-400/25 to-amber-500/20 hover:from-amber-500/30 hover:to-amber-400/30 border border-amber-400/50 text-amber-300 font-body font-semibold text-xs sm:text-[13px] flex items-center justify-center gap-2 transition-all active:scale-98 shadow-md"
-          >
-            <MessageSquarePlus size={14} />
-            <span>+ Bagikan Pengalaman & Ulasan Anda</span>
-          </button>
-        </div>
-
         {/* 3. DARI HATI SINKI (APRESIASI RINGKAS & ELEGAN - PILIHAN 3) */}
-        <div className="mt-2.5 p-3 sm:p-3.5 rounded-2xl bg-gradient-to-br from-[#1e2235] via-[#181a2b] to-[#131524] border border-white/10 shadow-xl relative overflow-hidden text-center space-y-2 backdrop-blur-md">
+        <div
+          style={{
+            animation: `sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) ${Math.min(
+              Math.max(displayedReviews.length, 1) * 75,
+              300
+            )}ms both`,
+            willChange: 'transform, opacity, filter',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+          }}
+          className="mt-2.5 p-3 sm:p-3.5 rounded-[10px] sinki-arch-card border relative overflow-hidden text-center space-y-2"
+        >
           {/* Subtle Glow */}
           <div className="absolute top-0 right-0 w-36 h-36 bg-[#c5a059]/[0.08] rounded-full blur-2xl pointer-events-none" />
 
@@ -675,7 +687,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
               <button
                 type="button"
                 onClick={onNavigateToOrder}
-                className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-xs sm:text-[13px] flex items-center justify-center gap-2 transition-transform active:scale-98 shadow-md shadow-black/30"
+                className="w-full py-2 px-4 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-xs sm:text-[13px] flex items-center justify-center gap-2 transition-transform active:scale-98 shadow-md shadow-black/30"
               >
                 <ShoppingBag size={14} />
                 <span>Pesan Varian Lain / Belanja Lagi</span>
@@ -685,46 +697,55 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         </div>
       </div>
 
-      {/* 4. MODAL TULIS ULASAN (RENDER VIA PORTAL AGAR 100% PASTI MUNCUL DI LAYAR) */}
+      {/* 4. PANEL TULIS ULASAN — SINKI BOUTIQUE SHEET LEGA (ALUR A & FRAMELESS ICONS) */}
       {isWriteModalOpen &&
         typeof document !== 'undefined' &&
         createPortal(
           <div
             onClick={() => setIsWriteModalOpen(false)}
-            className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+            className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-xs flex items-end sm:items-center justify-center px-0 sm:px-4 pt-6 pb-[env(safe-area-inset-bottom,0px)] sm:pb-6 sinki-backdrop-in"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-sm rounded-3xl bg-[#12141e] border border-white/15 p-4 sm:p-5 shadow-2xl space-y-3.5 max-h-[90vh] overflow-y-auto no-scrollbar"
+              className="relative w-full max-w-md max-h-[90vh] overflow-y-auto no-scrollbar rounded-t-[10px] sm:rounded-[10px] sinki-arch-modal border-t sm:border px-5 pt-4 pb-6 sm:p-6 sinki-sheet-elevation"
             >
-              {/* Header Modal */}
-              <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-lg">✍️</span>
-                  <div>
-                    <h3 className="font-heading font-bold text-[15px] sm:text-base leading-[1.25] text-white tracking-[-0.015em]">
+              {/* Aksen Garis Emas Tipis di Puncak Panel */}
+              <div className="absolute inset-x-10 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#DFB76C]/70 to-transparent pointer-events-none" />
+
+              {/* Garis Indikator Sheet Halus (Khusus Mobile) */}
+              <div className="w-10 h-1 rounded-[4px] bg-[#D4AF6A]/25 mx-auto mb-3 sm:hidden" />
+
+              {/* Header Lebih Besar & Jelas (Ikon Frameless Tanpa Kotak) */}
+              <div className="flex items-start justify-between pb-3.5 mb-4 border-b border-[#D4AF6A]/25">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-xl leading-none select-none shrink-0" aria-hidden="true">
+                    ✍️
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="font-heading font-bold text-lg sm:text-xl leading-tight text-white tracking-[-0.015em] truncate">
                       Tulis Ulasan SINKI
                     </h3>
-                    <span className="font-body text-[11px] text-slate-400 font-normal">
-                      Bagikan pengalaman aroma Anda
-                    </span>
+                    <p className="font-body text-xs text-slate-400 font-normal leading-snug mt-0.5">
+                      Bagikan pengalaman keharuman pilihan Anda
+                    </p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsWriteModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors active:scale-95"
+                  aria-label="Tutup form ulasan"
+                  className="p-1.5 -mr-1 text-slate-400 hover:text-white transition-colors active:scale-95 cursor-pointer"
                 >
-                  <X size={16} />
+                  <X size={20} />
                 </button>
               </div>
 
-              {/* Form */}
-              <form onSubmit={handleSubmitReview} className="space-y-3 font-body">
-                {/* Nama */}
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-200 font-medium block">
-                    Nama *
+              {/* Form Lega & Nyaman (Alur A) */}
+              <form onSubmit={handleSubmitReview} className="space-y-4 font-body">
+                {/* 1. Nama Anda */}
+                <div className="space-y-1.5">
+                  <label className="text-[13px] text-slate-200 font-medium block leading-none">
+                    Nama Anda
                   </label>
                   <input
                     type="text"
@@ -732,144 +753,239 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                     placeholder="Contoh: Rian Ardiansyah"
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 font-body text-base sm:text-sm leading-normal font-normal text-white placeholder:text-slate-500 focus:outline-none focus:border-[#DFB76C]"
+                    className="w-full px-3.5 py-2.5 rounded-[8px] sinki-arch-input border text-sm leading-normal text-white placeholder:text-slate-500 focus:outline-none transition-colors"
                   />
                 </div>
 
-                {/* Pilihan Varian Parfum (Sistem 2-Langkah: Pilih Koleksi ➔ Pilih Varian) */}
-                <div className="space-y-2 p-2.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                  <div className="flex items-center justify-between gap-2">
-                    <label className="text-xs text-slate-200 font-medium block">
-                      Varian yang Diulas *
-                    </label>
-                    <span className="text-[11px] font-medium text-[#DFB76C] bg-[#C5A059]/15 px-2 py-0.5 rounded-full border border-[#DFB76C]/30 truncate max-w-[175px]">
-                      {formVariant}
-                    </span>
-                  </div>
-
-                  {/* LANGKAH 1: Pilih Koleksi (6 Kategori SINKI) */}
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-normal block mb-1.5">
-                      1. Pilih Kategori Koleksi SINKI:
-                    </span>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {COLLECTION_CATEGORIES.map((cat) => {
-                        const isActive = variantCategoryTab === cat.id;
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => {
-                              setVariantCategoryTab(cat.id);
-                              const matching = perfumesCatalog.filter(
-                                (p) =>
-                                  Array.isArray(p.collectionCategories) &&
-                                  p.collectionCategories.includes(cat.id) &&
-                                  p.isActive !== false
-                              );
-                              if (matching.length > 0 && !matching.some((p) => p.name === formVariant)) {
-                                setFormVariant(matching[0].name);
-                              }
-                            }}
-                            className={`py-1.5 px-1 rounded-xl text-center flex items-center justify-center border transition-all ${
-                              isActive
-                                ? 'bg-[#C5A059]/30 border-[#DFB76C] text-white font-semibold shadow-sm'
-                                : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 font-medium'
-                            }`}
-                          >
-                            <span className="text-[11px] truncate leading-tight">{cat.title}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* LANGKAH 2: Pilih Nama Varian (Daftar Ringkas Sesuai Kategori Pilihan) */}
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-normal block mb-1">
-                      2. Pilih Nama Parfum (Kategori {COLLECTION_CATEGORIES.find((c) => c.id === variantCategoryTab)?.title || 'Pilihan'}):
-                    </span>
-                    <select
-                      value={formVariant}
-                      onChange={(e) => setFormVariant(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#171926] border border-white/15 font-body text-base sm:text-sm leading-normal font-medium text-white focus:outline-none focus:border-[#DFB76C]"
-                    >
-                      {perfumesCatalog
+                {/* 2. Kategori (6 Kategori Frameless) & Daftar Varian Rapi 2 Kolom Simetris (Alur A) */}
+                {(() => {
+                  const openCatMeta = variantCategoryTab
+                    ? COLLECTION_CATEGORIES.find((c) => c.id === variantCategoryTab) || null
+                    : null;
+                  const categoryPerfumes = variantCategoryTab
+                    ? perfumesCatalog
                         .filter(
                           (p) =>
                             Array.isArray(p.collectionCategories) &&
                             p.collectionCategories.includes(variantCategoryTab) &&
                             p.isActive !== false
                         )
-                        .map((p) => (
-                          <option key={p.id} value={p.name}>
-                            {p.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
+                        .slice()
+                        .sort((a, b) => a.name.localeCompare(b.name, 'id'))
+                    : [];
 
-                {/* Pilihan Kepuasan Aroma (1 Baris Ringkas & Ramping) */}
-                <div className="space-y-1.5">
+                  return (
+                    <div className="space-y-2 pt-0.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[13px] text-slate-200 font-medium leading-none">
+                          Varian Parfum
+                        </span>
+                        {formVariant ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const fallbackCat =
+                                selectedCategoryKey ||
+                                perfumesCatalog.find(
+                                  (p) => p.name.toLowerCase() === formVariant.toLowerCase()
+                                )?.collectionCategories?.[0] ||
+                                'daily_fresh';
+                              setVariantCategoryTab((prev) =>
+                                prev === fallbackCat ? null : fallbackCat
+                              );
+                            }}
+                            className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#DFB76C] hover:text-[#FFF0CA] truncate max-w-[210px] leading-none cursor-pointer transition-colors"
+                            title="Ketuk untuk mengganti varian parfum"
+                          >
+                            <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                            <span className="truncate">{formVariant}</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-normal leading-none">
+                            Pilih kategori di bawah
+                          </span>
+                        )}
+                      </div>
+
+                      {/* 6 Kategori Terlihat Utuh (3x2 Tanpa Kotak Pembungkus / Frameless) */}
+                      <div className="grid grid-cols-3 gap-x-2 gap-y-2.5 pt-1 pb-2 border-b border-[#D4AF6A]/20">
+                        {COLLECTION_CATEGORIES.map((cat) => {
+                          const isDrawerOpen = variantCategoryTab === cat.id;
+                          const isChosenCat =
+                            !variantCategoryTab &&
+                            Boolean(formVariant) &&
+                            selectedCategoryKey === cat.id;
+                          const isHighlighted = isDrawerOpen || isChosenCat;
+
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => {
+                                setVariantCategoryTab((prev) => (prev === cat.id ? null : cat.id));
+                                if (variantListScrollRef.current) {
+                                  variantListScrollRef.current.scrollTop = 0;
+                                }
+                              }}
+                              className={`relative pb-1.5 pt-0.5 inline-flex items-center justify-start gap-1.5 min-w-0 transition-all cursor-pointer select-none ${
+                                isHighlighted
+                                  ? 'text-[#F3E6C8] font-semibold'
+                                  : 'text-slate-300/80 hover:text-white font-medium'
+                              }`}
+                            >
+                              <Category3DIcon
+                                id={cat.id}
+                                sizeClass="w-4 h-4 shrink-0"
+                                idPrefix={`rev-${cat.id}`}
+                              />
+                              <span className="text-xs sm:text-[13px] leading-tight truncate">
+                                {cat.title}
+                              </span>
+                              {isHighlighted && (
+                                <span className="absolute left-0 right-2 bottom-0 h-[2px] rounded-full bg-[#DFB76C]" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Daftar Nama Varian — Susunan 2 Kolom Simetris Rapi (Urut A–Z) */}
+                      {openCatMeta && (
+                        <div className="rounded-[8px] sinki-arch-subbox border p-2.5 space-y-2 sinki-screen-soft-fade">
+                          <div className="flex items-center justify-between pb-2 border-b border-[#D4AF6A]/20 px-0.5">
+                            <div className="inline-flex items-center gap-1.5 min-w-0">
+                              <Category3DIcon
+                                id={openCatMeta.id}
+                                sizeClass="w-3.5 h-3.5 shrink-0"
+                                idPrefix={`rev-open-${openCatMeta.id}`}
+                              />
+                              <span className="text-xs text-slate-300 leading-none truncate">
+                                <strong className="text-[#F3E6C8] font-semibold">
+                                  {openCatMeta.title}
+                                </strong>
+                                <span className="text-slate-500 mx-1">·</span>
+                                <span className="text-[#DFB76C]/90 font-medium tabular-nums">
+                                  {categoryPerfumes.length} Varian
+                                </span>
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setVariantCategoryTab(null)}
+                              className="text-[11.5px] text-slate-400 hover:text-white font-medium leading-none cursor-pointer shrink-0"
+                            >
+                              Tutup ✕
+                            </button>
+                          </div>
+
+                          <div
+                            ref={variantListScrollRef}
+                            className="grid grid-cols-2 gap-1.5 max-h-[168px] sm:max-h-[184px] overflow-y-auto sinki-gold-scrollbar pr-1"
+                          >
+                            {categoryPerfumes.map((p) => {
+                              const isSelected = formVariant === p.name;
+                              return (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormVariant(p.name);
+                                    setSelectedCategoryKey(openCatMeta.id);
+                                    setVariantCategoryTab(null);
+                                  }}
+                                  className={`w-full px-3 py-2 rounded-[6px] text-xs sm:text-[12.5px] leading-tight text-left flex items-center justify-between gap-1.5 border transition-all cursor-pointer sinki-cushion-press-sm ${
+                                    isSelected
+                                      ? 'sinki-arch-card-selected text-[#FFF3D6] font-semibold'
+                                      : 'sinki-arch-subbox text-slate-200 hover:border-[#E8C782]/60 hover:text-white font-normal'
+                                  }`}
+                                >
+                                  <span className="truncate">{p.name}</span>
+                                  {isSelected ? (
+                                    <CheckCircle2 size={12.5} className="text-[#DFB76C] shrink-0" />
+                                  ) : (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white/15 shrink-0" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* 3. Kepuasan Aroma — Ikon Tanpa Kotak Pembungkus (100% Frameless & Lebih Jelas) */}
+                <div className="space-y-2 pt-0.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs sm:text-[13px] text-slate-200 font-medium block">
-                      Kepuasan Aroma *
-                    </label>
-                    <span className="text-xs text-[#DFB76C] font-medium bg-[#C5A059]/15 px-2 py-0.5 rounded-md border border-[#DFB76C]/30">
+                    <span className="text-[13px] text-slate-200 font-medium leading-none">
+                      Kepuasan Aroma
+                    </span>
+                    <span className="text-[12.5px] text-[#DFB76C] font-semibold leading-none">
                       {formEmoji} {formEmojiLabel}
                     </span>
                   </div>
-                  <div className="grid grid-cols-6 gap-1.5">
-                    {EMOJI_OPTIONS.map((item) => (
-                      <button
-                        key={item.emoji}
-                        type="button"
-                        onClick={() => {
-                          setFormEmoji(item.emoji);
-                          setFormEmojiLabel(item.label);
-                        }}
-                        className={`py-1.5 px-0.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
-                          formEmoji === item.emoji
-                            ? 'bg-[#C5A059]/25 border-[#DFB76C] text-white shadow-sm font-semibold scale-[1.03]'
-                            : 'bg-white/5 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 font-medium'
-                        }`}
-                      >
-                        <span className="text-base leading-none">{item.emoji}</span>
-                        <span className="text-[11px] text-center leading-tight">
-                          {item.label}
-                        </span>
-                      </button>
-                    ))}
+
+                  <div className="grid grid-cols-6 gap-1.5 pt-1">
+                    {EMOJI_OPTIONS.map((item) => {
+                      const isPicked = formEmoji === item.emoji;
+                      return (
+                        <button
+                          key={item.emoji}
+                          type="button"
+                          onClick={() => {
+                            setFormEmoji(item.emoji);
+                            setFormEmojiLabel(item.label);
+                          }}
+                          className={`py-1.5 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
+                            isPicked ? 'opacity-100' : 'opacity-50 hover:opacity-85'
+                          }`}
+                        >
+                          <span
+                            className={`text-2xl leading-none transition-transform duration-200 ${
+                              isPicked ? 'scale-115' : 'scale-100'
+                            }`}
+                          >
+                            {item.emoji}
+                          </span>
+                          <span
+                            className={`text-[11px] sm:text-xs leading-none transition-colors ${
+                              isPicked ? 'text-[#DFB76C] font-semibold' : 'text-slate-400 font-normal'
+                            }`}
+                          >
+                            {item.label}
+                          </span>
+                          <span
+                            className={`h-[2px] rounded-full transition-all duration-200 ${
+                              isPicked ? 'w-5 bg-[#DFB76C]' : 'w-0 bg-transparent'
+                            }`}
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Isi Ulasan */}
-                <div className="space-y-1">
-                  <label className="text-xs sm:text-[13px] text-slate-200 font-medium block">
-                    Ulasan & Kepuasan Aroma *
+                {/* 4. Kolom Ulasan Singkat (3 Baris Lega) */}
+                <div className="space-y-1.5">
+                  <label className="text-[13px] text-slate-200 font-medium block leading-none">
+                    Ulasan Singkat
                   </label>
                   <textarea
                     required
                     rows={3}
-                    placeholder="Ceritakan aroma, ketahanan wangi, dan kemasan parfum SINKI Anda..."
+                    placeholder="Ceritakan wangi, ketahanan aroma, atau kesan Anda..."
                     value={formComment}
                     onChange={(e) => setFormComment(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 font-body text-base sm:text-sm font-normal leading-[1.5] text-white placeholder:text-slate-500 focus:outline-none focus:border-[#DFB76C] resize-none"
+                    className="w-full px-3.5 py-2.5 rounded-[8px] sinki-arch-input border text-sm font-normal leading-relaxed text-white placeholder:text-slate-500 focus:outline-none resize-none transition-colors"
                   />
                 </div>
 
-                {/* Info Jeda 1 Menit & Sensor Santun */}
-                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-400 font-normal leading-[1.45]">
-                  ℹ️ Ulasan akan langsung tampil di urutan teratas. Mohon gunakan bahasa yang
-                  sopan. Terdapat jeda 1 menit antar pengiriman ulasan.
-                </div>
-
-                {/* Submit Button: Champagne Gold */}
+                {/* 5. Tombol Emas Kirim Ulasan */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-body font-semibold text-sm transition-all active:scale-98 shadow-md shadow-black/30"
+                  className="w-full py-3.5 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-body font-semibold text-sm transition-all active:scale-98 shadow-lg shadow-black/45 cursor-pointer"
                 >
                   {isSubmitting ? 'Menyimpan Ulasan...' : 'Kirim Ulasan Sekarang'}
                 </button>
@@ -889,10 +1005,10 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-xs rounded-3xl bg-[#12141e] border border-red-500/40 p-5 shadow-2xl space-y-3.5 text-center"
+              className="relative w-full max-w-xs rounded-[10px] sinki-arch-modal border border-red-500/45 p-5 space-y-3.5 text-center"
             >
               {/* Header */}
-              <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto text-red-400">
+              <div className="w-12 h-12 rounded-[8px] bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto text-red-400">
                 <Lock size={22} />
               </div>
 
@@ -917,7 +1033,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                     setPinInput(e.target.value);
                     setPinError('');
                   }}
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/15 text-center text-base sm:text-sm font-medium tabular-nums tracking-widest text-white focus:outline-none focus:border-red-400"
+                  className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-center text-base sm:text-sm font-medium tabular-nums tracking-widest text-white focus:outline-none focus:border-red-400"
                 />
 
                 {pinError && (
@@ -928,13 +1044,13 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsAdminModalOpen(false)}
-                    className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-medium"
+                    className="flex-1 py-2 rounded-[8px] bg-[#16161c] hover:bg-[#1f1f27] text-slate-300 text-sm font-medium"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-all active:scale-95"
+                    className="flex-1 py-2 rounded-[8px] bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-all active:scale-95"
                   >
                     Buka Kunci
                   </button>

@@ -11,7 +11,7 @@ import {
 export type { PerfumeItem, PerfumeCategory, CollectionCategoryKey, PricePerMlRate };
 export { COLLECTION_CATEGORIES };
 
-const PERFUMES_LOCAL_KEY = 'sinki_perfumes_catalog_v3';
+const PERFUMES_LOCAL_KEY = 'sinki_perfumes_catalog_v5';
 const PERFUMES_FILE_NAME = 'perfumes_catalog.json';
 const PERFUMES_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${PERFUMES_FILE_NAME}`;
 const SUPABASE_STORAGE_UPLOAD_URL =

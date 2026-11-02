@@ -175,7 +175,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
       {/* 1. KOTAK KHUSUS FULL BUAT FOTO QRIS ASLI (TAMPIL UTUH & JERNIH) */}
       <div
         onClick={handleSecretTap}
-        className="relative mx-auto w-full max-w-[310px] rounded-3xl bg-white text-slate-900 shadow-2xl overflow-hidden border border-slate-200 select-none cursor-pointer"
+        className="relative mx-auto w-full max-w-[310px] rounded-[10px] bg-white text-slate-900 shadow-2xl overflow-hidden border border-[#D4AF6A]/45 select-none cursor-pointer"
         title="Ketuk 5x untuk akses unggah pemilik"
       >
         {customQris ? (
@@ -184,7 +184,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
             <img
               src={customQris}
               alt="QRIS Resmi SINKI"
-              className="w-full h-auto max-h-[380px] object-contain rounded-2xl block mx-auto shadow-sm"
+              className="w-full h-auto max-h-[380px] object-contain rounded-[8px] block mx-auto shadow-sm"
             />
           </div>
         ) : (
@@ -199,10 +199,10 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
               </span>
             </div>
 
-            <div className="p-2 bg-white rounded-2xl border border-slate-100 flex items-center justify-center">
+            <div className="p-2 bg-white rounded-[8px] border border-slate-100 flex items-center justify-center">
               <canvas
                 ref={canvasRef}
-                className="block mx-auto rounded-lg max-w-full h-auto"
+                className="block mx-auto rounded-[6px] max-w-full h-auto"
                 style={{ imageRendering: 'pixelated' }}
               />
             </div>
@@ -219,7 +219,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
             <span className="text-xs font-medium leading-tight">
               Total Pembayaran:
             </span>
-            <span className="font-body font-semibold text-sm tabular-nums bg-black/20 px-2.5 py-0.5 rounded-md leading-tight">
+            <span className="font-body font-semibold text-sm tabular-nums bg-black/20 px-2.5 py-0.5 rounded-[5px] leading-tight">
               Rp {amount.toLocaleString('id-ID')}
             </span>
           </div>
@@ -227,7 +227,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
       </div>
 
       {/* 2. KETERANGAN & TOMBOL KIRIM BUKTI PEMBAYARAN LEWAT WHATSAPP (UKURAN LEBIH KECIL & RAPI) */}
-      <div className="p-2.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 max-w-[310px] mx-auto text-center space-y-2 shadow-md">
+      <div className="p-2.5 rounded-[8px] sinki-arch-card border max-w-[310px] mx-auto text-center space-y-2">
         <p className="font-body text-xs text-slate-300 font-normal leading-[1.45]">
           Setelah transfer, kirim bukti bayar lewat WhatsApp agar pesanan segera diproses.
         </p>
@@ -235,7 +235,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
         <button
           type="button"
           onClick={handleSendProof}
-          className="w-full py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-body font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-sm cursor-pointer"
+          className="w-full py-2 px-3.5 rounded-[8px] bg-emerald-600 hover:bg-emerald-500 text-white font-body font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-sm cursor-pointer"
         >
           <MessageCircle size={14} className="shrink-0" />
           <span>Kirim Bukti Bayar via WhatsApp</span>
@@ -252,17 +252,17 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-xs rounded-3xl bg-[#12141e] border border-white/15 p-5 shadow-2xl space-y-4 text-center cursor-default"
+              className="relative w-full max-w-xs rounded-[10px] sinki-arch-modal border p-5 space-y-4 text-center cursor-default"
             >
               {/* Header Modal */}
-              <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+              <div className="flex items-center justify-between pb-2.5 border-b border-[#D4AF6A]/25">
                 <span className="font-heading font-semibold text-base text-white tracking-[-0.015em] leading-[1.25]">
                   Unggah Foto QRIS Asli SINKI
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                  className="w-7 h-7 rounded-[6px] sinki-arch-subbox border hover:border-[#E8C782]/60 text-slate-300 hover:text-white flex items-center justify-center transition-colors"
                 >
                   <X size={14} />
                 </button>
@@ -284,14 +284,14 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
                       setOwnerPin(e.target.value);
                       setPinError('');
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/15 text-center text-base sm:text-sm font-body font-medium tabular-nums tracking-[0.15em] text-white focus:outline-none focus:border-[#DFB76C]"
+                    className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-center text-base sm:text-sm font-body font-medium tabular-nums tracking-[0.15em] text-white focus:outline-none"
                   />
                   {pinError && (
                     <p className="font-body text-xs text-red-400 font-medium">{pinError}</p>
                   )}
                   <button
                     type="submit"
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-sm transition-all active:scale-95 shadow-md shadow-black/30"
+                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-sm transition-all active:scale-95 shadow-md shadow-black/30"
                   >
                     Buka Akses Unggah
                   </button>
@@ -315,7 +315,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
                     type="button"
                     disabled={isUploading}
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-body font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                    className="w-full py-2.5 px-4 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 text-slate-950 font-body font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-amber-500/20 disabled:opacity-50"
                   >
                     <Upload size={15} />
                     <span>{isUploading ? 'Menyimpan Foto...' : 'Pilih File Foto QRIS Asli'}</span>
@@ -325,7 +325,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
                     <button
                       type="button"
                       onClick={handleResetQris}
-                      className="w-full py-2 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-slate-300 hover:text-red-300 font-body text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                      className="w-full py-2 rounded-[8px] sinki-arch-subbox hover:bg-red-500/20 border hover:border-red-500/40 text-slate-300 hover:text-red-300 font-body text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <RotateCcw size={12} />
                       <span>Kembalikan ke Bawaan</span>

@@ -112,6 +112,7 @@ const PERFUMES_FILE = path.join(DATA_DIR, 'perfumes_catalog.json');
 const SOCIAL_FILE = path.join(DATA_DIR, 'social_links.json');
 const TOP_PERFUMES_FILE = path.join(DATA_DIR, 'top_perfumes.json');
 const ARTICLES_FILE = path.join(DATA_DIR, 'articles.json');
+const THEME_FILE = path.join(DATA_DIR, 'theme_config.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -198,6 +199,34 @@ function getTickerConfig(): { text: string; font: string; updatedAt?: string } {
     } catch {}
   }
   return { text: 'Min. Rp150.000, gratis ongkir se-Jabodetabek! 😍', font: 'cormorant' };
+}
+
+let cachedThemeConfig: { id: string; updatedAt?: string } | null = null;
+const VALID_LUXURY_THEMES = [
+  'champagne-gold',
+  'platinum-silver',
+  'rose-gold',
+  'imperial-emerald',
+  'royal-bronze',
+];
+
+function getThemeConfig(): { id: string; updatedAt?: string } {
+  if (cachedThemeConfig && VALID_LUXURY_THEMES.includes(cachedThemeConfig.id)) {
+    return cachedThemeConfig;
+  }
+  if (fs.existsSync(THEME_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(THEME_FILE, 'utf-8'));
+      if (data && typeof data.id === 'string' && VALID_LUXURY_THEMES.includes(data.id)) {
+        cachedThemeConfig = {
+          id: data.id,
+          updatedAt: data.updatedAt,
+        };
+        return cachedThemeConfig;
+      }
+    } catch {}
+  }
+  return { id: 'champagne-gold' };
 }
 
 const INITIAL_4_REVIEWS: any[] = [];
@@ -432,7 +461,9 @@ const getAssets = (): AssetsData => {
 
 // Short URL endpoint for concise sharing links
 let cachedShortUrl: string | null = null;
-const OFFICIAL_SHARED_URL = 'https://ais-pre-eekqixbd4rmxm5n5gelqub-379981520046.asia-southeast1.run.app';
+const OFFICIAL_SHARED_URL =
+  process.env.APP_URL?.replace('ais-dev-', 'ais-pre-') ||
+  'https://ais-pre-iqgrrnk73zfofeqzkumvlm-784367078456.asia-northeast1.run.app';
 
 app.get('/api/short-url', async (req, res) => {
   // Derive target public URL (convert internal dev URL to public ais-pre URL)
@@ -1181,7 +1212,7 @@ app.post('/api/reviews', async (req, res) => {
         r.comment.trim().toLowerCase() === trimmedComment.toLowerCase()
       )
   );
-  const updated = [newReview, ...filtered].slice(0, 10);
+  const updated = [newReview, ...filtered].slice(0, 20);
   await persistReviews(updated);
 
   return res.json({ success: true, reviews: updated });
@@ -1447,7 +1478,70 @@ app.post('/api/owner/reset-analytics', async (req, res) => {
   return res.json({ success: true, message: 'Data analitik berhasil di-reset ke 0', analytics: zeroData });
 });
 
+app.get('/api/theme', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  return res.json(getThemeConfig());
+});
+
+app.post('/api/owner/update-theme', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+
+  const rawTheme = req.body?.theme || req.body;
+  const themeId =
+    rawTheme && typeof rawTheme.id === 'string' && VALID_LUXURY_THEMES.includes(rawTheme.id)
+      ? rawTheme.id
+      : 'champagne-gold';
+
+  const updated = {
+    id: themeId,
+    updatedAt: new Date().toISOString(),
+  };
+
+  cachedThemeConfig = updated;
+
+  try {
+    fs.writeFileSync(THEME_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Error saving theme_config.json locally:', err);
+  }
+
+  try {
+    await supabase.storage
+      .from(SUPABASE_BUCKET)
+      .upload('theme_config.json', JSON.stringify(updated, null, 2), {
+        contentType: 'application/json',
+        upsert: true,
+      });
+  } catch (err) {
+    console.warn('[Supabase Sync Notice] theme_config.json:', err);
+  }
+
+  return res.json({ success: true, theme: updated });
+});
+
 async function hydrateDataFromSupabase() {
+  try {
+    const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download('theme_config.json');
+    if (!error && data) {
+      const text = await data.text();
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed.id === 'string' && VALID_LUXURY_THEMES.includes(parsed.id)) {
+        fs.writeFileSync(THEME_FILE, text, 'utf-8');
+        cachedThemeConfig = parsed;
+      }
+    } else if (fs.existsSync(THEME_FILE)) {
+      const local = fs.readFileSync(THEME_FILE, 'utf-8');
+      cachedThemeConfig = JSON.parse(local);
+      await supabase.storage.from(SUPABASE_BUCKET).upload('theme_config.json', local, {
+        contentType: 'application/json',
+        upsert: true,
+      });
+    }
+  } catch (err) {
+    console.warn('[Supabase Hydration Notice] theme:', err);
+  }
   try {
     const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download('ticker_config.json');
     if (!error && data) {

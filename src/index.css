@@ -15,6 +15,251 @@
 
   --leading-heading: 1.22;
   --leading-body: 1.48;
+
+  /* Luxury Architectural Surface & Metallic Tokens (Default: Champagne Gold) */
+  --arch-canvas: #060609;
+  --arch-canvas-top: #0a0a0e;
+  --arch-canvas-mid: #07070a;
+  --arch-canvas-bot: #040406;
+  --arch-header-top: rgba(14, 14, 19, 0.94);
+  --arch-header-bot: rgba(8, 8, 12, 0.96);
+  --arch-card-top: #101015;
+  --arch-card-bot: #09090d;
+  --arch-card-hover-top: #15141b;
+  --arch-card-hover-bot: #0c0c10;
+  --arch-card-sel-top: #191612;
+  --arch-card-sel-bot: #0e0d0b;
+  --arch-bar-top: rgba(16, 15, 20, 0.95);
+  --arch-bar-bot: rgba(9, 9, 13, 0.97);
+  --arch-input-top: #0f0f13;
+  --arch-input-bot: #08080b;
+  --arch-subbox-top: rgba(19, 18, 24, 0.92);
+  --arch-subbox-bot: rgba(10, 10, 14, 0.95);
+  --arch-modal-top: #131318;
+  --arch-modal-bot: #08080c;
+
+  --arch-gold: #D4AF6A;
+  --arch-gold-bright: #E8C782;
+  --arch-gold-soft: #F6EAD0;
+  --arch-gold-deep: #9E7835;
+  --arch-btn-gradient: linear-gradient(135deg, #E5C684 0%, #C5A059 55%, #9A742F 100%);
+  --arch-title-gradient: linear-gradient(115deg, #F6EAD0 0%, #D4AF6A 50%, #9B782E 100%);
+
+  --arch-border-default: rgba(212, 175, 106, 0.44);
+  --arch-border-subtle: rgba(212, 175, 106, 0.28);
+  --arch-border-faint: rgba(212, 175, 106, 0.16);
+  --arch-border-hover: rgba(232, 199, 130, 0.72);
+  --arch-border-modal: rgba(212, 175, 106, 0.48);
+
+  --arch-glow-tl: rgba(218, 182, 114, 0.22);
+  --arch-glow-tl-mid: rgba(212, 175, 106, 0.055);
+  --arch-glow-br: rgba(194, 152, 78, 0.17);
+  --arch-glow-hover-tl: rgba(236, 204, 138, 0.28);
+  --arch-glow-hover-br: rgba(206, 164, 88, 0.22);
+  --arch-glow-sel-tl: rgba(242, 212, 148, 0.34);
+  --arch-glow-sel-br: rgba(212, 170, 94, 0.25);
+  --arch-specular-top: rgba(252, 238, 205, 0.28);
+  --arch-rim-glint: rgba(255, 246, 222, 0.92);
+  --arch-smoke-canvas-opacity: 0.24;
+  --arch-smoke-card-opacity: 0.20;
+  --arch-badge-bg: rgba(212, 175, 106, 0.16);
+  --arch-badge-bg-soft: rgba(212, 175, 106, 0.1);
+}
+
+/* 2. PLATINUM ARGENT & ONYX (Monochrome Haute Horlogerie) */
+html[data-sinki-theme="platinum-silver"] {
+  --arch-canvas: #06070a;
+  --arch-canvas-top: #0a0c11;
+  --arch-canvas-mid: #07080c;
+  --arch-canvas-bot: #040507;
+  --arch-header-top: rgba(13, 16, 22, 0.94);
+  --arch-header-bot: rgba(8, 10, 14, 0.96);
+  --arch-card-top: #10131a;
+  --arch-card-bot: #090b0f;
+  --arch-card-hover-top: #151922;
+  --arch-card-hover-bot: #0c0f14;
+  --arch-card-sel-top: #171c26;
+  --arch-card-sel-bot: #0d1017;
+  --arch-bar-top: rgba(15, 18, 25, 0.95);
+  --arch-bar-bot: rgba(8, 10, 14, 0.97);
+  --arch-input-top: #0e1117;
+  --arch-input-bot: #080a0e;
+  --arch-subbox-top: rgba(17, 21, 29, 0.92);
+  --arch-subbox-bot: rgba(10, 12, 17, 0.95);
+  --arch-modal-top: #12161f;
+  --arch-modal-bot: #080a0f;
+
+  --arch-gold: #AEBDD0;
+  --arch-gold-bright: #D4DFEC;
+  --arch-gold-soft: #F1F5FA;
+  --arch-gold-deep: #7B8B9F;
+  --arch-btn-gradient: linear-gradient(135deg, #EEF3F8 0%, #B8C6D8 55%, #8494A8 100%);
+  --arch-title-gradient: linear-gradient(115deg, #FFFFFF 0%, #C6D3E3 50%, #8393A7 100%);
+
+  --arch-border-default: rgba(188, 202, 220, 0.42);
+  --arch-border-subtle: rgba(188, 202, 220, 0.27);
+  --arch-border-faint: rgba(188, 202, 220, 0.16);
+  --arch-border-hover: rgba(220, 230, 242, 0.72);
+  --arch-border-modal: rgba(188, 202, 220, 0.46);
+
+  --arch-glow-tl: rgba(202, 216, 234, 0.21);
+  --arch-glow-tl-mid: rgba(196, 210, 228, 0.05);
+  --arch-glow-br: rgba(150, 168, 192, 0.16);
+  --arch-glow-hover-tl: rgba(220, 232, 246, 0.27);
+  --arch-glow-hover-br: rgba(166, 184, 206, 0.21);
+  --arch-glow-sel-tl: rgba(228, 238, 250, 0.33);
+  --arch-glow-sel-br: rgba(172, 190, 212, 0.24);
+  --arch-specular-top: rgba(242, 247, 255, 0.28);
+  --arch-rim-glint: rgba(255, 255, 255, 0.92);
+  --arch-badge-bg: rgba(184, 198, 216, 0.16);
+  --arch-badge-bg-soft: rgba(184, 198, 216, 0.1);
+}
+
+/* 3. ROSE CUIVRE & VELVET NOIR (Parisian Couture Rose Gold) */
+html[data-sinki-theme="rose-gold"] {
+  --arch-canvas: #080608;
+  --arch-canvas-top: #100b0e;
+  --arch-canvas-mid: #090709;
+  --arch-canvas-bot: #050405;
+  --arch-header-top: rgba(19, 13, 16, 0.94);
+  --arch-header-bot: rgba(10, 7, 9, 0.96);
+  --arch-card-top: #150f12;
+  --arch-card-bot: #0b080a;
+  --arch-card-hover-top: #1b1317;
+  --arch-card-hover-bot: #0f0b0d;
+  --arch-card-sel-top: #201518;
+  --arch-card-sel-bot: #120c0e;
+  --arch-bar-top: rgba(21, 14, 18, 0.95);
+  --arch-bar-bot: rgba(10, 7, 9, 0.97);
+  --arch-input-top: #120d10;
+  --arch-input-bot: #0a0709;
+  --arch-subbox-top: rgba(23, 16, 20, 0.92);
+  --arch-subbox-bot: rgba(12, 9, 11, 0.95);
+  --arch-modal-top: #171014;
+  --arch-modal-bot: #0a0709;
+
+  --arch-gold: #D89F92;
+  --arch-gold-bright: #ECBBB0;
+  --arch-gold-soft: #F9E3DE;
+  --arch-gold-deep: #A1695D;
+  --arch-btn-gradient: linear-gradient(135deg, #F0C6BC 0%, #D49A8D 55%, #9E6659 100%);
+  --arch-title-gradient: linear-gradient(115deg, #FAE6E1 0%, #DDA599 50%, #9E6659 100%);
+
+  --arch-border-default: rgba(216, 159, 146, 0.44);
+  --arch-border-subtle: rgba(216, 159, 146, 0.28);
+  --arch-border-faint: rgba(216, 159, 146, 0.16);
+  --arch-border-hover: rgba(236, 187, 176, 0.72);
+  --arch-border-modal: rgba(216, 159, 146, 0.48);
+
+  --arch-glow-tl: rgba(222, 162, 148, 0.22);
+  --arch-glow-tl-mid: rgba(216, 156, 142, 0.055);
+  --arch-glow-br: rgba(188, 126, 114, 0.17);
+  --arch-glow-hover-tl: rgba(238, 188, 176, 0.28);
+  --arch-glow-hover-br: rgba(198, 136, 124, 0.22);
+  --arch-glow-sel-tl: rgba(244, 196, 184, 0.34);
+  --arch-glow-sel-br: rgba(204, 142, 130, 0.25);
+  --arch-specular-top: rgba(252, 232, 226, 0.28);
+  --arch-rim-glint: rgba(255, 242, 238, 0.92);
+  --arch-badge-bg: rgba(212, 154, 141, 0.16);
+  --arch-badge-bg-soft: rgba(212, 154, 141, 0.1);
+}
+
+/* 4. IMPERIAL EMERALD & MALACHITE (Royal Niche Atelier) */
+html[data-sinki-theme="imperial-emerald"] {
+  --arch-canvas: #050807;
+  --arch-canvas-top: #08100d;
+  --arch-canvas-mid: #060a08;
+  --arch-canvas-bot: #030605;
+  --arch-header-top: rgba(10, 18, 15, 0.94);
+  --arch-header-bot: rgba(6, 11, 9, 0.96);
+  --arch-card-top: #0d1512;
+  --arch-card-bot: #070d0b;
+  --arch-card-hover-top: #111d18;
+  --arch-card-hover-bot: #09110e;
+  --arch-card-sel-top: #13221c;
+  --arch-card-sel-bot: #0b1410;
+  --arch-bar-top: rgba(12, 21, 17, 0.95);
+  --arch-bar-bot: rgba(7, 11, 9, 0.97);
+  --arch-input-top: #0b120f;
+  --arch-input-bot: #060a08;
+  --arch-subbox-top: rgba(13, 23, 19, 0.92);
+  --arch-subbox-bot: rgba(8, 13, 11, 0.95);
+  --arch-modal-top: #0e1814;
+  --arch-modal-bot: #070b09;
+
+  --arch-gold: #6BC0A1;
+  --arch-gold-bright: #90D8BD;
+  --arch-gold-soft: #DCF6EC;
+  --arch-gold-deep: #3E846B;
+  --arch-btn-gradient: linear-gradient(135deg, #9EE0C7 0%, #66B598 55%, #3D8269 100%);
+  --arch-title-gradient: linear-gradient(115deg, #DFF7ED 0%, #78C6A9 50%, #3E846B 100%);
+
+  --arch-border-default: rgba(107, 192, 161, 0.44);
+  --arch-border-subtle: rgba(107, 192, 161, 0.28);
+  --arch-border-faint: rgba(107, 192, 161, 0.16);
+  --arch-border-hover: rgba(144, 216, 189, 0.72);
+  --arch-border-modal: rgba(107, 192, 161, 0.48);
+
+  --arch-glow-tl: rgba(108, 192, 162, 0.22);
+  --arch-glow-tl-mid: rgba(102, 181, 152, 0.055);
+  --arch-glow-br: rgba(72, 148, 120, 0.17);
+  --arch-glow-hover-tl: rgba(144, 216, 189, 0.28);
+  --arch-glow-hover-br: rgba(88, 166, 138, 0.22);
+  --arch-glow-sel-tl: rgba(154, 224, 198, 0.34);
+  --arch-glow-sel-br: rgba(94, 174, 146, 0.25);
+  --arch-specular-top: rgba(220, 248, 236, 0.28);
+  --arch-rim-glint: rgba(238, 255, 248, 0.92);
+  --arch-badge-bg: rgba(102, 181, 152, 0.16);
+  --arch-badge-bg-soft: rgba(102, 181, 152, 0.1);
+}
+
+/* 5. ROYAL OUD BRONZE & SMOKED ESPRESSO (Private Reserve Oud) */
+html[data-sinki-theme="royal-bronze"] {
+  --arch-canvas: #090605;
+  --arch-canvas-top: #110c09;
+  --arch-canvas-mid: #0a0706;
+  --arch-canvas-bot: #050403;
+  --arch-header-top: rgba(20, 14, 10, 0.94);
+  --arch-header-bot: rgba(11, 8, 6, 0.96);
+  --arch-card-top: #16100c;
+  --arch-card-bot: #0c0806;
+  --arch-card-hover-top: #1d1510;
+  --arch-card-hover-bot: #100b08;
+  --arch-card-sel-top: #221811;
+  --arch-card-sel-bot: #130d09;
+  --arch-bar-top: rgba(22, 16, 12, 0.95);
+  --arch-bar-bot: rgba(11, 8, 6, 0.97);
+  --arch-input-top: #120d0a;
+  --arch-input-bot: #0a0705;
+  --arch-subbox-top: rgba(24, 17, 13, 0.92);
+  --arch-subbox-bot: rgba(13, 9, 7, 0.95);
+  --arch-modal-top: #18110d;
+  --arch-modal-bot: #0b0806;
+
+  --arch-gold: #CE8F5A;
+  --arch-gold-bright: #E6AC79;
+  --arch-gold-soft: #F8E2CE;
+  --arch-gold-deep: #945B2E;
+  --arch-btn-gradient: linear-gradient(135deg, #ECC096 0%, #C88954 55%, #8F562A 100%);
+  --arch-title-gradient: linear-gradient(115deg, #F9E6D4 0%, #D69863 50%, #8F562A 100%);
+
+  --arch-border-default: rgba(206, 143, 90, 0.44);
+  --arch-border-subtle: rgba(206, 143, 90, 0.28);
+  --arch-border-faint: rgba(206, 143, 90, 0.16);
+  --arch-border-hover: rgba(230, 172, 121, 0.72);
+  --arch-border-modal: rgba(206, 143, 90, 0.48);
+
+  --arch-glow-tl: rgba(212, 148, 94, 0.22);
+  --arch-glow-tl-mid: rgba(200, 137, 84, 0.055);
+  --arch-glow-br: rgba(172, 110, 60, 0.17);
+  --arch-glow-hover-tl: rgba(232, 174, 122, 0.28);
+  --arch-glow-hover-br: rgba(184, 120, 68, 0.22);
+  --arch-glow-sel-tl: rgba(238, 182, 130, 0.34);
+  --arch-glow-sel-br: rgba(190, 126, 72, 0.25);
+  --arch-specular-top: rgba(250, 228, 206, 0.28);
+  --arch-rim-glint: rgba(255, 242, 228, 0.92);
+  --arch-badge-bg: rgba(200, 137, 84, 0.16);
+  --arch-badge-bg-soft: rgba(200, 137, 84, 0.1);
 }
 
 @theme {
@@ -38,7 +283,7 @@
     font-family: var(--font-body);
     font-weight: 400;
     line-height: var(--leading-body);
-    background-color: #0e1017;
+    background-color: var(--arch-canvas);
     color: #f8fafc;
   }
 
@@ -103,34 +348,413 @@
   scrollbar-width: none;
 }
 
-/* Metallic Champagne Gold luxury gradient utility - Soft & Prestigious, Anti-Glare */
+/* Metallic Luxury gradient utility - Soft & Prestigious, Anti-Glare */
 .gold-gradient-text {
-  background: linear-gradient(135deg, #F3E6C8 0%, #D4AF37 50%, #9B782E 100%);
+  background: var(--arch-title-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .champagne-gold-btn {
-  background: linear-gradient(135deg, #E2C27F 0%, #C5A059 60%, #9A742F 100%);
+  background: var(--arch-btn-gradient);
   color: #090a0f;
   font-family: var(--font-body);
   font-weight: 600;
 }
 
 .gold-border {
-  border: 1px solid rgba(197, 160, 89, 0.22);
+  border: 1px solid var(--arch-border-default);
 }
 
 .gold-glow {
-  box-shadow: 0 4px 20px -2px rgba(197, 160, 89, 0.12);
+  box-shadow: 0 4px 20px -2px var(--arch-glow-tl);
+}
+
+/* Calm Atmospheric Intensity Modifier for Dense Admin Tables & Forms (Zero Layout Shift, 100% Static) */
+.sinki-admin-calm {
+  --arch-smoke-canvas-opacity: 0.16;
+  --arch-smoke-card-opacity: 0.14;
+}
+
+@layer components {
+  /* =========================================================================
+     1. AMBIENT SOFT VELVET MIST CANVAS (.sinki-arch-canvas)
+     Deep Obsidian Void + Whisper-Soft Diffused Corner Velvet Mist (100% Static)
+     ========================================================================= */
+  .sinki-arch-canvas {
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(88% 42% at 96% 4%, var(--arch-glow-tl) 0%, transparent 62%),
+      radial-gradient(84% 40% at 4% 96%, var(--arch-glow-br) 0%, transparent 60%),
+      linear-gradient(180deg, var(--arch-canvas-top) 0%, var(--arch-canvas-mid) 52%, var(--arch-canvas-bot) 100%);
+  }
+
+  .sinki-arch-canvas::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: var(--arch-smoke-canvas-opacity);
+    background: linear-gradient(
+      145deg,
+      var(--arch-gold-soft) 0%,
+      var(--arch-gold-bright) 28%,
+      var(--arch-gold) 62%,
+      var(--arch-gold-deep) 100%
+    );
+    -webkit-mask-image: url("/assets/smoke/sinki-canvas-smoke.webp?v=2");
+    mask-image: url("/assets/smoke/sinki-canvas-smoke.webp?v=2");
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+
+  /* Home Video Stage Isolation: prevents any canvas mist or glow from entering or colliding with the Hero Video */
+  .sinki-home-stage-canvas {
+    background: #08080b;
+  }
+
+  .sinki-home-stage-canvas::before {
+    content: none;
+  }
+
+  /* Outer App Frame Deduplicator: avoids painting hidden duplicate smoke mask behind active tab screen */
+  .sinki-canvas-frame-only::before {
+    content: none;
+  }
+
+  .sinki-arch-canvas > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .sinki-arch-canvas > .absolute {
+    position: absolute;
+  }
+
+  .sinki-arch-canvas > .fixed {
+    position: fixed;
+  }
+
+  .sinki-arch-canvas > .sticky {
+    position: sticky;
+  }
+
+  /* =========================================================================
+     2. ARCHITECTURAL HEADER (.sinki-arch-header)
+     Translucent Obsidian Surface + Subtle Bottom Metallic Rim Glint
+     ========================================================================= */
+  .sinki-arch-header {
+    background:
+      radial-gradient(90% 140% at 88% 0%, var(--arch-glow-tl-mid) 0%, transparent 68%),
+      linear-gradient(180deg, var(--arch-header-top) 0%, var(--arch-header-bot) 100%);
+    border-color: var(--arch-border-subtle);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.72),
+      inset 0 -1px 0 0 var(--arch-border-faint),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+  }
+
+  /* =========================================================================
+     3. INNER CARD SILK SMOKE + SPECULAR RIM GLINT (.sinki-arch-card)
+     - Center remains deep obsidian for razor-sharp text legibility
+     - ::before renders organic silk smoke wisps at bottom-right & mist at top-left
+     - ::after renders 1px specular metallic rim flare along top-left edge
+     ========================================================================= */
+  .sinki-arch-card {
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(115% 95% at 0% 0%, var(--arch-glow-tl) 0%, var(--arch-glow-tl-mid) 40%, transparent 68%),
+      radial-gradient(105% 88% at 100% 100%, var(--arch-glow-br) 0%, transparent 62%),
+      linear-gradient(180deg, var(--arch-card-top) 0%, var(--arch-card-bot) 100%);
+    border-color: var(--arch-border-default);
+    box-shadow:
+      0 10px 26px rgba(0, 0, 0, 0.75),
+      inset 0 1px 0 0 var(--arch-specular-top);
+  }
+
+  .sinki-arch-card::before,
+  .sinki-arch-card-selected::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    opacity: var(--arch-smoke-card-opacity);
+    background: linear-gradient(
+      135deg,
+      var(--arch-gold-soft) 0%,
+      var(--arch-gold-bright) 38%,
+      var(--arch-gold) 75%,
+      var(--arch-gold-deep) 100%
+    );
+    -webkit-mask-image: url("/assets/smoke/sinki-card-smoke.webp?v=2");
+    mask-image: url("/assets/smoke/sinki-card-smoke.webp?v=2");
+    -webkit-mask-size: cover;
+    mask-size: cover;
+    -webkit-mask-position: right bottom;
+    mask-position: right bottom;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  .sinki-arch-card::after,
+  .sinki-arch-card-selected::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    z-index: 2;
+    background: linear-gradient(
+      132deg,
+      var(--arch-rim-glint) 0%,
+      var(--arch-gold-bright) 14%,
+      transparent 38%,
+      transparent 72%,
+      var(--arch-border-subtle) 92%,
+      var(--arch-gold) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.72;
+    transition: opacity 220ms ease;
+  }
+
+  .sinki-arch-card > *,
+  .sinki-arch-card-selected > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .sinki-arch-card > .absolute,
+  .sinki-arch-card-selected > .absolute {
+    position: absolute;
+  }
+
+  .sinki-arch-card-interactive:hover {
+    background:
+      radial-gradient(120% 98% at 0% 0%, var(--arch-glow-hover-tl) 0%, var(--arch-glow-tl-mid) 44%, transparent 72%),
+      radial-gradient(110% 92% at 100% 100%, var(--arch-glow-hover-br) 0%, transparent 66%),
+      linear-gradient(180deg, var(--arch-card-hover-top) 0%, var(--arch-card-hover-bot) 100%);
+    border-color: var(--arch-border-hover);
+    box-shadow:
+      0 12px 30px rgba(0, 0, 0, 0.8),
+      0 0 18px var(--arch-glow-tl),
+      inset 0 1px 0 0 var(--arch-specular-top);
+  }
+
+  .sinki-arch-card-interactive:hover::before {
+    opacity: calc(var(--arch-smoke-card-opacity) * 1.22);
+  }
+
+  .sinki-arch-card-interactive:hover::after {
+    opacity: 0.96;
+  }
+
+  .sinki-arch-card-selected {
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(125% 100% at 0% 0%, var(--arch-glow-sel-tl) 0%, var(--arch-glow-tl-mid) 48%, transparent 76%),
+      radial-gradient(115% 95% at 100% 100%, var(--arch-glow-sel-br) 0%, transparent 68%),
+      linear-gradient(180deg, var(--arch-card-sel-top) 0%, var(--arch-card-sel-bot) 100%);
+    border-color: var(--arch-gold-bright);
+    box-shadow:
+      0 12px 30px rgba(0, 0, 0, 0.82),
+      0 0 20px var(--arch-glow-hover-tl),
+      inset 0 1px 0 0 var(--arch-specular-top);
+  }
+
+  .sinki-arch-card-selected::before {
+    opacity: calc(var(--arch-smoke-card-opacity) * 1.28);
+  }
+
+  .sinki-arch-card-selected::after {
+    opacity: 1;
+  }
+
+  /* =========================================================================
+     4. ARCHITECTURAL BARS, INPUTS, SUBBOXES & MODALS
+     ========================================================================= */
+  .sinki-arch-bar {
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(95% 150% at 14% 0%, var(--arch-glow-tl) 0%, transparent 60%),
+      radial-gradient(95% 140% at 92% 100%, var(--arch-glow-br) 0%, transparent 58%),
+      linear-gradient(180deg, var(--arch-bar-top) 0%, var(--arch-bar-bot) 100%);
+    border-color: var(--arch-border-default);
+    box-shadow:
+      0 14px 36px rgba(0, 0, 0, 0.88),
+      inset 0 1px 0 0 var(--arch-specular-top);
+  }
+
+  .sinki-arch-bar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    opacity: calc(var(--arch-smoke-card-opacity) * 0.82);
+    background: linear-gradient(
+      115deg,
+      var(--arch-gold-soft) 0%,
+      var(--arch-gold-bright) 45%,
+      var(--arch-gold) 100%
+    );
+    -webkit-mask-image: url("/assets/smoke/sinki-card-smoke.webp");
+    mask-image: url("/assets/smoke/sinki-card-smoke.webp");
+    -webkit-mask-size: 55% auto;
+    mask-size: 55% auto;
+    -webkit-mask-position: right bottom;
+    mask-position: right bottom;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  .sinki-arch-bar::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    z-index: 2;
+    background: linear-gradient(
+      105deg,
+      transparent 4%,
+      var(--arch-rim-glint) 16%,
+      var(--arch-gold-bright) 28%,
+      transparent 52%,
+      transparent 78%,
+      var(--arch-border-subtle) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.78;
+  }
+
+  .sinki-arch-bar > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .sinki-arch-bar > .absolute {
+    position: absolute;
+  }
+
+  .sinki-arch-input {
+    background:
+      radial-gradient(90% 170% at 8% 0%, var(--arch-badge-bg) 0%, transparent 56%),
+      radial-gradient(80% 150% at 94% 100%, var(--arch-glow-tl-mid) 0%, transparent 58%),
+      linear-gradient(180deg, var(--arch-input-top) 0%, var(--arch-input-bot) 100%);
+    border-color: var(--arch-border-default);
+    box-shadow:
+      inset 0 1px 0 0 var(--arch-specular-top),
+      inset 0 2px 6px rgba(0, 0, 0, 0.55),
+      0 2px 10px rgba(0, 0, 0, 0.45);
+  }
+
+  .sinki-arch-input:focus {
+    border-color: var(--arch-gold-bright);
+    box-shadow:
+      0 0 0 1px var(--arch-border-subtle),
+      0 0 14px var(--arch-glow-tl),
+      inset 0 1px 0 0 var(--arch-specular-top);
+  }
+
+  .sinki-arch-subbox {
+    background:
+      radial-gradient(120% 100% at 0% 0%, var(--arch-badge-bg) 0%, transparent 68%),
+      linear-gradient(180deg, var(--arch-subbox-top) 0%, var(--arch-subbox-bot) 100%);
+    border-color: var(--arch-border-subtle);
+    box-shadow: inset 0 1px 0 0 var(--arch-specular-top);
+  }
+
+  .sinki-arch-modal {
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(115% 75% at 0% 0%, var(--arch-glow-tl) 0%, var(--arch-glow-tl-mid) 42%, transparent 70%),
+      radial-gradient(105% 80% at 100% 100%, var(--arch-glow-br) 0%, transparent 62%),
+      linear-gradient(180deg, var(--arch-modal-top) 0%, var(--arch-modal-bot) 100%);
+    border-color: var(--arch-border-modal);
+    box-shadow:
+      0 24px 64px rgba(0, 0, 0, 0.94),
+      inset 0 1px 0 0 var(--arch-specular-top);
+  }
+
+  .sinki-arch-modal::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    opacity: calc(var(--arch-smoke-card-opacity) * 0.72);
+    background: linear-gradient(
+      135deg,
+      var(--arch-gold-soft) 0%,
+      var(--arch-gold-bright) 42%,
+      var(--arch-gold) 100%
+    );
+    -webkit-mask-image: url("/assets/smoke/sinki-card-smoke.webp?v=2");
+    mask-image: url("/assets/smoke/sinki-card-smoke.webp?v=2");
+    -webkit-mask-size: cover;
+    mask-size: cover;
+    -webkit-mask-position: right bottom;
+    mask-position: right bottom;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  .sinki-arch-modal > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .sinki-arch-modal > .absolute {
+    position: absolute;
+  }
+
+  .sinki-arch-modal > .fixed {
+    position: fixed;
+  }
+
+  .sinki-arch-modal > .sticky {
+    position: sticky;
+  }
+
+  /* Tapered Metallic Section Light Line (Zero Height Shift) */
+  .sinki-tapered-line-left {
+    background: linear-gradient(90deg, transparent 0%, var(--arch-gold) 58%, var(--arch-gold-soft) 92%, transparent 100%);
+    box-shadow: 0 0 8px var(--arch-glow-tl);
+  }
+
+  .sinki-tapered-line-right {
+    background: linear-gradient(270deg, transparent 0%, var(--arch-gold) 58%, var(--arch-gold-soft) 92%, transparent 100%);
+    box-shadow: 0 0 8px var(--arch-glow-tl);
+  }
 }
 
 /* Golden Boutique Spotlight Halo - subtle, warm & non-intrusive */
 .boutique-spotlight-glow {
-  background: radial-gradient(circle, rgba(197, 160, 89, 0.08) 0%, rgba(140, 104, 38, 0.03) 50%, transparent 75%);
+  background: radial-gradient(circle, var(--arch-badge-bg-soft) 0%, transparent 75%);
 }
 
-/* Haute Horlogerie & Parisian High Perfumery: Brushed Metallic Champagne Gold */
+/* Haute Horlogerie & Parisian High Perfumery: Brushed Metallic Title */
 @keyframes parisianSpecularBeam {
   0% {
     background-position: -250% 0;
@@ -145,7 +769,7 @@
 
 .haute-gold-title {
   display: inline-block;
-  background: linear-gradient(115deg, #F0DFB6 0%, #C5A059 50%, #8C6826 100%);
+  background: var(--arch-title-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.95));
@@ -232,8 +856,8 @@
 
 /* Reflective glassmorphism card rim */
 .glass-card-border {
-  border: 1px solid rgba(245, 186, 73, 0.32);
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.65), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(212, 175, 106, 0.4);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.72), inset 0 1px 0 0 rgba(246, 228, 188, 0.18);
 }
 
 /* Micro Marquee Ticker (GPU-Accelerated) */
@@ -376,13 +1000,13 @@
   will-change: transform, opacity;
 }
 
-/* SINKI Luxury Interactive Traveling Border Beam (Cahaya Berjalan Interaktif) */
+/* SINKI Luxury Interactive Traveling Border Beam (Garis Cahaya Berputar Tajam Tanpa Blur) */
 @keyframes border-beam-spin {
   0% {
-    transform: rotate(0deg);
+    transform: translate(-50%, -50%) rotate(0deg);
   }
   100% {
-    transform: rotate(360deg);
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }
 
@@ -394,10 +1018,10 @@
 .border-beam-active::before {
   content: '';
   position: absolute;
-  top: -85%;
-  left: -85%;
-  width: 270%;
-  height: 270%;
+  top: 50%;
+  left: 50%;
+  width: 220%;
+  aspect-ratio: 1 / 1;
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
@@ -416,9 +1040,12 @@
 .border-beam-active::after {
   content: '';
   position: absolute;
-  inset: 1.5px;
-  background: linear-gradient(to bottom, rgba(24, 26, 40, 0.98), rgba(18, 20, 30, 0.98));
-  border-radius: 14px;
+  inset: 1.25px;
+  background:
+    radial-gradient(125% 95% at 0% 0%, rgba(212, 175, 106, 0.14) 0%, transparent 70%),
+    radial-gradient(115% 90% at 100% 100%, rgba(188, 145, 72, 0.1) 0%, transparent 65%),
+    #0d0d11;
+  border-radius: calc(0.5rem - 1.25px);
   z-index: 1;
   pointer-events: none;
 }
@@ -587,12 +1214,12 @@
   will-change: opacity, transform;
 }
 
-/* SINKI Collection Ultra-Silky Smooth Transitions (Fluid Deceleration + Crystal Lens Focus) */
+/* SINKI Collection Ultra-Silky Smooth Transitions (Fluid Deceleration + 2.5px Crystal Lens Focus) */
 @keyframes sinkiCardCascade {
   0% {
     opacity: 0;
     transform: translate3d(0, 9px, 0) scale(0.985);
-    filter: blur(3.5px);
+    filter: blur(2.5px);
   }
   65% {
     filter: blur(0px);
@@ -605,18 +1232,31 @@
 }
 
 .sinki-cascade-row-0 {
-  animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both;
   will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .sinki-cascade-row-1 {
   animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 75ms both;
   will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .sinki-cascade-row-2 {
   animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 150ms both;
   will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.sinki-cascade-row-3 {
+  animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 225ms both;
+  will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @keyframes sinkiHeadingFade {
@@ -635,13 +1275,15 @@
 .sinki-heading-anim {
   animation: sinkiHeadingFade 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @keyframes sinkiVariantSlideUp {
   0% {
     opacity: 0;
     transform: translate3d(0, 10px, 0);
-    filter: blur(3px);
+    filter: blur(2.5px);
   }
   100% {
     opacity: 1;
@@ -653,6 +1295,8 @@
 .sinki-variant-anim {
   animation: sinkiVariantSlideUp 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @keyframes sinkiSheetElevation {
@@ -701,12 +1345,12 @@
   will-change: opacity;
 }
 
-/* Staggered Variant Item Cascade (Fluid Paris Boutique Deceleration: 9px travel, 0.985 scale, crystal lens blur 3px ➔ 0px) */
+/* Staggered Variant Item Cascade (Fluid Paris Boutique Deceleration: 9px travel, 0.985 scale, crystal lens blur 2.5px ➔ 0px) */
 @keyframes sinkiVariantItemCascade {
   0% {
     opacity: 0;
     transform: translate3d(0, 9px, 0) scale(0.985);
-    filter: blur(3px);
+    filter: blur(2.5px);
   }
   65% {
     filter: blur(0px);
@@ -721,6 +1365,8 @@
 .sinki-variant-item-cascade {
   animation: sinkiVariantItemCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Paris Boutique Cushioned Tap Press (Empuk & Berdeselerasi Sutra) */
@@ -755,3 +1401,107 @@
   will-change: transform;
 }
 
+/* Thin Luxury Metallic Scrollbar for Boutique Variant Picker */
+.sinki-gold-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--arch-border-default) rgba(255, 255, 255, 0.04);
+}
+.sinki-gold-scrollbar::-webkit-scrollbar {
+  width: 3.5px;
+}
+.sinki-gold-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 9999px;
+}
+.sinki-gold-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--arch-border-default);
+  border-radius: 9999px;
+}
+.sinki-gold-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--arch-border-hover);
+}
+
+/* ============================================================================
+   LUXURY THEME ACCENT HARMONIZER (Active for Platinum, Rose Gold, Emerald, Bronze)
+   Zero dimension/layout impact — strictly maps metallic colors, borders & gradients
+   ============================================================================ */
+html[data-sinki-theme]:not([data-sinki-theme="champagne-gold"]) {
+  /* Soft Champagne Text -> Soft Metallic Highlight */
+  & .text-\[\#F3E6C8\],
+  & .text-\[\#F8EBCB\],
+  & .text-amber-100,
+  & .text-amber-200 {
+    color: var(--arch-gold-soft) !important;
+  }
+
+  /* Bright Champagne Text -> Bright Metallic Accent */
+  & .text-\[\#E8C782\],
+  & .text-\[\#E8C574\],
+  & .text-\[\#DFB76C\],
+  & .text-amber-300 {
+    color: var(--arch-gold-bright) !important;
+  }
+
+  /* Base Gold Text -> Base Metallic Accent */
+  & .text-\[\#D4AF6A\],
+  & .text-\[\#D4AF57\],
+  & .text-\[\#C5A059\],
+  & .text-amber-400,
+  & .text-amber-400\/80,
+  & .text-amber-300\/85 {
+    color: var(--arch-gold) !important;
+  }
+
+  /* Primary Metallic CTA Buttons */
+  & .from-\[\#DFB76C\],
+  & .from-amber-500 {
+    background-image: var(--arch-btn-gradient) !important;
+  }
+
+  /* Brand Gradient Wordmarks in Admin */
+  & .from-\[\#FFF5C2\] {
+    background-image: var(--arch-title-gradient) !important;
+  }
+
+  /* Active Indicators, Dots & Progress Bars */
+  & .bg-\[\#E8C782\],
+  & .bg-\[\#E8C574\],
+  & .bg-\[\#E8C574\]\/80,
+  & .bg-\[\#DFB76C\],
+  & .bg-\[\#D4AF6A\],
+  & .bg-\[\#D4AF57\],
+  & .bg-\[\#FBBF24\] {
+    background-color: var(--arch-gold-bright) !important;
+  }
+
+  & .from-\[\#382c16\] {
+    background-image: linear-gradient(90deg, var(--arch-card-sel-top) 0%, var(--arch-gold-deep) 55%, var(--arch-gold) 100%) !important;
+    border-color: var(--arch-border-hover) !important;
+    box-shadow: 0 2px 12px var(--arch-glow-hover-tl) !important;
+  }
+
+  & .after\:via-\[\#E8C574\]::after {
+    background-image: linear-gradient(to right, transparent, var(--arch-gold-bright), transparent) !important;
+  }
+
+  /* Subtle Metallic Badge Backgrounds */
+  & .bg-\[\#D4AF6A\]\/10,
+  & .bg-\[\#D4AF6A\]\/15,
+  & .bg-\[\#D4AF6A\]\/20,
+  & .bg-\[\#D4AF6A\]\/25 {
+    background-color: var(--arch-badge-bg) !important;
+  }
+
+  /* Hairline Dividers & Accent Borders */
+  & .border-\[\#D4AF6A\]\/15,
+  & .border-\[\#D4AF6A\]\/20,
+  & .border-\[\#D4AF6A\]\/25 {
+    border-color: var(--arch-border-subtle) !important;
+  }
+
+  & .border-\[\#D4AF6A\]\/35,
+  & .border-\[\#D4AF6A\]\/40,
+  & .border-\[\#DFB76C\]\/40 {
+    border-color: var(--arch-border-default) !important;
+  }
+}

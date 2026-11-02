@@ -1,3 +1,5 @@
+import { getStoredPricing } from './pricingStorage';
+
 export const COLLECTION_BOTTLE_SIZES = [10, 20, 30, 50, 100] as const;
 export type CollectionBottleSize = (typeof COLLECTION_BOTTLE_SIZES)[number];
 
@@ -8,6 +10,22 @@ export const COLLECTION_FIXED_PRICES: Record<CollectionBottleSize, number> = {
   50: 59000,
   100: 115000,
 };
+
+export function getPerfumeBottleUnitPrice(
+  size: CollectionBottleSize,
+  perfume?: { collectionCategories?: string[]; pricePerMl?: number } | null
+): number {
+  const cats = perfume?.collectionCategories || [];
+  if (cats.includes('new_trending')) {
+    const pricing = getStoredPricing();
+    return size * (pricing.premiumRatePerMl || 4000);
+  }
+  if (cats.includes('viral_hits')) {
+    const pricing = getStoredPricing();
+    return size * (pricing.mykonosRatePerMl || 3000);
+  }
+  return COLLECTION_FIXED_PRICES[size];
+}
 
 export interface CartItem {
   id: string;
@@ -36,13 +54,15 @@ export function getStoredCart(): CartItem[] {
       )
       .map((item: any) => {
         const size = Number(item.size) as CollectionBottleSize;
-        const fixedPrice = COLLECTION_FIXED_PRICES[size];
+        const storedUnitPrice = Number(item.unitPrice);
+        const resolvedUnitPrice =
+          storedUnitPrice > 0 ? storedUnitPrice : COLLECTION_FIXED_PRICES[size];
         return {
           id: String(item.id || `${item.perfumeId || item.name}-${size}`),
           perfumeId: String(item.perfumeId || item.name),
           name: item.name,
           size,
-          unitPrice: fixedPrice,
+          unitPrice: resolvedUnitPrice,
           quantity: Math.max(1, Math.floor(Number(item.quantity))),
         };
       });
@@ -65,10 +85,14 @@ export function addToCart(params: {
   name: string;
   size: CollectionBottleSize;
   quantity?: number;
+  unitPrice?: number;
 }): CartItem[] {
   const { perfumeId, name, size } = params;
   const qtyToAdd = Math.max(1, Math.floor(params.quantity ?? 1));
-  const unitPrice = COLLECTION_FIXED_PRICES[size];
+  const unitPrice =
+    params.unitPrice && params.unitPrice > 0
+      ? params.unitPrice
+      : COLLECTION_FIXED_PRICES[size];
   const itemId = `${perfumeId}-${size}`;
 
   const current = getStoredCart();

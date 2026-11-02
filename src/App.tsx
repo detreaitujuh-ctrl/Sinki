@@ -10,6 +10,7 @@ import { PinModal } from './components/PinModal';
 import { DrawerMenu } from './components/DrawerMenu';
 import { Toast } from './components/Toast';
 import { fetchPerfumesFromServer, getStoredPerfumes, PerfumeItem } from './utils/perfumeStorage';
+import { CollectionCategoryKey } from './data/perfumes';
 import {
   getStoredLogo,
   getStoredChibi,
@@ -40,6 +41,12 @@ import {
 } from './utils/socialStorage';
 import { fetchTopPerfumesFromServer } from './utils/topPerfumesStorage';
 import { CartItem, getStoredCart, getCartTotalCount } from './utils/cartStorage';
+import {
+  LuxuryThemeConfig,
+  getStoredTheme,
+  fetchThemeFromServer,
+  applyThemeToDocument,
+} from './utils/themeStorage';
 
 const TABS: TabType[] = ['home', 'collection', 'match', 'order', 'review'];
 
@@ -87,8 +94,17 @@ export default function App() {
   const [pricing, setPricing] = useState<PricingConfig>(() => getStoredPricing());
   const [tickerConfig, setTickerConfig] = useState<TickerConfig>(() => getStoredTicker());
   const [socialLinks, setSocialLinks] = useState<SocialLinks>(() => getStoredSocialLinks());
+  const [luxuryTheme, setLuxuryTheme] = useState<LuxuryThemeConfig>(() => {
+    const stored = getStoredTheme();
+    applyThemeToDocument(stored.id);
+    return stored;
+  });
   const [catalogPerfumes, setCatalogPerfumes] = useState<PerfumeItem[]>(() => getStoredPerfumes());
   const [cartItems, setCartItems] = useState<CartItem[]>(() => getStoredCart());
+
+  useEffect(() => {
+    applyThemeToDocument(luxuryTheme.id);
+  }, [luxuryTheme.id]);
 
   useEffect(() => {
     const handleCartChange = (e: any) => {
@@ -107,6 +123,9 @@ export default function App() {
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [collectionScrollTrigger, setCollectionScrollTrigger] = useState(0);
+  const [collectionTargetCategory, setCollectionTargetCategory] = useState<
+    CollectionCategoryKey | 'overview' | null
+  >(null);
   const [selectedPerfumeForOrder, setSelectedPerfumeForOrder] = useState<{
     name: string;
     category?: string;
@@ -139,6 +158,11 @@ export default function App() {
     // Sync social links from server immediately
     fetchSocialLinksFromServer().then((links) => {
       if (links) setSocialLinks(links);
+    });
+
+    // Sync luxury architectural theme from server/cloud immediately
+    fetchThemeFromServer().then((themeCfg) => {
+      if (themeCfg) setLuxuryTheme(themeCfg);
     });
 
     // Sync top bestseller perfumes and catalog from server/cloud immediately
@@ -196,6 +220,9 @@ export default function App() {
         fetchSocialLinksFromServer().then((links) => {
           if (links) setSocialLinks(links);
         });
+        fetchThemeFromServer().then((themeCfg) => {
+          if (themeCfg) setLuxuryTheme(themeCfg);
+        });
       }
     };
     window.addEventListener('focus', handleTickerRefresh);
@@ -244,7 +271,7 @@ export default function App() {
   // JIKA SEDANG MEMBUKA RUTE RAHASIA /dimensi-sinki: TAMPILKAN DASHBOARD DIMENSI-SINKI
   if (isDimensiRoute) {
     return (
-      <div className="w-full h-screen bg-[#090b10] text-slate-100 flex justify-center items-center">
+      <div className="w-full h-screen bg-[#08080b] text-slate-100 flex justify-center items-center">
         <DimensiSinkiScreen
           onExitToPublic={() => {
             window.history.pushState({}, "", "/");
@@ -259,6 +286,7 @@ export default function App() {
           tickerConfig={tickerConfig}
           perfumes={catalogPerfumes}
           socialLinks={socialLinks}
+          luxuryTheme={luxuryTheme}
           heroBottles={heroBottles}
           heroStageEffect={heroStageEffect}
           heroStageEnabled={heroStageEnabled}
@@ -307,6 +335,9 @@ export default function App() {
           onSocialLinksUpdated={(newLinks) => {
             setSocialLinks(newLinks);
           }}
+          onThemeUpdated={(newTheme) => {
+            setLuxuryTheme(newTheme);
+          }}
         />
         {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
       </div>
@@ -314,22 +345,20 @@ export default function App() {
   }
 
   return (
-    <div className="relative w-full h-[100dvh] bg-[#0e1017] flex items-center justify-center overflow-hidden font-sans selection:bg-amber-500/25">
-      {/* Desktop Ambient Subtle Boutique Glow - Dibuat jauh lebih tipis */}
+    <div className="relative w-full h-[100dvh] bg-[#08080b] flex items-center justify-center overflow-hidden font-sans selection:bg-amber-500/25">
+      {/* Desktop Ambient Glow */}
       <div className="hidden md:block absolute -top-40 -left-40 w-96 h-96 bg-amber-500/[0.06] rounded-full blur-[140px] pointer-events-none" />
       <div className="hidden md:block absolute -bottom-40 -right-40 w-96 h-96 bg-amber-600/[0.05] rounded-full blur-[140px] pointer-events-none" />
 
-      {/* Mobile App Container with Deep Charcoal Graphite Canvas (Cool Neutral Dark) */}
-      <main
-        className="relative w-full max-w-md h-full md:h-[92dvh] md:max-h-[880px] bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] md:rounded-[36px] md:border md:border-amber-500/25 md:shadow-[0_20px_70px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden"
-      >
+      {/* Mobile App Container */}
+      <main className="relative w-full max-w-md h-full md:h-[92dvh] md:max-h-[880px] sinki-arch-canvas sinki-canvas-frame-only md:rounded-[10px] md:border md:border-[#D4AF6A]/40 md:shadow-[0_24px_75px_rgba(0,0,0,0.92)] flex flex-col overflow-hidden">
         {/* Subtle Top Notch Line for App Realism on Desktop */}
-        <div className="hidden md:flex justify-center pt-2 pb-1 shrink-0">
-          <div className="w-20 h-1 rounded-full bg-white/15" />
+        <div className="relative z-10 hidden md:flex justify-center pt-2 pb-1 shrink-0">
+          <div className="w-20 h-1 rounded-[4px] bg-[#D4AF6A]/25" />
         </div>
 
         {/* Stable Tab Views Container (Bebas Efek Geser/Swipe Horizontal) */}
-        <div className="relative flex-1 w-full h-full overflow-hidden">
+        <div className="relative z-10 flex-1 w-full h-full overflow-hidden">
           {/* View 1: Home Screen */}
           <div className={`w-full h-full ${activeTab === 'home' ? 'block' : 'hidden'}`}>
             <HomeScreen
@@ -362,6 +391,8 @@ export default function App() {
               scrollToTopTrigger={collectionScrollTrigger}
               perfumes={catalogPerfumes}
               onCartUpdated={() => setCartItems(getStoredCart())}
+              targetCategory={collectionTargetCategory}
+              onClearTargetCategory={() => setCollectionTargetCategory(null)}
             />
           </div>
 
@@ -387,7 +418,14 @@ export default function App() {
           <div className={`w-full h-full ${activeTab === 'order' ? 'block' : 'hidden'}`}>
             <OrderScreen
               onBackToHome={() => setActiveTab('home')}
-              onNavigateToCollection={() => setActiveTab('collection')}
+              onNavigateToCollection={() => {
+                setCollectionTargetCategory('overview');
+                setActiveTab('collection');
+              }}
+              onNavigateToCategory={(cat) => {
+                setCollectionTargetCategory(cat);
+                setActiveTab('collection');
+              }}
               onShowToast={showToast}
               pricing={pricing}
               customQris={customQris}

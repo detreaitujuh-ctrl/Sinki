@@ -261,11 +261,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const tickerText = currentTicker.text.trim() || 'Tahan 8 jam, dia aja yang gak tahan 😏';
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-between p-3.5 pb-20 bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] text-slate-100 overflow-y-auto no-scrollbar">
+    <div className="relative w-full h-full flex flex-col justify-between p-3.5 pb-20 sinki-arch-canvas sinki-home-stage-canvas text-slate-100 overflow-y-auto no-scrollbar">
       {/* LAYER 2: HERO BACKDROP BOTOL PARFUM & VIDEO SINEMATIK (Panggung Tengah di bawah Teks Judul) */}
       <div className={`absolute inset-x-0 top-0 ${heightClass} pointer-events-none overflow-hidden z-0`}>
         {/* Base dark canvas */}
-        <div className="absolute inset-0 bg-[#0e1017]" />
+        <div className="absolute inset-0 bg-[#08080b]" />
 
         {/* 1. Video Layer: Diputar autoplay, loop, muted di latar belakang */}
         {isVideoMode && activeVideoUrl && (
@@ -309,14 +309,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           }`}
         />
 
-        {/* Ambient Top Glow from top-right corner like soft champagne dawn light */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[#c5a059]/[0.05] rounded-full blur-[120px]" />
-
-        {/* Pelindung Area Judul & Menu (Gradasi gelap lembut agar tulisan SINKI selalu berkilau tajam & tidak tertutup foto/video) */}
-        <div className={`absolute inset-x-0 top-0 ${activeHeight === 'full' ? 'h-36 bg-gradient-to-b from-[#0d0f18]/95 via-[#0d0f18]/70 to-transparent' : 'h-28 bg-gradient-to-b from-[#0d0f18] via-[#0d0f18]/85 to-transparent'}`} />
+        {/* Pelindung Area Judul & Menu */}
+        <div
+          className={`absolute inset-x-0 top-0 ${
+            activeHeight === 'full'
+              ? 'h-36 bg-gradient-to-b from-[#08080b]/95 via-[#08080b]/70 to-transparent'
+              : 'h-28 bg-gradient-to-b from-[#08080b] via-[#08080b]/85 to-transparent'
+          }`}
+        />
 
         {/* Bottom Water Ripple Exposure Fade */}
-        <div className={`absolute inset-x-0 bottom-0 ${activeHeight === 'full' ? 'h-32 bg-gradient-to-t from-[#0d0f18] via-[#0d0f18]/80 to-transparent' : 'h-16 bg-gradient-to-t from-[#0d0f18] via-[#0d0f18]/70 to-transparent'}`} />
+        <div
+          className={`absolute inset-x-0 bottom-0 ${
+            activeHeight === 'full'
+              ? 'h-32 bg-gradient-to-t from-[#08080b] via-[#08080b]/80 to-transparent'
+              : 'h-16 bg-gradient-to-t from-[#08080b] via-[#08080b]/70 to-transparent'
+          }`}
+        />
 
         {/* Tombol Mute / Unmute Interaktif saat video aktif & berputar */}
         {isVideoMode && videoPlaying && !videoFailed && (
@@ -327,7 +336,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               setIsMuted((prev) => !prev);
               onShowToast(!isMuted ? 'Suara video dinonaktifkan (hening)' : 'Suara video sinematik aktif 🔊');
             }}
-            className="pointer-events-auto absolute bottom-4 right-4 z-10 p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white/80 hover:text-white transition-all shadow-md active:scale-95"
+            className="pointer-events-auto absolute bottom-4 right-4 z-10 p-2 rounded-[8px] sinki-arch-bar backdrop-blur-md border text-white/80 hover:text-white transition-all shadow-md active:scale-95"
             title={isMuted ? 'Nyalakan Suara Video' : 'Matikan Suara Video'}
           >
             {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} className="text-amber-400" />}
@@ -350,7 +359,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Top-Right: 3-line hamburger menu button ("Garis 3") */}
         <button
           onClick={onOpenDrawer}
-          className="w-8 h-8 rounded-xl bg-black/60 hover:bg-white/10 border border-white/15 text-slate-200 hover:text-white flex items-center justify-center transition-all active:scale-90 shadow-lg backdrop-blur-xs"
+          className="w-8 h-8 rounded-[8px] sinki-arch-bar hover:border-[#E8C782]/65 border text-[#E8C782] hover:text-[#FBF2D5] flex items-center justify-center transition-all active:scale-90 backdrop-blur-xs"
           title="Menu Utama"
           aria-label="Menu"
         >
@@ -393,7 +402,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
             {/* Discreet Micro Indicators if more than 1 bottle */}
             {activeBottles.length > 1 && (
-              <div className="absolute bottom-0 flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-black/40 border border-white/10 backdrop-blur-xs">
+              <div className="absolute bottom-0 flex items-center gap-1.5 py-1 px-2.5 rounded-[6px] sinki-arch-subbox border backdrop-blur-xs">
                 {activeBottles.map((_, idx) => {
                   const isActive = activeBottleIdx === idx;
                   return (
@@ -423,7 +432,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       */}
       <section className="relative z-10 space-y-2 shrink-0">
         {/* Story Box "Define your presence" with Quiet Luxury Clean Typography */}
-        <div className="py-2.5 px-3.5 rounded-2xl bg-gradient-to-r from-[#171926]/95 via-[#131520]/95 to-[#0f111a]/95 border border-white/10 hover:border-white/20 shadow-[0_8px_25px_rgba(0,0,0,0.65)] flex items-center justify-between gap-3 backdrop-blur-md transition-all">
+        <div className="py-2.5 px-3.5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border flex items-center justify-between gap-3 backdrop-blur-md transition-all">
           {/* Story Text */}
           <div className="flex-1 min-w-0">
             <h2 className="font-heading text-[14.5px] sm:text-[15px] font-semibold tracking-[-0.015em] text-white leading-[1.22]">
@@ -455,7 +464,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </button>
         </div>
 
-        {/* Follow Sinki Section with Equal-Sized Logos & Glassmorphism Borders */}
+        {/* Follow Sinki Section with Equal-Sized Logos & Luxury Architectural Borders */}
         <div className="space-y-1.5">
           <span className="font-body text-[11px] font-medium tracking-[0.02em] text-slate-300 pl-1 block leading-tight">
             Follow Sinki
@@ -468,10 +477,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleSocialClick('instagram')}
-              className="group flex items-center justify-between py-2 px-2.5 rounded-2xl bg-gradient-to-b from-[#1e2235]/95 to-[#141626]/95 hover:from-[#24283f] hover:to-[#171a2c] border border-pink-500/35 hover:border-pink-400/60 transition-all active:scale-98 shadow-[0_4px_15px_rgba(0,0,0,0.45)] backdrop-blur-md"
+              className="group flex items-center justify-between py-2 px-2.5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border transition-all active:scale-98 backdrop-blur-md"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6.5 h-6.5 rounded-lg bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center p-1.5 shrink-0 shadow-md">
+                <div className="w-6.5 h-6.5 rounded-[6px] bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center p-1.5 shrink-0 shadow-md">
                   <svg viewBox="0 0 24 24" fill="white" className="w-3.5 h-3.5">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                   </svg>
@@ -482,7 +491,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </span>
                 </div>
               </div>
-              <ExternalLink size={12} className="text-slate-300 group-hover:text-pink-300 shrink-0 ml-1" />
+              <ExternalLink size={12} className="text-[#D4AF6A]/80 group-hover:text-[#F3E6C8] shrink-0 ml-1" />
             </a>
 
             {/* TikTok Box */}
@@ -491,10 +500,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleSocialClick('tiktok')}
-              className="group flex items-center justify-between py-2 px-2.5 rounded-2xl bg-gradient-to-b from-[#1e2235]/95 to-[#141626]/95 hover:from-[#24283f] hover:to-[#171a2c] border border-cyan-500/35 hover:border-cyan-400/60 transition-all active:scale-98 shadow-[0_4px_15px_rgba(0,0,0,0.45)] backdrop-blur-md"
+              className="group flex items-center justify-between py-2 px-2.5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border transition-all active:scale-98 backdrop-blur-md"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6.5 h-6.5 rounded-lg bg-black border border-slate-700 flex items-center justify-center p-1.5 shrink-0 shadow-md">
+                <div className="w-6.5 h-6.5 rounded-[6px] bg-black border border-[#D4AF6A]/30 flex items-center justify-center p-1.5 shrink-0 shadow-md">
                   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5">
                     <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#00f2fe"/>
                     <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.31-4.636c.31 0 .611.049.897.139V9.414A6.33 6.33 0 0 0 9.474 9.2c-3.528 0-6.388 2.859-6.388 6.387 0 3.528 2.86 6.388 6.388 6.388 3.528 0 6.387-2.86 6.387-6.388v-7.04a8.217 8.217 0 0 0 4.838 1.572V6.686z" fill="#fe2c55" opacity="0.7"/>
@@ -507,7 +516,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </span>
                 </div>
               </div>
-              <ExternalLink size={12} className="text-slate-300 group-hover:text-cyan-300 shrink-0 ml-1" />
+              <ExternalLink size={12} className="text-[#D4AF6A]/80 group-hover:text-[#F3E6C8] shrink-0 ml-1" />
             </a>
           </div>
         </div>
@@ -516,7 +525,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <button
           onClick={onNavigateToCollection}
           aria-label="Lihat Koleksi Parfum SINKI"
-          className="luxury-ticker-container w-full py-2 px-3 rounded-xl bg-gradient-to-r from-[#171927]/95 via-[#1d2238]/95 to-[#131625]/95 hover:from-[#21263d] hover:to-[#181c2f] border border-white/12 hover:border-[#DFB76C]/40 flex items-center gap-2 text-slate-100 transition-all active:scale-[0.98] shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.08)] backdrop-blur-md group overflow-hidden"
+          className="luxury-ticker-container w-full py-2 px-3 rounded-[8px] sinki-arch-bar hover:border-[#E8C782]/65 border flex items-center gap-2 text-slate-100 transition-all active:scale-[0.98] backdrop-blur-md group overflow-hidden"
         >
           {/* Running Text Area with Mask Fade */}
           <div className="flex-1 overflow-hidden relative ticker-mask-fade py-0.5 min-w-0">
@@ -530,7 +539,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
 
           {/* Action indicator button/arrow */}
-          <div className="shrink-0 flex items-center gap-1 font-body text-[11px] font-semibold leading-none text-[#DFB76C] group-hover:text-[#F0DFB6] pl-2.5 border-l border-white/10">
+          <div className="shrink-0 flex items-center gap-1 font-body text-[11px] font-semibold leading-none text-[#DFB76C] group-hover:text-[#F0DFB6] pl-2.5 border-l border-[#D4AF6A]/25">
             <span className="hidden xs:inline">Koleksi</span>
             <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform text-[#DFB76C]" />
           </div>

@@ -3,8 +3,8 @@ import { X, Heart, Check, Plus, ShoppingBag } from 'lucide-react';
 import { PerfumeItem } from '../data/perfumes';
 import {
   COLLECTION_BOTTLE_SIZES,
-  COLLECTION_FIXED_PRICES,
   CollectionBottleSize,
+  getPerfumeBottleUnitPrice,
   addToCart,
 } from '../utils/cartStorage';
 
@@ -31,13 +31,20 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
   if (!perfume) return null;
 
   const isFav = favorites.includes(perfume.id);
-  const selectedUnitPrice = selectedBottleSize ? COLLECTION_FIXED_PRICES[selectedBottleSize] : null;
+  const perMlBadge = perfume.collectionCategories?.includes('new_trending')
+    ? 'Rp4.000/ml'
+    : perfume.collectionCategories?.includes('viral_hits')
+    ? 'Rp3.000/ml'
+    : null;
+  const selectedUnitPrice = selectedBottleSize
+    ? getPerfumeBottleUnitPrice(selectedBottleSize, perfume)
+    : null;
   const selectedTotalPrice = selectedUnitPrice ? selectedUnitPrice * bottleQty : null;
 
   const handleAddToCart = () => {
     if (!selectedBottleSize) return;
 
-    const unitPrice = COLLECTION_FIXED_PRICES[selectedBottleSize];
+    const unitPrice = getPerfumeBottleUnitPrice(selectedBottleSize, perfume);
     const totalPrice = unitPrice * bottleQty;
 
     addToCart({
@@ -45,6 +52,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
       name: perfume.name,
       size: selectedBottleSize,
       quantity: bottleQty,
+      unitPrice,
     });
 
     onCartUpdated?.();
@@ -60,15 +68,22 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md max-h-[calc(100dvh-96px)] md:max-h-[calc(92dvh-96px)] bg-[#121520] border-t border-b sm:border border-white/15 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden sinki-sheet-elevation"
+        className="w-full max-w-md max-h-[calc(100dvh-96px)] md:max-h-[calc(92dvh-96px)] sinki-arch-modal border-t border-b sm:border rounded-t-[10px] sm:rounded-[10px] flex flex-col overflow-hidden sinki-sheet-elevation"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ZONE 1: Fixed Top Header */}
-        <div className="shrink-0 flex items-start justify-between gap-3 px-4 pt-3 pb-2.5 border-b border-white/10 bg-[#121520]">
+        <div className="shrink-0 flex items-start justify-between gap-3 px-4 pt-3 pb-2.5 border-b border-[#D4AF6A]/25 sinki-arch-header">
           <div className="min-w-0 flex-1">
-            <span className="font-body text-[11px] font-medium tracking-[0.03em] text-[#DFB76C] block mb-0.5 leading-tight">
-              SINKI Signature Detail
-            </span>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="font-body text-[11px] font-medium tracking-[0.03em] text-[#DFB76C] leading-tight">
+                SINKI Signature Detail
+              </span>
+              {perMlBadge && (
+                <span className="font-body text-[10.5px] font-semibold tabular-nums px-1.5 py-0.5 rounded-[5px] bg-[#C5A059]/15 border border-[#DFB76C]/35 text-[#F3E6C8] leading-none">
+                  {perMlBadge}
+                </span>
+              )}
+            </div>
             <h3 className="font-heading text-base sm:text-[17px] font-bold text-white tracking-[-0.015em] leading-[1.22] break-words">
               {perfume.name}
             </h3>
@@ -79,7 +94,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
               <button
                 type="button"
                 onClick={() => onToggleFavorite(perfume.id, perfume.name)}
-                className="w-8 h-8 rounded-md bg-white/[0.05] hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 hover:text-rose-400 transition-colors sinki-cushion-press-sm"
+                className="w-8 h-8 rounded-[6px] sinki-arch-subbox hover:border-[#E8C782]/60 border flex items-center justify-center text-slate-300 hover:text-rose-400 transition-colors sinki-cushion-press-sm"
                 title="Simpan ke favorit"
               >
                 <Heart
@@ -91,7 +106,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-md bg-white/[0.05] hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors sinki-cushion-press-sm"
+              className="w-8 h-8 rounded-[6px] sinki-arch-subbox hover:border-[#E8C782]/60 border flex items-center justify-center text-slate-300 hover:text-white transition-colors sinki-cushion-press-sm"
               title="Tutup detail"
             >
               <X size={16} />
@@ -103,7 +118,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-3 pb-3.5 space-y-2">
           {/* Fragrance Profile */}
           <div className="space-y-2 font-body">
-            <div className="p-2.5 rounded-lg bg-[#0e1018] border border-white/[0.07] space-y-0.5">
+            <div className="p-2.5 rounded-[8px] sinki-arch-subbox border space-y-0.5">
               <span className="text-[11px] font-medium text-[#DFB76C] block leading-tight">
                 Karakter Aroma
               </span>
@@ -113,7 +128,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
             </div>
 
             {perfume.usageRecommendation && perfume.usageRecommendation.trim() !== '' && (
-              <div className="p-2.5 rounded-lg bg-[#0e1018] border border-white/[0.07] space-y-0.5">
+              <div className="p-2.5 rounded-[8px] sinki-arch-subbox border space-y-0.5">
                 <span className="text-[11px] font-medium text-[#DFB76C] block leading-tight">
                   Rekomendasi Penggunaan
                 </span>
@@ -124,7 +139,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
             )}
 
             {perfume.accords && perfume.accords.length > 0 && (
-              <div className="p-2.5 rounded-lg bg-[#0e1018] border border-white/[0.07] space-y-1.5">
+              <div className="p-2.5 rounded-[8px] sinki-arch-subbox border space-y-1.5">
                 <span className="text-[11px] font-medium text-[#DFB76C] block leading-tight">
                   Komposisi Notes
                 </span>
@@ -132,7 +147,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
                   {perfume.accords.map((note, idx) => (
                     <span
                       key={`${note}-${idx}`}
-                      className="font-body px-2 py-0.5 rounded bg-[#151824] border border-white/10 text-[11.5px] font-normal text-slate-200 leading-tight"
+                      className="font-body px-2 py-0.5 rounded-[5px] bg-[#14141a] border border-[#D4AF6A]/25 text-[11.5px] font-normal text-slate-200 leading-tight"
                     >
                       {note}
                     </span>
@@ -167,10 +182,10 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
                     key={size}
                     type="button"
                     onClick={() => setSelectedBottleSize(size)}
-                    className={`font-body py-2 px-1 rounded-md border text-center tabular-nums whitespace-nowrap sinki-cushion-press-sm ${
+                    className={`font-body py-2 px-1 rounded-[6px] border text-center tabular-nums whitespace-nowrap sinki-cushion-press-sm ${
                       isSelected
-                        ? 'bg-[#C5A059]/20 border-[#DFB76C] text-white font-semibold shadow-[0_2px_12px_rgba(197,160,89,0.2)]'
-                        : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/12 hover:border-white/25 font-medium'
+                        ? 'sinki-arch-card-selected text-white font-semibold'
+                        : 'sinki-arch-subbox hover:border-[#E8C782]/55 text-slate-200 font-medium'
                     }`}
                   >
                     <span className="text-xs block leading-none font-medium">{size} ml</span>
@@ -182,9 +197,9 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
         </div>
 
         {/* ZONE 3: Sticky Bottom Action Bar */}
-        <div className="shrink-0 bg-[#0e1018]/98 border-t border-white/12 px-4 pt-2.5 pb-3 shadow-[0_-10px_28px_rgba(0,0,0,0.65)] space-y-2">
+        <div className="shrink-0 bg-[#0b0b0f]/98 border-t border-[#D4AF6A]/25 px-4 pt-2.5 pb-3 shadow-[0_-10px_28px_rgba(0,0,0,0.75)] space-y-2">
           {selectedBottleSize && selectedUnitPrice && selectedTotalPrice ? (
-            <div className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-lg bg-[#171b29] border border-[#C5A059]/35">
+            <div className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-[8px] sinki-arch-card border">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 font-body text-[11px] font-medium text-slate-300 tabular-nums leading-tight">
                   <span>Ukuran {selectedBottleSize} ml</span>
@@ -200,12 +215,12 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
               </div>
 
               {/* Quantity Stepper */}
-              <div className="flex items-center gap-2 bg-[#121422] px-2 py-1 rounded-md border border-white/15 shrink-0">
+              <div className="flex items-center gap-2 sinki-arch-subbox px-2 py-1 rounded-[6px] border shrink-0">
                 <button
                   type="button"
                   onClick={() => setBottleQty((prev) => Math.max(1, prev - 1))}
                   aria-label="Kurangi jumlah botol"
-                  className="font-body w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center sinki-cushion-press-sm"
+                  className="font-body w-6 h-6 rounded-[5px] bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center sinki-cushion-press-sm"
                 >
                   -
                 </button>
@@ -216,14 +231,14 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
                   type="button"
                   onClick={() => setBottleQty((prev) => prev + 1)}
                   aria-label="Tambah jumlah botol"
-                  className="font-body w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center sinki-cushion-press-sm"
+                  className="font-body w-6 h-6 rounded-[5px] bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center sinki-cushion-press-sm"
                 >
                   +
                 </button>
               </div>
             </div>
           ) : (
-            <div className="py-1 px-3 rounded-lg bg-white/[0.03] border border-white/8 text-center">
+            <div className="py-1 px-3 rounded-[8px] sinki-arch-subbox border text-center">
               <span className="font-body text-[11.5px] text-slate-300 font-normal">
                 Pilih salah satu ukuran botol di atas untuk melihat harga
               </span>
@@ -235,10 +250,10 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
             type="button"
             disabled={!selectedBottleSize}
             onClick={handleAddToCart}
-            className={`w-full py-2.5 px-4 rounded-xl font-body font-semibold text-[13px] flex items-center justify-center gap-2 transition-all shadow-md sinki-cushion-press ${
+            className={`w-full py-2.5 px-4 rounded-[8px] font-body font-semibold text-[13px] flex items-center justify-center gap-2 transition-all shadow-md sinki-cushion-press ${
               selectedBottleSize
                 ? 'bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:scale-[0.98] text-slate-950 shadow-black/40 cursor-pointer'
-                : 'bg-white/10 text-slate-500 border border-white/5 cursor-not-allowed'
+                : 'bg-white/[0.06] text-slate-500 border border-[#D4AF6A]/15 cursor-not-allowed'
             }`}
           >
             {selectedBottleSize ? (

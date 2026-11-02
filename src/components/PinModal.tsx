@@ -93,10 +93,10 @@ export const PinModal: React.FC<PinModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-xs rounded-3xl bg-gradient-to-b from-[#1e2235] to-[#141624] border border-white/15 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.85)] space-y-4 text-center font-body">
+      <div className="w-full max-w-xs rounded-[10px] sinki-arch-modal border p-6 space-y-4 text-center font-body">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="w-8 h-8 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[#DFB76C]">
+          <div className="w-8 h-8 rounded-[6px] sinki-arch-subbox border flex items-center justify-center text-[#DFB76C]">
             <Lock size={16} />
           </div>
           <span className="font-body text-xs font-medium text-[#DFB76C]">
@@ -108,7 +108,7 @@ export const PinModal: React.FC<PinModalProps> = ({
               setError(false);
               onClose();
             }}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-[6px] sinki-arch-subbox border hover:border-[#E8C782]/60 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
           >
             <X size={16} />
           </button>
@@ -156,7 +156,7 @@ export const PinModal: React.FC<PinModalProps> = ({
               key={digit}
               onClick={() => handleNumberClick(digit)}
               disabled={isVerifying}
-              className="py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-[#DFB76C] active:text-slate-950 active:scale-95 border border-white/10 hover:border-[#DFB76C]/40 text-white font-body font-semibold text-lg tabular-nums transition-all disabled:opacity-50"
+              className="py-2.5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive active:bg-[#DFB76C] active:text-slate-950 active:scale-95 border text-white font-body font-semibold text-lg tabular-nums transition-all disabled:opacity-50"
             >
               {digit}
             </button>
@@ -164,21 +164,21 @@ export const PinModal: React.FC<PinModalProps> = ({
           <button
             onClick={handleDelete}
             disabled={isVerifying}
-            className="py-2.5 rounded-2xl bg-white/5 hover:bg-red-500/25 active:scale-95 border border-white/10 hover:border-red-500/40 text-slate-300 font-body font-medium text-sm transition-all flex items-center justify-center disabled:opacity-50"
+            className="py-2.5 rounded-[8px] sinki-arch-subbox hover:bg-red-500/25 active:scale-95 border hover:border-red-500/45 text-slate-300 font-body font-medium text-sm transition-all flex items-center justify-center disabled:opacity-50"
           >
             Hapus
           </button>
           <button
             onClick={() => handleNumberClick('0')}
             disabled={isVerifying}
-            className="py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-[#DFB76C] active:text-slate-950 active:scale-95 border border-white/10 hover:border-[#DFB76C]/40 text-white font-body font-semibold text-lg tabular-nums transition-all disabled:opacity-50"
+            className="py-2.5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive active:bg-[#DFB76C] active:text-slate-950 active:scale-95 border text-white font-body font-semibold text-lg tabular-nums transition-all disabled:opacity-50"
           >
             0
           </button>
           <button
             onClick={() => validatePin(pin)}
             disabled={pin.length < 4 || isVerifying}
-            className="py-2.5 rounded-2xl bg-gradient-to-r from-[#DFB76C] to-[#A07C3A] text-slate-950 font-body font-semibold text-sm transition-all flex items-center justify-center gap-1 active:scale-95 disabled:opacity-35"
+            className="py-2.5 rounded-[8px] bg-gradient-to-r from-[#DFB76C] to-[#A07C3A] text-slate-950 font-body font-semibold text-sm transition-all flex items-center justify-center gap-1 active:scale-95 disabled:opacity-35"
           >
             <Check size={14} />
             <span>{isVerifying ? '...' : 'Masuk'}</span>

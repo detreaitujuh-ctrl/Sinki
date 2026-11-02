@@ -18,7 +18,7 @@ const RECENT_SUBMISSIONS_KEY = 'sinki_recent_reviews_cache_v5';
 const REVIEWS_FILE_NAME = 'reviews.json';
 const REVIEWS_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${REVIEWS_FILE_NAME}`;
 
-export const MAX_REVIEWS_LIMIT = 10;
+export const MAX_REVIEWS_LIMIT = 20;
 
 /**
  * Menghitung jumlah ulasan riil untuk suatu varian parfum (+ base count wajar yang bertambah real-time saat diulas)

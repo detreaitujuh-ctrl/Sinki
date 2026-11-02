@@ -1,627 +1,30 @@
 [
   {
-    "id": "w-1",
-    "name": "Gucci Flora Gardenia",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Sweet Floral & Red Berries",
-    "accords": [
-      "Floral",
-      "Fruity",
-      "Sweet"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "attraction",
-      "viral_hits"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Aktivitas harian, jalan santai sore, dan kencan romantis"
-  },
-  {
-    "id": "w-2",
-    "name": "Scandalous",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Warm Floral & Raspberry Seduction",
-    "accords": [
-      "Fruity",
-      "Warm",
-      "Floral"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "viral_hits"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Kencan malam hari, hangout spesial, dan momen memikat"
-  },
-  {
-    "id": "w-3",
-    "name": "Scandalous Premium",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Rich Intense Praline & Peony",
-    "accords": [
-      "Sweet",
-      "Floral",
-      "Intense"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "luxury",
-      "viral_hits"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Pesta malam, makan malam romantis, dan acara eksklusif"
-  },
-  {
-    "id": "w-4",
-    "name": "Scandalous LW",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Light Fresh Floral Breeze",
-    "accords": [
-      "Fresh",
-      "Floral",
-      "Light"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "attraction"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Pemakaian sehari-hari, kuliah, dan suasana santai"
-  },
-  {
-    "id": "w-5",
-    "name": "HMS Alpha",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Confident Green & Citrus Elegance",
-    "accords": [
-      "Citrus",
-      "Green",
-      "Fresh"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "professional",
-      "new_trending"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Bekerja di kantor, meeting profesional, dan aktivitas pagi"
-  },
-  {
-    "id": "w-6",
-    "name": "HMS Orgsm",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Sensual Red Apple & Rose Petals",
-    "accords": [
-      "Floral",
-      "Amber",
-      "Sensual"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "viral_hits",
-      "new_trending"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Kencan spesial, hangout sore hingga malam hari"
-  },
-  {
-    "id": "w-7",
-    "name": "Paco Rabanne Olympea",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Salty Vanilla & Jasmine Goddess",
-    "accords": [
-      "Vanilla",
-      "Salty",
-      "White Floral"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "luxury"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Acara formal malam hari, resepsi, dan momen berkelas"
-  },
-  {
-    "id": "w-8",
-    "name": "YSL Libre",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Lavender & Moroccan Orange Blossom",
-    "accords": [
-      "Lavender",
-      "Citrus",
-      "Vanilla"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "professional",
-      "luxury",
-      "viral_hits"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Rapat eksekutif, kerja kantoran rapi, dan acara formal"
-  },
-  {
-    "id": "w-9",
-    "name": "YSL Mon Paris",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Sweet Strawberry & Datura Flower",
-    "accords": [
-      "Fruity",
-      "Sweet",
-      "Patchouli"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "luxury"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Kencan romantis, perayaan spesial, dan acara malam"
-  },
-  {
-    "id": "w-10",
-    "name": "Escada Moon Sparkle",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Sparkling Blackcurrant & Strawberry",
-    "accords": [
-      "Fruity",
-      "Sweet",
-      "Citrus"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "attraction"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Hangout ceria bersama teman dan aktivitas luar ruangan"
-  },
-  {
-    "id": "w-11",
-    "name": "Escada Cherry",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Juicy Cherry & Marshmallow Delicacy",
-    "accords": [
-      "Cherry",
-      "Sweet",
-      "Fruity"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "attraction"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Aktivitas kasual harian, kencan siang, dan suasana santai"
-  },
-  {
-    "id": "w-12",
-    "name": "Escada Sexy Gravity",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Exotic Passion Fruit & Red Peony",
-    "accords": [
-      "Tropical",
-      "Fruity",
-      "Floral"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "daily_fresh"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Liburan, jalan sore, dan momen kencan kasual"
-  },
-  {
-    "id": "w-13",
-    "name": "Escada Magnetism",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Sweet Caramel & Green Leaves",
-    "accords": [
-      "Caramel",
-      "Fruity",
-      "Vanilla"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Pertemuan dekat, kencan sore, dan acara semi-formal"
-  },
-  {
-    "id": "w-14",
-    "name": "J-Lo Still",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Earl Grey Tea & Calming White Floral",
-    "accords": [
-      "Tea",
-      "Floral",
-      "Fresh"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "professional",
-      "daily_fresh"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Ruang kerja ber-AC, aktivitas kantor tenang, dan harian rapi"
-  },
-  {
-    "id": "w-15",
-    "name": "Avril Lavigne",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Blackberry & Dark Chocolate Romance",
-    "accords": [
-      "Fruity",
-      "Sweet",
-      "Gourmand"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "daily_fresh"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Hangout malam, nonton konser, dan suasana kasual akrab"
-  },
-  {
-    "id": "w-16",
-    "name": "Sarah Jessica Parker",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Velvety Lavender & Soft Apple Martini",
-    "accords": [
-      "Musk",
-      "Powdery",
-      "Woody"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "professional"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Bekerja seharian di kantor, presentasi, dan tampil dewasa rapi"
-  },
-  {
-    "id": "w-17",
-    "name": "Red Vanilla",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Blackcurrant, Iris & Warm Bourbon Vanilla",
-    "accords": [
-      "Vanilla",
-      "Sweet",
-      "Powdery"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "luxury",
-      "new_trending"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Makan malam romantis, acara malam, dan cuaca sejuk"
-  },
-  {
-    "id": "w-18",
-    "name": "Wonderstruck",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Raspberry, Peach & Golden Amber Magic",
-    "accords": [
-      "Fruity",
-      "Sweet",
-      "Vanilla"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "daily_fresh"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Aktivitas kuliah, jalan santai, dan momen spesial sore hari"
-  },
-  {
-    "id": "w-19",
-    "name": "My Way Floral",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Fresh Orange Blossom & Tuberose Bouquet",
-    "accords": [
-      "White Floral",
-      "Citrus",
-      "Fresh"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "professional",
-      "daily_fresh",
-      "new_trending"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Kerja profesional, pertemuan bisnis, dan acara siang hari"
-  },
-  {
-    "id": "w-20",
-    "name": "Paris Floral",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Romantic Rose & Soft Violet Charm",
-    "accords": [
-      "Floral",
-      "Rose",
-      "Powdery"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "professional",
-      "luxury"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Undangan resmi, acara keluarga, dan tampilan feminin anggun"
-  },
-  {
-    "id": "w-21",
-    "name": "Body Shop",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Clean White Musk & Earthy Botanicals",
-    "accords": [
-      "Musky",
-      "Clean",
-      "Floral"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "professional"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Sehabis mandi, kerja harian di ruangan tertutup, dan santai"
-  },
-  {
-    "id": "w-22",
-    "name": "Cake",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Sweet Vanilla Bakery & Butter Frosting",
-    "accords": [
-      "Gourmand",
-      "Vanilla",
-      "Sweet"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "new_trending"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Kencan santai di kafe, hangout sore, dan pencinta aroma manis"
-  },
-  {
-    "id": "w-23",
-    "name": "Rose",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Pure Morning Damask Rose Petals",
-    "accords": [
-      "Rose",
-      "Floral",
-      "Fresh"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "professional"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Kegiatan pagi hari, ibadah, dan suasana formal yang lembut"
-  },
-  {
-    "id": "w-24",
-    "name": "Ice",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Crisp Arctic Citrus & Cooling Breeze",
-    "accords": [
-      "Fresh",
-      "Aquatic",
-      "Citrus"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Cuaca panas terik, olahraga ringan, dan kesegaran sepanjang hari"
-  },
-  {
-    "id": "w-25",
-    "name": "VS Bombshell",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Purple Passion Fruit & Shangri-la Peony",
-    "accords": [
-      "Fruity",
-      "Floral",
-      "Fresh"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "attraction",
-      "viral_hits"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Segala suasana harian, kencan pertama, dan tampil percaya diri"
-  },
-  {
-    "id": "w-26",
-    "name": "VS Bombshell Paradise",
-    "category": "women",
-    "categoryLabel": "Women",
-    "tagline": "Sun-Drenched Grapefruit & Tropical Lily",
-    "accords": [
-      "Tropical",
-      "Citrus",
-      "Floral"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "new_trending"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Aktivitas outdoor siang hari, liburan, dan suasana segar ceria"
-  },
-  {
-    "id": "m-1",
-    "name": "Blue Motion",
+    "id": "df-1",
+    "name": "Blue Emotion",
     "category": "men",
     "categoryLabel": "Men",
-    "tagline": "Dynamic Mint, Lemon & Amber Woods",
+    "tagline": "Segar Jeruk Mandarin, Lavender & Rempah Dingin",
     "accords": [
+      "Citrus",
       "Aromatic",
-      "Fresh",
-      "Woody"
+      "Fresh"
     ],
     "isActive": true,
     "collectionCategories": [
-      "daily_fresh",
-      "professional"
+      "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Kerja harian, mobilitas tinggi, dan kesegaran maskulin rapi"
+    "usageRecommendation": "Aktivitas harian, mobilitas tinggi, olahraga ringan, dan cuaca panas"
   },
   {
-    "id": "m-2",
+    "id": "df-2",
     "name": "Dunhill Blue",
     "category": "men",
     "categoryLabel": "Men",
-    "tagline": "Oceanic Lotus, Bergamot & Ambergris",
+    "tagline": "Kesegaran Laut Biru, Leci, Bergamot & Kayu Apung",
     "accords": [
       "Aquatic",
-      "Citrus",
-      "Fresh"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "professional",
-      "viral_hits"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Kantor, kuliah, aktivitas siang hari, dan aman di segala cuaca"
-  },
-  {
-    "id": "m-3",
-    "name": "Dior Sauvage",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Calabrian Bergamot & Sichuan Pepper",
-    "accords": [
-      "Fresh Spicy",
-      "Amber",
-      "Citrus"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "professional",
-      "attraction",
-      "viral_hits"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Meeting penting, kencan malam hari, dan tampil karismatik"
-  },
-  {
-    "id": "m-4",
-    "name": "Jaguar Blue",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Crisp Mandarin, Lavender & Sandalwood",
-    "accords": [
-      "Citrus",
-      "Woody",
-      "Aromatic"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "professional"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Kerja kantoran, berkendara, dan rutinitas harian yang rapi"
-  },
-  {
-    "id": "m-5",
-    "name": "Paco Rabanne Phantom",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Futuristic Creamy Lavender & Lemon Zest",
-    "accords": [
-      "Vanilla",
-      "Lavender",
-      "Citrus"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "new_trending"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Hangout malam, kencan modern, dan acara sosial anak muda"
-  },
-  {
-    "id": "m-6",
-    "name": "Montblanc Legend",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Classic Bergamot, Pineapple & Oakmoss",
-    "accords": [
-      "Fruity",
-      "Aromatic",
-      "Woody"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "professional",
-      "luxury"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Presentasi bisnis, setelan kemeja rapi, dan acara formal"
-  },
-  {
-    "id": "m-7",
-    "name": "Adidas London",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Sporty Grapefruit, Melon & Vetiver",
-    "accords": [
-      "Sporty",
       "Citrus",
       "Fresh"
     ],
@@ -630,166 +33,34 @@
       "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Olahraga, gym, aktivitas lapangan, dan keseharian aktif"
+    "usageRecommendation": "Kuliah, kerja harian, berkendara siang hari, dan aman di segala cuaca"
   },
   {
-    "id": "m-8",
+    "id": "df-3",
     "name": "Polo Sport",
     "category": "men",
     "categoryLabel": "Men",
-    "tagline": "Invigorating Mint, Seagrass & Ginger",
+    "tagline": "Sensasi Mint Dingin, Rumput Laut Segar & Citrus",
     "accords": [
-      "Aromatic",
+      "Fresh",
       "Green",
-      "Fresh"
+      "Sporty"
     ],
     "isActive": true,
     "collectionCategories": [
       "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Aktivitas outdoor, olahraga pagi, dan cuaca tropis panas"
+    "usageRecommendation": "Olahraga, gym, aktivitas outdoor siang hari, dan kesegaran aktif"
   },
   {
-    "id": "m-9",
-    "name": "Bvlgari Aqva",
+    "id": "df-4",
+    "name": "Bvlgari Aqua",
     "category": "men",
     "categoryLabel": "Men",
-    "tagline": "Deep Ocean Posidonia & Mineral Amber",
+    "tagline": "Aroma Samudra Dalam, Jeruk Petitgrain & Mineral Amber",
     "accords": [
       "Marine",
-      "Citrus",
-      "Aquatic"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "professional"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Kerja seharian, aktivitas luar ruang, dan kesan segar tenang"
-  },
-  {
-    "id": "m-10",
-    "name": "Davidoff Man",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Crisp Wave, Rosemary & Cedarwood",
-    "accords": [
-      "Aquatic",
-      "Aromatic",
-      "Fresh"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "professional"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Ngantor harian, sehabis mandi pagi, dan gaya kasual bersih"
-  },
-  {
-    "id": "m-11",
-    "name": "Davidoff Black",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Mysterious Dark Wood & Spiced Suede",
-    "accords": [
-      "Woody",
-      "Warm Spicy",
-      "Smoky"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "luxury"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Acara malam hari, makan malam formal, dan suasana maskulin hangat"
-  },
-  {
-    "id": "m-12",
-    "name": "Hugo Boss Energy",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Kumquat, Pink Pepper & White Cedar",
-    "accords": [
-      "Citrus",
-      "Fresh Spicy",
-      "Woody"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "professional"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Produktivitas kerja pagi hingga sore dan aktivitas dinamis"
-  },
-  {
-    "id": "m-13",
-    "name": "Hugo Boss Orange",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Crispy Apple, Coriander & Frankincense",
-    "accords": [
-      "Warm Spicy",
-      "Vanilla",
-      "Woody"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "professional",
-      "attraction"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Smart-casual kantor, ngopi sore, dan kencan santai"
-  },
-  {
-    "id": "m-14",
-    "name": "Kenzo Batang",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Earthy Bamboo & Marine Pine Mist",
-    "accords": [
-      "Woody",
-      "Aquatic",
-      "Aromatic"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "professional"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Aktivitas kerja lapangan maupun ruang kantor dengan kesan kalem"
-  },
-  {
-    "id": "m-15",
-    "name": "Kenzo Bali",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Tropical Frangipani & Island Breeze",
-    "accords": [
-      "Tropical",
-      "Floral",
-      "Fresh"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Suasana santai akhir pekan, liburan, dan pemakaian harian rileks"
-  },
-  {
-    "id": "m-16",
-    "name": "Kenzo Daun",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Lush Green Lotus Leaves & Yuzu Water",
-    "accords": [
-      "Green",
       "Aquatic",
       "Citrus"
     ],
@@ -798,73 +69,17 @@
       "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Cuaca siang yang terik, kesegaran alami harian, dan kuliah"
+    "usageRecommendation": "Pemakaian harian pria aktif, cuaca tropis, dan kesan segar tenang"
   },
   {
-    "id": "m-17",
-    "name": "Vera Wang Man",
+    "id": "df-5",
+    "name": "Davidoff Man",
     "category": "men",
     "categoryLabel": "Men",
-    "tagline": "Sophisticated Tobacco Leaf & Nutmeg",
+    "tagline": "Ombak Laut Dingin, Daun Mint, Rosemary & Cendana",
     "accords": [
-      "Tobacco",
-      "Warm Spicy",
-      "Woody"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "luxury",
-      "professional"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Jamuan bisnis malam, jas formal, dan kesan pria matang berwibawa"
-  },
-  {
-    "id": "m-18",
-    "name": "Gucci Rush 1",
-    "category": "men",
-    "categoryLabel": "Men",
-    "tagline": "Electrifying Peach, Coriander & Patchouli",
-    "accords": [
-      "Patchouli",
-      "White Floral",
-      "Spicy"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "attraction",
-      "new_trending"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Pesta malam, kencan intens, dan tampil beda mencuri perhatian"
-  },
-  {
-    "id": "p-1",
-    "name": "Mawar",
-    "category": "powdery",
-    "categoryLabel": "Powdery",
-    "tagline": "Classic Red Rosewater & Gentle Petals",
-    "accords": [
-      "Rose",
-      "Powdery",
-      "Floral"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Keseharian di rumah, ibadah, dan aroma lembut menenangkan"
-  },
-  {
-    "id": "p-2",
-    "name": "Lavender",
-    "category": "powdery",
-    "categoryLabel": "Powdery",
-    "tagline": "Calming French Lavender & Herbal Dew",
-    "accords": [
-      "Lavender",
-      "Herbal",
+      "Aquatic",
+      "Fresh",
       "Aromatic"
     ],
     "isActive": true,
@@ -872,17 +87,35 @@
       "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Waktu istirahat, relaksasi sore, dan aktivitas santai harian"
+    "usageRecommendation": "Sehabis mandi pagi, rutinitas harian bersih, dan gaya kasual rapi"
   },
   {
-    "id": "p-3",
-    "name": "Lux",
-    "category": "powdery",
-    "categoryLabel": "Powdery",
-    "tagline": "Creamy Shower Blossom & Pure Soft Musk",
+    "id": "df-6",
+    "name": "Saff & Co. Loui",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Segar Daun Verbena, Embun Hijau, Peony & Mawar Lembut",
     "accords": [
-      "Soapy",
+      "Fresh",
       "Floral",
+      "Green"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas sehari-hari pagi hingga sore, kuliah, dan nongkrong santai"
+  },
+  {
+    "id": "df-7",
+    "name": "Incanto Shine",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Segar Nanas Manis, Markisa Tropis & Bunga Freesia",
+    "accords": [
+      "Fruity",
+      "Tropical",
       "Fresh"
     ],
     "isActive": true,
@@ -890,90 +123,32 @@
       "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Wangi bersih sehabis mandi sepanjang hari untuk aktivitas kasual"
+    "usageRecommendation": "Kegiatan pagi hingga siang yang ceria, jalan santai, dan kuliah"
   },
   {
-    "id": "p-4",
-    "name": "Downy",
-    "category": "powdery",
-    "categoryLabel": "Powdery",
-    "tagline": "Luxurious Fresh Laundry & Garden Bloom",
+    "id": "df-8",
+    "name": "Aqua Kiss",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Embun Air Hujan Sejuk, Bunga Daisy & Freesia Segar",
     "accords": [
-      "Clean",
+      "Aquatic",
       "Floral",
-      "Fresh"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "professional"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Pakaian kerja rapi, kuliah, dan kesan bersih segar seharian"
-  },
-  {
-    "id": "p-5",
-    "name": "Cuddle",
-    "category": "powdery",
-    "categoryLabel": "Powdery",
-    "tagline": "Warm Cozy Cotton & Sweet Vanilla Cloud",
-    "accords": [
-      "Soft",
-      "Sweet",
-      "Cozy"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "daily_fresh",
-      "attraction",
-      "new_trending"
-    ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Suasana dekat yang nyaman, ruangan ber-AC, dan harian lembut"
-  },
-  {
-    "id": "p-6",
-    "name": "Cusson",
-    "category": "powdery",
-    "categoryLabel": "Powdery",
-    "tagline": "Gentle Chamomile & Clean Baby Freshness",
-    "accords": [
-      "Clean",
-      "Floral",
-      "Powdery"
+      "Clean"
     ],
     "isActive": true,
     "collectionCategories": [
       "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Pemakaian harian ringan yang lembut dan tidak menyengat"
+    "usageRecommendation": "Sehabis mandi, aktivitas harian santai, dan cuaca siang yang terik"
   },
   {
-    "id": "p-7",
-    "name": "Chanel No.5",
-    "category": "powdery",
-    "categoryLabel": "Powdery",
-    "tagline": "Timeless Aldehydes, Ylang-Ylang & Iris",
-    "accords": [
-      "Aldehydic",
-      "Powdery",
-      "Floral"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "luxury",
-      "professional"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Gala dinner, resepsi resmi, dan gaya klasik berkelas tinggi"
-  },
-  {
-    "id": "p-8",
+    "id": "df-9",
     "name": "Zwitsal",
     "category": "powdery",
     "categoryLabel": "Powdery",
-    "tagline": "Soft Soothing Baby Powder & Cananga",
+    "tagline": "Wangi Bedak Bayi Lembut, Bunga Kenanga & Chamomile",
     "accords": [
       "Powdery",
       "Soft",
@@ -981,61 +156,128 @@
     ],
     "isActive": true,
     "collectionCategories": [
-      "daily_fresh",
-      "viral_hits"
+      "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Aktivitas santai harian, setelah mandi, dan wangi bedak lembut"
+    "usageRecommendation": "Santai di rumah, setelah mandi, dan pecinta wangi lembut menenangkan"
   },
   {
-    "id": "u-1",
-    "name": "Black Opium",
-    "category": "unisex",
-    "categoryLabel": "Unisex",
-    "tagline": "Addictive Black Coffee, Vanilla & Cedar",
+    "id": "df-10",
+    "name": "Cuddle",
+    "category": "powdery",
+    "categoryLabel": "Powdery",
+    "tagline": "Kapas Lembut Hangat, Bedak Halus & Sentuhan Vanila Susu",
     "accords": [
-      "Coffee",
-      "Vanilla",
-      "Sweet"
+      "Powdery",
+      "Soft",
+      "Cozy"
     ],
     "isActive": true,
     "collectionCategories": [
-      "attraction",
-      "luxury",
-      "viral_hits"
+      "daily_fresh"
     ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Kencan malam hari, nongkrong di lounge/kafe, dan acara spesial"
+    "pricePerMl": 3000,
+    "usageRecommendation": "Suasana santai harian, ruangan ber-AC, dan kesan bersih nyaman"
   },
   {
-    "id": "u-2",
-    "name": "Baccarat Rouge 540",
-    "category": "unisex",
-    "categoryLabel": "Unisex",
-    "tagline": "Luminous Saffron, Ambergris & Cedarwood",
+    "id": "df-11",
+    "name": "Cussons",
+    "category": "powdery",
+    "categoryLabel": "Powdery",
+    "tagline": "Segar Lembut Khas Bayi, Bunga Halus & Musk Bersih",
     "accords": [
-      "Amber",
-      "Woody",
-      "Warm Spicy"
+      "Powdery",
+      "Clean",
+      "Floral"
     ],
     "isActive": true,
     "collectionCategories": [
-      "luxury",
-      "attraction",
-      "viral_hits"
+      "daily_fresh"
     ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Pesta pernikahan, acara VIP, dan meninggalkan jejak mewah"
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pemakaian harian ringan yang kalem dan tidak menyengat di hidung"
   },
   {
-    "id": "u-3",
-    "name": "Incanto Shine",
+    "id": "df-12",
+    "name": "Lux",
+    "category": "powdery",
+    "categoryLabel": "Powdery",
+    "tagline": "Harum Sabun Bunga Putih Creamy & Kesegaran Sehabis Mandi",
+    "accords": [
+      "Soapy",
+      "Floral",
+      "Clean"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Wangi bersih segar sepanjang hari untuk aktivitas kasual harian"
+  },
+  {
+    "id": "df-13",
+    "name": "Downy",
+    "category": "powdery",
+    "categoryLabel": "Powdery",
+    "tagline": "Harum Pakaian Bersih Segar, Kelopak Mawar & Kapas Manis",
+    "accords": [
+      "Clean",
+      "Fresh",
+      "Floral"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pakaian harian rapi, kuliah, kerja santai, dan segar seharian"
+  },
+  {
+    "id": "df-14",
+    "name": "Lavender",
+    "category": "powdery",
+    "categoryLabel": "Powdery",
+    "tagline": "Bunga Lavender Prancis Menenangkan & Embun Herbal Segar",
+    "accords": [
+      "Lavender",
+      "Herbal",
+      "Calming"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Relaksasi, istirahat nyaman, dan aktivitas harian yang tenang"
+  },
+  {
+    "id": "df-15",
+    "name": "Mawar",
+    "category": "powdery",
+    "categoryLabel": "Powdery",
+    "tagline": "Kelopak Mawar Merah Pagi Hari & Air Mawar Lembut",
+    "accords": [
+      "Rose",
+      "Floral",
+      "Soft"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "daily_fresh"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Keseharian lembut, ibadah, dan pencinta wangi mawar alami"
+  },
+  {
+    "id": "df-16",
+    "name": "Fruity Mangga",
     "category": "unisex",
     "categoryLabel": "Unisex",
-    "tagline": "Juicy Pineapple, Passionfruit & Freesia",
+    "tagline": "Manis Segar Buah Mangga Harum Manis & Sentuhan Tropis",
     "accords": [
+      "Mango",
       "Fruity",
-      "Sweet",
       "Tropical"
     ],
     "isActive": true,
@@ -1043,252 +285,1158 @@
       "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Aktivitas pagi-siang yang aktif, kuliah, dan jalan santai"
+    "usageRecommendation": "Hangout siang hari, suasana ceria bersama teman, dan harian segar"
   },
   {
-    "id": "u-4",
-    "name": "Aqua Kiss",
+    "id": "df-17",
+    "name": "Fruity Leci",
     "category": "unisex",
     "categoryLabel": "Unisex",
-    "tagline": "Cool Waters, Rain-Kissed Daisy & Freesia",
+    "tagline": "Kesegaran Buah Leci Manis Berair & Embun Bunga Mawar",
     "accords": [
-      "Aquatic",
-      "Floral",
+      "Lychee",
+      "Fruity",
       "Fresh"
     ],
     "isActive": true,
     "collectionCategories": [
-      "daily_fresh",
-      "new_trending"
+      "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Kesegaran harian sehabis mandi dan cuaca siang yang hangat"
+    "usageRecommendation": "Aktivitas harian kasual, kuliah, dan penyuka wangi buah segar ringan"
   },
   {
-    "id": "u-5",
-    "name": "Chanel Coco",
+    "id": "df-18",
+    "name": "Fruity Strawberry",
     "category": "unisex",
     "categoryLabel": "Unisex",
-    "tagline": "Opulent Amber, Clove, Orange & Tonka",
+    "tagline": "Buah Stroberi Merah Segar, Berry Manis & Gula Halus",
     "accords": [
-      "Warm Spicy",
-      "Amber",
-      "Citrus"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "professional",
-      "luxury"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Pertemuan eksekutif, busana formal, dan perayaan bergengsi"
-  },
-  {
-    "id": "u-6",
-    "name": "Champagne Glow",
-    "category": "unisex",
-    "categoryLabel": "Unisex",
-    "tagline": "Fizzy Golden Champagne & Sweet Peach Bellini",
-    "accords": [
-      "Sparkling",
+      "Strawberry",
       "Fruity",
       "Sweet"
     ],
     "isActive": true,
     "collectionCategories": [
-      "attraction",
-      "luxury",
-      "new_trending"
+      "daily_fresh"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Pesta perayaan, makan malam spesial, dan tampil glamor ceria"
+    "usageRecommendation": "Jalan santai, kegiatan harian ceria, dan kesan muda menyenangkan"
   },
   {
-    "id": "u-7",
-    "name": "So Sexy",
+    "id": "pr-1",
+    "name": "Jaguar Blue",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Jeruk Mandarin Rapi, Juniper Berry, Lavender & Kayu Cendana",
+    "accords": [
+      "Citrus",
+      "Aromatic",
+      "Woody"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kerja kantoran, berkendara harian, dan tampilan pria rapi profesional"
+  },
+  {
+    "id": "pr-2",
+    "name": "HMNS Alpha",
     "category": "unisex",
     "categoryLabel": "Unisex",
-    "tagline": "Flirty Red Fruits & Velvet Amber Musk",
+    "tagline": "Segar Citrus Grass, Teh Hijau Tenang & Kayu Cedar Fokus",
     "accords": [
-      "Fruity",
+      "Citrus",
+      "Green Tea",
+      "Cedarwood"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Bekerja di kantor, meeting pagi, dan menjaga fokus sepanjang hari"
+  },
+  {
+    "id": "pr-3",
+    "name": "Montblanc Legend",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Bergamot Klasik, Daun Nanas, Lavender & Kayu Oakmoss",
+    "accords": [
+      "Aromatic",
+      "Fresh",
+      "Woody"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Presentasi bisnis, kemeja kerja rapi, dan wibawa profesional"
+  },
+  {
+    "id": "pr-4",
+    "name": "Bvlgari Extreme",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Teh Darjeeling Elegan, Grapefruit Segar, Kapulaga & Cedar",
+    "accords": [
+      "Tea",
+      "Citrus",
+      "Woody"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Ruang kerja ber-AC, rapat eksekutif, dan aktivitas kantor seharian"
+  },
+  {
+    "id": "pr-5",
+    "name": "Hugo Boss Orange",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Apel Merah Segar, Rempah Hangat, Vanila & Kayu Bubinga",
+    "accords": [
+      "Woody",
+      "Warm Spicy",
+      "Crisp Apple"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Gaya smart-casual kantor, bertemu klien, dan diskusi di kafe"
+  },
+  {
+    "id": "pr-6",
+    "name": "Hugo Boss Energy",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Jeruk Kumquat, Lada Merah Muda, Daun Mint & Kayu Putih",
+    "accords": [
+      "Citrus",
+      "Fresh Spicy",
+      "Woody"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Produktivitas kerja tinggi dari pagi hingga sore hari"
+  },
+  {
+    "id": "pr-7",
+    "name": "Vera Man",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Daun Yuzu Segar, Pala Hangat, Kulit Halus & Tembakau Elegan",
+    "accords": [
+      "Woody",
+      "Warm Spicy",
+      "Tobacco"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pria dewasa berwibawa, setelan rapi kantor, dan jamuan bisnis"
+  },
+  {
+    "id": "pr-8",
+    "name": "Silver",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Air Pegunungan Sejuk, Teh Hijau Bersih, Citrus & White Musk",
+    "accords": [
+      "Fresh",
+      "Green Tea",
+      "Musky"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kerja kantoran rapi, ibadah, dan kesan bersih sopan di ruang tertutup"
+  },
+  {
+    "id": "pr-9",
+    "name": "Marbert Man",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Aromatik Klasik Lavender, Madu Hangat, Nilam & Kayu Cendana",
+    "accords": [
+      "Woody",
+      "Aromatic",
+      "Leather"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pertemuan resmi, kerja profesional, dan karakter maskulin matang"
+  },
+  {
+    "id": "pr-10",
+    "name": "Escada Man",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Citrus Bergamot Rapi, Kayu Manis Halus & Amber Maskulin",
+    "accords": [
+      "Citrus",
+      "Warm Spicy",
+      "Woody"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas kerja profesional, acara kantor, dan tampil maskulin elegan"
+  },
+  {
+    "id": "pr-11",
+    "name": "J.Lo",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Teh Earl Grey Tenang, Melati Putih & Musk Lembut Bersih",
+    "accords": [
+      "Tea",
+      "White Floral",
+      "Clean Musk"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Ruang kantor ber-AC, meeting tenang, dan tampil anggun dewasa"
+  },
+  {
+    "id": "pr-12",
+    "name": "Jessica Parker",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Lavender Halus, Anggrek, Apple Martini & White Musk Lembut",
+    "accords": [
       "Musky",
-      "Sensual"
+      "Lavender",
+      "Powdery"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kerja kantoran seharian, presentasi, dan gaya feminin profesional"
+  },
+  {
+    "id": "pr-13",
+    "name": "My Way Floral",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Buket Orange Blossom Segar, Bunga Sedap Malam & Neroli",
+    "accords": [
+      "White Floral",
+      "Citrus",
+      "Fresh"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "professional"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Karier profesional, pertemuan bisnis, dan acara formal siang hari"
+  },
+  {
+    "id": "at-1",
+    "name": "Pink Chiffon",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Buah Pir Merah Manis, Anggrek Vanila & Chiffon Musk Lembut",
+    "accords": [
+      "Sweet",
+      "Vanilla",
+      "Fruity"
     ],
     "isActive": true,
     "collectionCategories": [
       "attraction"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Momen romantis berdua dan acara kencan malam hari"
+    "usageRecommendation": "Kencan romantis, jalan berdua, dan memancarkan pesona feminin manis"
   },
   {
-    "id": "u-8",
-    "name": "Sultan Andara",
+    "id": "at-2",
+    "name": "Gucci Flora Gardenia",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Bunga Gardenia Putih, Pear Blossom & Manis Gula Aren",
+    "accords": [
+      "Floral",
+      "Sweet",
+      "Fruity"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan sore hingga malam, hangout spesial, dan tampil anggun memikat"
+  },
+  {
+    "id": "at-3",
+    "name": "HMNS Orgsm",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Apel Merah Segar, Kelopak Mawar, Peony & Vanila Hangat",
+    "accords": [
+      "Floral",
+      "Vanilla",
+      "Fruity"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Momen kencan spesial, dinner romantis, dan meninggalkan kesan rindu"
+  },
+  {
+    "id": "at-4",
+    "name": "Gucci Rush",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Persik Eksotis, Bunga Gardenia, Mawar Damask & Patchouli",
+    "accords": [
+      "Fruity",
+      "White Floral",
+      "Patchouli"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Acara malam hari, kencan intens, dan tampil berani mencuri perhatian"
+  },
+  {
+    "id": "at-5",
+    "name": "Black Opium",
     "category": "unisex",
     "categoryLabel": "Unisex",
-    "tagline": "Regal Golden Saffron, Amber & Sweet Oud",
+    "tagline": "Kopi Hitam Memikat, Vanila Manis Creamy & Bunga Putih",
     "accords": [
+      "Coffee",
+      "Vanilla",
+      "Sweet"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Kencan malam hari, nongkrong di kafe/lounge, dan udara malam sejuk"
+  },
+  {
+    "id": "at-6",
+    "name": "So Sexy",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Apel Segar, Bergamot & Krim Vanila Kocok yang Menggoda",
+    "accords": [
+      "Sweet",
+      "Fruity",
+      "Creamy"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Momen dekat bersama pasangan dan kencan kasual yang manis"
+  },
+  {
+    "id": "at-7",
+    "name": "Scandalous",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Raspberry Liqueur Manis, Bunga Black Peony & Praline Hangat",
+    "accords": [
+      "Fruity",
+      "Sweet",
+      "Floral"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan malam romantis, hangout spesial, dan aura memikat perhatian"
+  },
+  {
+    "id": "at-8",
+    "name": "YSL Mon Paris",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Stroberi Merah, Raspberry Manis, Bunga Datura & White Musk",
+    "accords": [
+      "Fruity",
+      "Sweet",
+      "Floral"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Makan malam romantis, perayaan berdua, dan tampil feminin menawan"
+  },
+  {
+    "id": "at-9",
+    "name": "Escada Cherry",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Buah Ceri Merah Manis, Marshmallow Lembut & Kayu Cendana",
+    "accords": [
+      "Cherry",
+      "Sweet",
+      "Fruity"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan siang maupun sore hari, jalan santai, dan kesan manis ceria"
+  },
+  {
+    "id": "at-10",
+    "name": "Escada Sexy Gravity",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Stroberi Liar, Raspberry, Jeruk Bali & Kelopak Peony Merah",
+    "accords": [
+      "Fruity",
+      "Tropical",
+      "Floral"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Hangout sore, kencan seru, dan memancarkan daya tarik energik"
+  },
+  {
+    "id": "at-11",
+    "name": "Escada Magnetism",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Buah Berry Merah, Leci, Karamel Manis, Mawar & Vanila",
+    "accords": [
+      "Caramel",
+      "Fruity",
+      "Vanilla"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pertemuan dekat, makan malam hangat, dan daya pikat yang lekat"
+  },
+  {
+    "id": "at-12",
+    "name": "Red Vanilla",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Blackcurrant Hitam, Bunga Iris, Praline & Vanila Hangat",
+    "accords": [
+      "Vanilla",
+      "Sweet",
+      "Powdery"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan malam hari, acara semi-formal, dan suasana hangat intim"
+  },
+  {
+    "id": "at-13",
+    "name": "VS Bombshell",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Markisa Ungu Segar, Bunga Shangri-La Peony & Anggrek Vanila",
+    "accords": [
+      "Fruity",
+      "Floral",
+      "Fresh"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan pertama, tampil percaya diri, dan memikat di segala suasana"
+  },
+  {
+    "id": "at-14",
+    "name": "Zara Gardenia",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Bunga Gardenia Putih, Orange Blossom, Sentuhan Kopi & Vanila",
+    "accords": [
+      "White Floral",
+      "Vanilla",
+      "Coffee"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "attraction"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan malam elegan, hangout di kafe, dan kesan manis dewasa"
+  },
+  {
+    "id": "lx-1",
+    "name": "Baccarat",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Kemewahan Saffron Emas, Kristal Ambergris & Kayu Cedar",
+    "accords": [
+      "Amber",
+      "Woody",
+      "Warm Spicy"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Pesta pernikahan, acara VIP malam hari, dan jejak aroma prestisius"
+  },
+  {
+    "id": "lx-2",
+    "name": "Paco Rabanne",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Jeruk Mandarin Merah, Kayu Manis Hangat, Kulit & Amber Emas",
+    "accords": [
+      "Amber",
       "Warm Spicy",
+      "Leather"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Pesta malam eksklusif, acara spesial, dan karisma mewah berkelas"
+  },
+  {
+    "id": "lx-3",
+    "name": "Davidoff Black",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Kayu Hitam Misterius, Rempah Hangat, Cedar & Smoky Amber",
+    "accords": [
+      "Woody",
+      "Warm Spicy",
+      "Smoky"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Jamuan makan malam formal, jas rapi, dan suasana malam berwibawa"
+  },
+  {
+    "id": "lx-4",
+    "name": "Dalal",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Karamel Madu Emas, Jeruk Manis, Vanila & Kayu Cendana Timur",
+    "accords": [
+      "Caramel",
+      "Vanilla",
+      "Sandalwood"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Silaturahmi besar, Hari Raya, kondangan, dan suasana hangat mewah"
+  },
+  {
+    "id": "lx-5",
+    "name": "Kasturi Kijang",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Musk Kasturi Royal Pekat, Amber Hangat & Kayu Sakral",
+    "accords": [
+      "Musky",
       "Amber",
       "Woody"
     ],
     "isActive": true,
     "collectionCategories": [
-      "luxury",
-      "viral_hits",
-      "new_trending"
+      "luxury"
     ],
     "pricePerMl": 4000,
-    "usageRecommendation": "Acara besar, kondangan VIP, dan tampil eksklusif berwibawa"
+    "usageRecommendation": "Majelis terhormat, ibadah khusyuk, dan acara keagamaan istimewa"
   },
   {
-    "id": "u-9",
-    "name": "Arabian",
+    "id": "lx-6",
+    "name": "Malaikat Subuh",
     "category": "unisex",
     "categoryLabel": "Unisex",
-    "tagline": "Exotic Desert Spices & Frankincense Smoke",
+    "tagline": "Harum Bunga Timur Tengah Anggun, Kayu Halus & White Musk",
     "accords": [
-      "Spicy",
-      "Smoky",
-      "Oriental"
+      "Oriental Floral",
+      "Musky",
+      "Woody"
     ],
     "isActive": true,
     "collectionCategories": [
       "luxury"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Acara keagamaan besar, malam hari, dan silaturahmi resmi"
+    "usageRecommendation": "Ibadah besar, silaturahmi resmi, dan ketenangan berwibawa"
   },
   {
-    "id": "u-10",
-    "name": "Oud Bukhiyah",
+    "id": "lx-7",
+    "name": "Champagne Glow",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Kilau Sparkling Champagne Emas, Belimbing Manis & Peony",
+    "accords": [
+      "Sparkling",
+      "Fruity",
+      "Floral"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pesta perayaan, resepsi pernikahan, dan tampil glamor mempesona"
+  },
+  {
+    "id": "lx-8",
+    "name": "Sultan Andara",
     "category": "unisex",
     "categoryLabel": "Unisex",
-    "tagline": "Deep Agarwood & Traditional Bukhoor Essence",
+    "tagline": "Saffron Ningrat, Amberwood Mewah, Rempah Manis & Oud Halus",
     "accords": [
+      "Amber",
       "Oud",
-      "Woody",
-      "Balsamic"
+      "Warm Spicy"
     ],
     "isActive": true,
     "collectionCategories": [
       "luxury"
     ],
     "pricePerMl": 4000,
-    "usageRecommendation": "Majelis resmi, ibadah Jumat/Hari Raya, dan acara malam mewah"
+    "usageRecommendation": "Acara besar VIP, resepsi mewah, dan memancarkan aura eksklusif"
   },
   {
-    "id": "u-11",
-    "name": "Ameer Al-Oud",
-    "category": "unisex",
-    "categoryLabel": "Unisex",
-    "tagline": "Royal Smoked Oud, Vanilla Sugar & Herbs",
+    "id": "lx-9",
+    "name": "Chanel No.5",
+    "category": "powdery",
+    "categoryLabel": "Powdery",
+    "tagline": "Klasik Aldehida Mewah, Ylang-Ylang, Mawar Mei, Iris & Cendana",
     "accords": [
-      "Oud",
-      "Vanilla",
-      "Warm Spicy"
+      "Aldehydic",
+      "Powdery",
+      "Floral"
     ],
     "isActive": true,
     "collectionCategories": [
-      "luxury",
-      "viral_hits"
+      "luxury"
     ],
     "pricePerMl": 4000,
-    "usageRecommendation": "Acara spesial malam hari, resepsi, dan pencinta oud manis hangat"
+    "usageRecommendation": "Gala dinner, resepsi resmi, dan keanggunan kelas atas tak lekang waktu"
   },
   {
-    "id": "u-12",
-    "name": "Dalal",
+    "id": "lx-10",
+    "name": "Paco Rabanne Olympea",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Salted Vanilla Mewah, Melati Air, Bunga Jahe & Kayu Kasmir",
+    "accords": [
+      "Vanilla",
+      "Salty",
+      "White Floral"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Pesta malam elegan, gaun formal, dan pesona ratu yang berkelas"
+  },
+  {
+    "id": "lx-11",
+    "name": "YSL Libre",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Lavender Prancis, Orange Blossom Maroko & Vanila Madagaskar",
+    "accords": [
+      "Lavender",
+      "Orange Blossom",
+      "Vanilla"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "luxury"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Acara eksklusif, pertemuan eksekutif, dan simbol kemewahan modern"
+  },
+  {
+    "id": "vh-1",
+    "name": "Mykonos Monaco Royal",
     "category": "unisex",
     "categoryLabel": "Unisex",
-    "tagline": "Golden Honeycomb, Caramel & Warm Orange",
+    "tagline": "Kemewahan Pir Hijau Segar, Melon Manis, Kayu Cedar & Karamel Hangat",
+    "accords": [
+      "Melon",
+      "Caramel",
+      "Cedarwood"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Acara spesial, hangout malam, kencan berkelas, dan tampil mewah memikat"
+  },
+  {
+    "id": "vh-2",
+    "name": "Mykonos California",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Kesegaran Jeruk Mandarin, Lemon Pantai, Aquatic Laut & Kayu Apung",
+    "accords": [
+      "Citrus",
+      "Marine",
+      "Fresh"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Cuaca panas siang hari, liburan, hangout santai, dan kesegaran sepanjang hari"
+  },
+  {
+    "id": "vh-3",
+    "name": "Mykonos Utopia",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Buket Bunga Putih, Calabrian Bergamot, Ylang-Ylang, Melati & White Musk",
+    "accords": [
+      "White Floral",
+      "Citrus",
+      "Clean Musk"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas harian elegan, ngantor rapi, jalan sore, dan kesan bersih mewah"
+  },
+  {
+    "id": "vh-4",
+    "name": "Mykonos Penthouse",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Kemewahan Mawar Hitam, Berry Manis, Peony & Amber Hangat",
+    "accords": [
+      "Floral",
+      "Fruity",
+      "Warm Amber"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Acara malam eksklusif, makan malam romantis, dan tampil anggun berkelas"
+  },
+  {
+    "id": "vh-5",
+    "name": "Mykonos Mandalika",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Eksotisme Kelapa Tropis, Nanas Segar, Vanila Lembut & Kayu Cendana",
+    "accords": [
+      "Tropical",
+      "Coconut",
+      "Vanilla"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Liburan tropis, nongkrong sore hingga malam, dan aura santai berkarisma"
+  },
+  {
+    "id": "vh-6",
+    "name": "Mykonos Inception",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Segar Bergamot, Jahe Hangat, Teh Hitam Elegan & Ambroxan Modern",
+    "accords": [
+      "Citrus",
+      "Black Tea",
+      "Ambroxan"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kerja profesional, meeting penting, aktivitas harian mewah, dan segala cuaca"
+  },
+  {
+    "id": "vh-7",
+    "name": "Dior Addict",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Daun Mandarin Segar, Silkwood Blossom, Melati & Bourbon Vanilla",
+    "accords": [
+      "Bourbon Vanilla",
+      "White Floral",
+      "Sweet"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Pesta malam, kencan romantis, dan memancarkan pesona mewah menggoda"
+  },
+  {
+    "id": "vh-8",
+    "name": "Velixir Selene",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Buah Pir Lembut, Bunga Putih Creamy, Hazelnut Manis & Kayu Cendana",
+    "accords": [
+      "Creamy Floral",
+      "Vanilla",
+      "Sandalwood"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan malam hari, kondangan, dan meninggalkan jejak wangi viral memikat"
+  },
+  {
+    "id": "vh-9",
+    "name": "Esc Magnetis",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Buah Berry Merah Pekat, Leci Manis, Karamel Hangat, Mawar & Vanila",
     "accords": [
       "Caramel",
-      "Sweet",
+      "Red Berries",
+      "Vanilla"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Momen kencan spesial, hangout malam, dan daya tarik manis yang lekat"
+  },
+  {
+    "id": "vh-10",
+    "name": "9pm Rebel",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Nanas Segar Berkarisma, Apel Hijau, Kayu Oakmoss, Karamel & Ambroxan",
+    "accords": [
+      "Pineapple",
+      "Woody",
+      "Ambroxan"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Nongkrong malam, acara kasual hingga semi-formal, dan tampil maskulin viral"
+  },
+  {
+    "id": "vh-11",
+    "name": "Prada Paradoxe",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Buah Pir Segar, Neroli Mekar, Amber Hangat, Bourbon Vanilla & White Musk",
+    "accords": [
+      "White Floral",
+      "Amber",
+      "Vanilla"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kencan spesial, kerja eksekutif, acara pesta, dan gaya feminin modern"
+  },
+  {
+    "id": "vh-12",
+    "name": "Her Majesty Kiliann",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Mawar Damaskus Ningrat, Persik Lembut, Biji Ambrette & Kayu Cedar",
+    "accords": [
+      "Rose",
+      "Fruity",
+      "Woody"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Acara formal berkelas, pesta malam, dan memancarkan keanggunan bangsawan"
+  },
+  {
+    "id": "vh-13",
+    "name": "Velixir Icarus",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Jeruk Bergamot Segar, Lavender, Madu Hangat, Kayu Manis & Amberwood",
+    "accords": [
+      "Citrus",
+      "Honey",
+      "Amber"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas malam maupun siang, hangout keren, dan daya tarik karismatik"
+  },
+  {
+    "id": "vh-14",
+    "name": "Seribu Bunga",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Rangkaian Semerbak Taman Bunga Nusantara, Melati, Kenanga & Mawar",
+    "accords": [
+      "Floral Bouquet",
+      "Jasmine",
+      "Rose"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Acara adat, ibadah, silaturahmi keluarga, dan pencinta wangi bunga klasik"
+  },
+  {
+    "id": "vh-15",
+    "name": "Aigner Black",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Jeruk Bergamot, Daun Pinus, Mint, Kulit Maskulin & Tonka Bean",
+    "accords": [
+      "Leather",
+      "Citrus",
+      "Woody"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Kerja profesional, rapat bisnis, acara malam, dan pria tegas berwibawa"
+  },
+  {
+    "id": "vh-16",
+    "name": "Aigner Blue",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Apel Segar, Lemon Mediterania, Lavender, Mawar & Kayu Cedar Bersih",
+    "accords": [
+      "Citrus",
+      "Fresh Spicy",
+      "Woody"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Aktivitas kantor harian, kuliah, dan kesegaran maskulin rapi sepanjang hari"
+  },
+  {
+    "id": "vh-17",
+    "name": "Oud Bukiyah",
+    "category": "unisex",
+    "categoryLabel": "Unisex",
+    "tagline": "Kayu Gaharu Timur Tengah Pekat, Dupa Bukhoor, Mawar & Amber",
+    "accords": [
+      "Oud",
+      "Smoky",
+      "Amber"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "viral_hits"
+    ],
+    "pricePerMl": 3000,
+    "usageRecommendation": "Ibadah Jumat, Hari Raya, majelis resmi, dan acara malam bernuansa agung"
+  },
+  {
+    "id": "vh-18",
+    "name": "Kenzo Daun",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Daun Hijau Segar Embun Pagi, Yuzu Citrus, Teratai Air & White Musk",
+    "accords": [
+      "Green",
+      "Aquatic",
       "Citrus"
     ],
     "isActive": true,
     "collectionCategories": [
-      "daily_fresh",
-      "luxury"
+      "viral_hits"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Silaturahmi keluarga, kegiatan harian rapi, dan suasana hangat"
+    "usageRecommendation": "Cuaca siang terik, aktivitas harian santai, dan kesegaran alami menenangkan"
   },
   {
-    "id": "u-13",
-    "name": "Malaikat Subuh",
-    "category": "unisex",
-    "categoryLabel": "Unisex",
-    "tagline": "Serene Sacred Floral & Heavenly White Musk",
+    "id": "vh-19",
+    "name": "Delina Marly Meliora",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Buah Leci & Berry Merah Segar, Mawar Turki Mewah, Peony & Musk Halus",
     "accords": [
-      "Floral",
-      "Musky",
-      "Spiritual"
+      "Rose",
+      "Red Berries",
+      "Lychee"
     ],
     "isActive": true,
     "collectionCategories": [
-      "daily_fresh",
-      "luxury"
+      "viral_hits"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Ibadah harian, pengajian, dan ketenangan sepanjang hari"
+    "usageRecommendation": "Resepsi pernikahan, kencan romantis berkelas, dan tampil anggun mempesona"
   },
   {
-    "id": "u-14",
-    "name": "Silver",
-    "category": "unisex",
-    "categoryLabel": "Unisex",
-    "tagline": "Crisp Mountain Stream, Green Tea & Citrus",
+    "id": "vh-20",
+    "name": "Zara Man",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Jeruk Lemon Segar, Lada Hitam, Lavender Modern, Praline & Amberwood",
     "accords": [
-      "Aquatic",
-      "Green",
-      "Metallic"
+      "Fresh Spicy",
+      "Aromatic",
+      "Amber"
     ],
     "isActive": true,
     "collectionCategories": [
-      "daily_fresh",
-      "professional"
+      "viral_hits"
     ],
     "pricePerMl": 3000,
-    "usageRecommendation": "Bekerja di kantor, aktivitas siang hari, dan kesan bersih modern"
+    "usageRecommendation": "Gaya kasual modern, ngantor, hangout di mal, dan kencan santai"
   },
   {
-    "id": "u-15",
-    "name": "Kasturi Kijang",
+    "id": "nt-1",
+    "name": "Kirke",
     "category": "unisex",
     "categoryLabel": "Unisex",
-    "tagline": "Authentic Deep Deer Musk & Sacred Earth",
+    "tagline": "Nektar Markisa Eksotis, Persik Manis, Pir, Raspberry & Velvet Musk Pekat",
     "accords": [
-      "Musky",
-      "Earthy",
-      "Animalic"
+      "Passionfruit",
+      "Peach",
+      "Velvet Musk"
     ],
     "isActive": true,
     "collectionCategories": [
-      "luxury"
-    ],
-    "pricePerMl": 4000,
-    "usageRecommendation": "Ibadah khusyuk, acara keagamaan, dan momen sakral istimewa"
-  },
-  {
-    "id": "u-16",
-    "name": "Marbat Man",
-    "category": "unisex",
-    "categoryLabel": "Unisex",
-    "tagline": "Charismatic Leather, Vetiver & Dark Amber",
-    "accords": [
-      "Leather",
-      "Woody",
-      "Warm Spicy"
-    ],
-    "isActive": true,
-    "collectionCategories": [
-      "professional",
-      "luxury",
       "new_trending"
     ],
-    "pricePerMl": 3000,
-    "usageRecommendation": "Pertemuan formal, jamuan malam, dan karakter maskulin tegas"
+    "pricePerMl": 4000,
+    "usageRecommendation": "Acara VIP, pesta malam mewah, dan meninggalkan jejak wangi super tahan lama"
+  },
+  {
+    "id": "nt-2",
+    "name": "Scandalous Premium",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Konsentrasi Ekstra Raspberry Liqueur, Black Peony & Praline Manis Intens",
+    "accords": [
+      "Sweet",
+      "Floral",
+      "Intense Praline"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "new_trending"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Makan malam romantis, pesta eksklusif, dan daya pikat mewah sepanjang malam"
+  },
+  {
+    "id": "nt-3",
+    "name": "Chanel Coco",
+    "category": "women",
+    "categoryLabel": "Women",
+    "tagline": "Jeruk Sisilia Segar, Mawar Prancis, Melati, Patchouli Halus & Vanila Mewah",
+    "accords": [
+      "Citrus",
+      "Rose",
+      "Patchouli"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "new_trending"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Pertemuan eksekutif, resepsi resmi, dan simbol wanita berkelas tinggi"
+  },
+  {
+    "id": "nt-4",
+    "name": "Abercrombie",
+    "category": "men",
+    "categoryLabel": "Men",
+    "tagline": "Petitgrain Segar, Kapulaga, Rosemary, Pohon Cemara & Oakmoss Maskulin",
+    "accords": [
+      "Woody",
+      "Aromatic",
+      "Fresh Spicy"
+    ],
+    "isActive": true,
+    "collectionCategories": [
+      "new_trending"
+    ],
+    "pricePerMl": 4000,
+    "usageRecommendation": "Karisma pria dewasa, acara spesial malam maupun siang, dan tampil eksklusif"
   }
 ]

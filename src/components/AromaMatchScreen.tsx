@@ -233,6 +233,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
   const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
+  const [viewTransitionKey, setViewTransitionKey] = useState<number>(0);
 
   const catalog = perfumes.length > 0 ? perfumes : getStoredPerfumes();
 
@@ -243,6 +244,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     setSelectedOccasion(null);
     setSelectedVibe(null);
     setMatchResult(null);
+    setViewTransitionKey((k) => k + 1);
   };
 
   // Handler Langkah 1
@@ -290,16 +292,16 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-gradient-to-b from-[#181b26] via-[#141620] to-[#10121a] text-slate-100 overflow-hidden sinki-screen-soft-fade">
+    <div className="relative w-full h-full flex flex-col sinki-arch-canvas text-slate-100 overflow-hidden sinki-screen-soft-fade">
       {/* Pendaran Cahaya Halo Emas Lembut di Belakang */}
       <div className="absolute top-0 right-1/4 w-72 h-72 bg-[#C5A059]/[0.05] rounded-full blur-[120px] pointer-events-none" />
 
       {/* TOP HEADER MINIMALIS */}
-      <div className="relative z-10 px-4 pt-3.5 pb-3 shrink-0 bg-[#12141a]/95 border-b border-white/10 backdrop-blur-md flex items-center justify-between gap-2 shadow-sm">
+      <div className="relative z-10 px-4 pt-3.5 pb-3 shrink-0 sinki-arch-header border-b backdrop-blur-md flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <button
             onClick={step === 1 ? onBackToHome : () => setStep((prev) => (prev === 2 ? 1 : 2))}
-            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-200 hover:text-white transition-colors sinki-cushion-press-sm shrink-0"
+            className="w-8 h-8 rounded-[6px] sinki-arch-subbox hover:border-[#E8C782]/60 border flex items-center justify-center text-[#E8C782] hover:text-[#F3E6C8] transition-colors sinki-cushion-press-sm shrink-0"
             title="Kembali"
           >
             <ArrowLeft size={16} />
@@ -319,18 +321,18 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
         {/* Indikator Langkah Ramping (1 / 2 / 3) */}
         {step !== 'calculating' && step !== 'result' && (
-          <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full border border-white/10 shrink-0 font-body">
+          <div className="flex items-center gap-1.5 sinki-arch-subbox px-2.5 py-1 rounded-[6px] border shrink-0 font-body">
             <span className="text-[11px] font-semibold tabular-nums text-[#DFB76C]">
               Langkah {step}
             </span>
-            <span className="text-[10px] text-slate-500">/ 3</span>
+            <span className="text-[10px] text-slate-400">/ 3</span>
           </div>
         )}
 
         {step === 'result' && (
           <button
             onClick={handleReset}
-            className="flex items-center gap-1 py-1 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11.5px] font-semibold text-slate-300 hover:text-white transition-colors sinki-cushion-press-sm shrink-0 font-body"
+            className="flex items-center gap-1 py-1 px-2.5 rounded-[6px] sinki-arch-subbox hover:border-[#E8C782]/60 border text-[11.5px] font-semibold text-slate-200 hover:text-white transition-colors sinki-cushion-press-sm shrink-0 font-body"
             title="Ulangi kuis pencarian aroma"
           >
             <RotateCcw size={12} className="text-[#DFB76C]" />
@@ -345,7 +347,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             LANGKAH 1: PERSONA & KARAKTER DIRI
             ========================================== */}
         {step === 1 && (
-          <div className="space-y-4">
+          <div key={`step-1-${viewTransitionKey}`} className="space-y-4">
             <div className="text-center space-y-1 sinki-heading-anim pb-1">
               <span className="font-body text-[11px] font-semibold tracking-[0.06em] text-[#DFB76C] uppercase block">
                 Langkah 1 dari 3
@@ -361,25 +363,26 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               </p>
             </div>
 
-            {/* 3 Kartu Lapang, Bersih & Lega */}
+            {/* 3 Kartu Lapang, Bersih & Lega (Cascade 0ms / 75ms / 150ms identik Collection) */}
             <div className="space-y-3">
               {PERSONA_OPTIONS.map((item, idx) => {
                 const isSelected = selectedPersona === item.id;
-                const cascadeDelayMs = idx * 60;
+                const cascadeClass =
+                  idx === 0
+                    ? 'sinki-cascade-row-0'
+                    : idx === 1
+                    ? 'sinki-cascade-row-1'
+                    : 'sinki-cascade-row-2';
 
                 return (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => handleSelectPersona(item.id)}
-                    style={{
-                      animation: `sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) ${cascadeDelayMs}ms both`,
-                      willChange: 'transform, opacity, filter',
-                    }}
-                    className={`w-full p-4 rounded-2xl text-left border flex items-center justify-between gap-3.5 transition-all cursor-pointer sinki-cushion-press ${
+                    className={`${cascadeClass} w-full p-4 rounded-[8px] text-left border flex items-center justify-between gap-3.5 transition-all cursor-pointer sinki-cushion-press ${
                       isSelected
-                        ? 'bg-gradient-to-r from-[#C5A059]/20 to-[#9A742F]/15 border-[#DFB76C] shadow-[0_4px_20px_rgba(197,160,89,0.22)]'
-                        : 'bg-[#141724]/90 hover:bg-[#181c2c] border-white/10 hover:border-[#DFB76C]/40 shadow-[0_4px_16px_rgba(0,0,0,0.35)]'
+                        ? 'sinki-arch-card-selected'
+                        : 'sinki-arch-card sinki-arch-card-interactive'
                     }`}
                   >
                     <div className="flex items-center gap-3.5 min-w-0">
@@ -410,7 +413,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             LANGKAH 2: SUASANA & MOMEN PENGGUNAAN
             ========================================== */}
         {step === 2 && (
-          <div className="space-y-4">
+          <div key={`step-2-${viewTransitionKey}`} className="space-y-4">
             <div className="text-center space-y-1 sinki-heading-anim pb-1">
               <span className="font-body text-[11.5px] font-semibold tracking-[0.06em] text-[#DFB76C] uppercase block">
                 Langkah 2 dari 3
@@ -423,25 +426,26 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               </p>
             </div>
 
-            {/* 3 Kartu Lapang, Bersih & Lega */}
+            {/* 3 Kartu Lapang, Bersih & Lega (Cascade 0ms / 75ms / 150ms identik Collection) */}
             <div className="space-y-3">
               {OCCASION_OPTIONS.map((item, idx) => {
                 const isSelected = selectedOccasion === item.id;
-                const cascadeDelayMs = idx * 60;
+                const cascadeClass =
+                  idx === 0
+                    ? 'sinki-cascade-row-0'
+                    : idx === 1
+                    ? 'sinki-cascade-row-1'
+                    : 'sinki-cascade-row-2';
 
                 return (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => handleSelectOccasion(item.id)}
-                    style={{
-                      animation: `sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) ${cascadeDelayMs}ms both`,
-                      willChange: 'transform, opacity, filter',
-                    }}
-                    className={`w-full p-4 rounded-2xl text-left border flex items-center justify-between gap-3.5 transition-all cursor-pointer sinki-cushion-press ${
+                    className={`${cascadeClass} w-full p-4 rounded-[8px] text-left border flex items-center justify-between gap-3.5 transition-all cursor-pointer sinki-cushion-press ${
                       isSelected
-                        ? 'bg-gradient-to-r from-[#C5A059]/20 to-[#9A742F]/15 border-[#DFB76C] shadow-[0_4px_20px_rgba(197,160,89,0.22)]'
-                        : 'bg-[#141724]/90 hover:bg-[#181c2c] border-white/10 hover:border-[#DFB76C]/40 shadow-[0_4px_16px_rgba(0,0,0,0.35)]'
+                        ? 'sinki-arch-card-selected'
+                        : 'sinki-arch-card sinki-arch-card-interactive'
                     }`}
                   >
                     <div className="flex items-center gap-3.5 min-w-0">
@@ -470,7 +474,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             LANGKAH 3: KESAN WANGI UTAMA
             ========================================== */}
         {step === 3 && (
-          <div className="space-y-4">
+          <div key={`step-3-${viewTransitionKey}`} className="space-y-4">
             <div className="text-center space-y-1 sinki-heading-anim pb-1">
               <span className="font-body text-[11.5px] font-semibold tracking-[0.06em] text-[#DFB76C] uppercase block">
                 Langkah 3 dari 3
@@ -483,25 +487,26 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               </p>
             </div>
 
-            {/* 3 Kartu Lapang, Bersih & Lega */}
+            {/* 3 Kartu Lapang, Bersih & Lega (Cascade 0ms / 75ms / 150ms identik Collection) */}
             <div className="space-y-3">
               {SCENT_VIBE_OPTIONS.map((item, idx) => {
                 const isSelected = selectedVibe === item.id;
-                const cascadeDelayMs = idx * 60;
+                const cascadeClass =
+                  idx === 0
+                    ? 'sinki-cascade-row-0'
+                    : idx === 1
+                    ? 'sinki-cascade-row-1'
+                    : 'sinki-cascade-row-2';
 
                 return (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => handleSelectVibe(item.id)}
-                    style={{
-                      animation: `sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) ${cascadeDelayMs}ms both`,
-                      willChange: 'transform, opacity, filter',
-                    }}
-                    className={`w-full p-4 rounded-2xl text-left border flex items-center justify-between gap-3.5 transition-all cursor-pointer sinki-cushion-press ${
+                    className={`${cascadeClass} w-full p-4 rounded-[8px] text-left border flex items-center justify-between gap-3.5 transition-all cursor-pointer sinki-cushion-press ${
                       isSelected
-                        ? 'bg-gradient-to-r from-[#C5A059]/20 to-[#9A742F]/15 border-[#DFB76C] shadow-[0_4px_20px_rgba(197,160,89,0.22)]'
-                        : 'bg-[#141724]/90 hover:bg-[#181c2c] border-white/10 hover:border-[#DFB76C]/40 shadow-[0_4px_16px_rgba(0,0,0,0.35)]'
+                        ? 'sinki-arch-card-selected'
+                        : 'sinki-arch-card sinki-arch-card-interactive'
                     }`}
                   >
                     <div className="flex items-center gap-3.5 min-w-0">
@@ -531,7 +536,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             ========================================== */}
         {step === 'calculating' && (
           <div className="py-16 text-center space-y-4 sinki-heading-anim">
-            <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-[#DFB76C]/25 to-[#C5A059]/10 border border-[#DFB76C]/40 flex items-center justify-center text-[#DFB76C] shadow-[0_0_30px_rgba(223,183,108,0.25)] animate-pulse">
+            <div className="w-16 h-16 mx-auto rounded-[10px] sinki-arch-card border flex items-center justify-center text-[#DFB76C] animate-pulse">
               <Compass size={28} className="animate-spin" style={{ animationDuration: '3.5s' }} />
             </div>
             <div className="space-y-1">
@@ -549,11 +554,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             HASIL JUARA REKOMENDASI TUNGGAL (GRAND REVEAL)
             ========================================== */}
         {step === 'result' && matchResult && (
-          <div className="space-y-3.5 sinki-sheet-elevation pb-6">
+          <div key={`step-result-${viewTransitionKey}`} className="space-y-3.5 pb-6">
             {/* Kartu Megah Rekomendasi Utama (1 Botol Juara, Bersih & Tidak Padat) */}
-            <div className="relative rounded-3xl bg-gradient-to-b from-[#1b1f2e]/98 via-[#141724]/98 to-[#0f111a]/98 border border-[#DFB76C]/40 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.7)] text-center space-y-3">
+            <div className="sinki-cascade-row-0 relative rounded-[10px] sinki-arch-card border p-4 text-center space-y-3">
               {/* Badge Persentase Kecocokan */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C5A059]/20 border border-[#DFB76C]/50 text-[#F0DFB6] font-body text-xs font-semibold shadow-sm">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[6px] bg-[#C5A059]/20 border border-[#DFB76C]/50 text-[#F0DFB6] font-body text-xs font-semibold shadow-sm">
                 <Sparkles size={12} className="text-[#DFB76C]" />
                 <span>{matchResult.matchScore}% Sangat Cocok untuk Karakter Anda</span>
               </div>
@@ -586,12 +591,12 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               </div>
 
               {/* Piramida Notes & Ketahanan */}
-              <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1 text-left font-body text-[11.5px]">
+              <div className="p-2.5 rounded-[8px] sinki-arch-subbox border space-y-1 text-left font-body text-[11.5px]">
                 <div className="flex items-center gap-1.5 text-slate-300">
                   <span className="text-[#DFB76C] font-semibold">Komposisi:</span>
                   <span className="text-white truncate">{matchResult.accords}</span>
                 </div>
-                <div className="pt-1 border-t border-white/10 flex items-center justify-between gap-2 text-[11px]">
+                <div className="pt-1 border-t border-[#D4AF6A]/20 flex items-center justify-between gap-2 text-[11px]">
                   <span className="text-emerald-400 font-medium flex items-center gap-1">
                     <Clock size={11} /> {matchResult.longevity}
                   </span>
@@ -605,7 +610,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               <button
                 type="button"
                 onClick={handleOrderResult}
-                className="w-full py-3 px-4 rounded-xl champagne-gold-btn text-slate-950 font-body text-sm font-bold tracking-[0.01em] flex items-center justify-center gap-2 shadow-[0_6px_22px_rgba(197,160,89,0.32)] hover:brightness-105 sinki-cushion-press cursor-pointer"
+                className="w-full py-3 px-4 rounded-[8px] champagne-gold-btn text-slate-950 font-body text-sm font-bold tracking-[0.01em] flex items-center justify-center gap-2 shadow-[0_6px_22px_rgba(197,160,89,0.32)] hover:brightness-105 sinki-cushion-press cursor-pointer"
               >
                 <ShoppingBag size={16} />
                 <span>Ambil Aroma Ini Sekarang</span>

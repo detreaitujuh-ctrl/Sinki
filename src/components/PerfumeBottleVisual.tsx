@@ -34,7 +34,7 @@ export const PerfumeBottleVisual: React.FC<PerfumeBottleVisualProps> = ({
       {showCustom ? (
         // Custom Uploaded Bottle Photo with Instant Eager Render & Glassmorphism Showcase Box
         <div
-          className={`relative w-full h-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#1c1f32]/90 to-[#131522]/95 border border-amber-500/40 shadow-[0_10px_28px_rgba(0,0,0,0.65)] backdrop-blur-md flex items-center justify-center transition-colors ${
+          className={`relative w-full h-full rounded-[8px] overflow-hidden sinki-arch-card border backdrop-blur-md flex items-center justify-center transition-colors ${
             fitMode === 'cover' ? 'p-0' : 'p-2'
           }`}
         >
@@ -87,14 +87,14 @@ export const PerfumeBottleVisual: React.FC<PerfumeBottleVisualProps> = ({
               />
 
               {/* Bottle Emblem & Label */}
-              <div className="relative z-10 w-full mt-auto mb-auto bg-[#0b0d13]/85 border border-amber-400/40 rounded-xl p-1.5 text-center shadow-lg">
-                <span className="font-heading text-[8px] tracking-[0.16em] text-amber-300 font-bold block leading-none">
+              <div className="relative z-10 w-full mt-auto mb-auto bg-[#0b0b0f]/90 border border-[#D4AF6A]/45 rounded-[6px] p-1.5 text-center shadow-lg">
+                <span className="font-heading text-[8px] tracking-[0.16em] text-[#E8C782] font-bold block leading-none">
                   SINKI
                 </span>
                 <span className="font-heading text-[10px] font-semibold text-white leading-tight block truncate mt-0.5">
                   {item.name}
                 </span>
-                <span className="font-body text-[8px] text-amber-200/80 font-normal block mt-0.5 leading-none truncate">
+                <span className="font-body text-[8px] text-[#F3E6C8]/80 font-normal block mt-0.5 leading-none truncate">
                   {item.type}
                 </span>
               </div>
