@@ -13,9 +13,13 @@ import {
   CheckCircle2,
   MessageSquare,
   ArrowRight,
+  ChevronRight,
 } from 'lucide-react';
 import { Top11Item } from '../data/top11';
 import { QrisPaymentCard } from './QrisPaymentCard';
+import { PerfumeDetailModal } from './PerfumeDetailModal';
+import { PerfumeItem } from '../data/perfumes';
+import { getStoredPerfumes, fetchPerfumesFromServer } from '../utils/perfumeStorage';
 import {
   PricingConfig,
   getStoredPricing,
@@ -41,6 +45,7 @@ interface OrderScreenProps {
   topPerfumes?: Top11Item[];
   cartItems?: CartItem[];
   selectedPerfumeFromCollection?: { name: string; category?: string; pricePerMl?: number } | null;
+  onClearSelectedPerfume?: () => void;
 }
 
 export const BOTTLE_SIZES = [10, 15, 20, 30, 50, 100] as const;
@@ -56,6 +61,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
   customQris,
   cartItems: cartItemsProp,
   selectedPerfumeFromCollection,
+  onClearSelectedPerfume,
 }) => {
   // Persistent Shopping Cart State
   const [cartItems, setCartItems] = useState<CartItem[]>(() =>
@@ -63,6 +69,16 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
   );
   const [confirmClearCart, setConfirmClearCart] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'whatsapp' | 'qris'>('whatsapp');
+  const [selectedPerfumeForDetail, setSelectedPerfumeForDetail] = useState<PerfumeItem | null>(null);
+  const [catalogPerfumes, setCatalogPerfumes] = useState<PerfumeItem[]>(() => getStoredPerfumes());
+
+  useEffect(() => {
+    fetchPerfumesFromServer().then((list) => {
+      if (list && Array.isArray(list) && list.length > 0) {
+        setCatalogPerfumes(list);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (cartItemsProp) {
@@ -100,6 +116,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
         setCartItems(updated);
         onShowToast(`"${perfName} (30 ml)" ditambahkan ke tas belanja`);
       }
+      onClearSelectedPerfume?.();
     }
   }, [selectedPerfumeFromCollection]);
 
@@ -283,12 +300,16 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                 )}
               </div>
 
-              {/* Items List */}
+              {/* Items List dengan Transisi Fluid & Cushion Press */}
               <div className="space-y-2">
-                {cartItems.map((item) => (
+                {cartItems.map((item, idx) => (
                   <div
                     key={item.id}
-                    className="p-3 rounded-2xl bg-[#141626] border border-white/10 flex items-center justify-between gap-2.5 hover:border-white/20 transition-colors"
+                    style={{
+                      animation: `sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) ${Math.min(idx * 60, 300)}ms both`,
+                      willChange: 'transform, opacity, filter',
+                    }}
+                    className="p-3 rounded-2xl bg-[#141626] border border-white/10 flex items-center justify-between gap-2.5 hover:border-white/20 transition-all sinki-cushion-press"
                   >
                     <div className="min-w-0 flex-1">
                       <h4 className="font-heading text-[13.5px] sm:text-sm font-semibold text-white tracking-[-0.015em] leading-[1.25] truncate">
@@ -311,7 +332,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setCartItems(updateCartItemQuantity(item.id, -1))}
-                          className="w-6.5 h-6.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-body text-xs font-semibold flex items-center justify-center active:scale-90"
+                          className="w-6.5 h-6.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-body text-xs font-semibold flex items-center justify-center sinki-cushion-press-sm"
                           title="Kurangi jumlah"
                         >
                           -
@@ -322,7 +343,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setCartItems(updateCartItemQuantity(item.id, 1))}
-                          className="w-6.5 h-6.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-body text-xs font-semibold flex items-center justify-center active:scale-90"
+                          className="w-6.5 h-6.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-body text-xs font-semibold flex items-center justify-center sinki-cushion-press-sm"
                           title="Tambah jumlah"
                         >
                           +
@@ -336,7 +357,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                           setCartItems(removeFromCart(item.id));
                           onShowToast(`${item.name} (${item.size} ml) dihapus`);
                         }}
-                        className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/20 border border-white/10 text-slate-300 hover:text-rose-300 transition-colors active:scale-95"
+                        className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/20 border border-white/10 text-slate-300 hover:text-rose-300 transition-colors sinki-cushion-press-sm"
                         title="Hapus item"
                       >
                         <Trash2 size={13} />
@@ -346,16 +367,18 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                 ))}
               </div>
 
-              {/* Button: Tambah Aroma Lain dari Koleksi */}
+              {/* Button: Tambah Aroma Lain dari Koleksi SINKI */}
               {onNavigateToCollection && (
-                <button
-                  type="button"
-                  onClick={onNavigateToCollection}
-                  className="w-full py-2.5 px-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/15 text-[#DFB76C] font-body text-xs sm:text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-98"
-                >
-                  <Plus size={14} className="text-[#DFB76C]" />
-                  <span>Tambah Aroma Lain dari 6 Koleksi SINKI</span>
-                </button>
+                <div className="pt-2 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={onNavigateToCollection}
+                    className="w-full py-2.5 px-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/15 text-[#DFB76C] hover:text-[#F3E6C8] font-body text-xs sm:text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-98 sinki-cushion-press-sm"
+                  >
+                    <Plus size={14} className="text-[#DFB76C]" />
+                    <span>Tambah Aroma Lain dari 6 Koleksi SINKI</span>
+                  </button>
+                </div>
               )}
             </div>
 
@@ -580,6 +603,14 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
           </div>
         )}
       </div>
+
+      {/* REUSABLE PERFUME DETAIL SHEET (100% Identik di Collection, Order & Review) */}
+      <PerfumeDetailModal
+        perfume={selectedPerfumeForDetail}
+        onClose={() => setSelectedPerfumeForDetail(null)}
+        onShowToast={onShowToast}
+        onCartUpdated={() => setCartItems(getStoredCart())}
+      />
     </div>
   );
 };

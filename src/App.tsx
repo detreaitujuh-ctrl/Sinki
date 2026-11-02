@@ -393,6 +393,7 @@ export default function App() {
               customQris={customQris}
               cartItems={cartItems}
               selectedPerfumeFromCollection={selectedPerfumeForOrder}
+              onClearSelectedPerfume={() => setSelectedPerfumeForOrder(null)}
             />
           </div>
 

@@ -667,7 +667,7 @@
 }
 
 .sinki-sheet-elevation {
-  animation: sinkiSheetElevation 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: sinkiSheetElevation 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity;
 }
 

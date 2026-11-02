@@ -24,6 +24,7 @@ import {
   addToCart,
 } from '../utils/cartStorage';
 import { ReviewItem, getCachedReviews, fetchReviewsFromSupabase } from '../utils/reviewStorage';
+import { PerfumeDetailModal } from './PerfumeDetailModal';
 
 interface CollectionScreenProps {
   onBackToHome: () => void;
@@ -260,13 +261,31 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
   });
 
   useEffect(() => {
-    fetchReviewsFromSupabase()
-      .then((list) => {
-        if (Array.isArray(list) && list.length > 0) {
-          setCollectionReviews(list);
-        }
-      })
-      .catch(() => {});
+    const sync = () => {
+      fetchReviewsFromSupabase()
+        .then((list) => {
+          if (Array.isArray(list) && list.length > 0) {
+            setCollectionReviews(list);
+          }
+        })
+        .catch(() => {});
+    };
+
+    sync();
+
+    const handleReviewsUpdated = (e: any) => {
+      if (e.detail && Array.isArray(e.detail) && e.detail.length > 0) {
+        setCollectionReviews(e.detail);
+      }
+    };
+
+    window.addEventListener('sinki_reviews_updated', handleReviewsUpdated);
+    window.addEventListener('focus', sync);
+
+    return () => {
+      window.removeEventListener('sinki_reviews_updated', handleReviewsUpdated);
+      window.removeEventListener('focus', sync);
+    };
   }, []);
 
   const [catalogPerfumes, setCatalogPerfumes] = useState<PerfumeItem[]>(() =>
@@ -389,6 +408,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
 
   const handleSelectCategory = (catId: CollectionCategoryKey) => {
     setSelectedCategory(catId);
+    setViewTransitionKey((prev) => prev + 1);
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -596,30 +616,33 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
               })}
             </div>
 
-            {/* OPSI A: 1 BARIS KAPSUL ULASAN TERPADU DENGAN BADGE KE MENU REVIEW */}
-            <div className="mt-3.5 p-2 sm:p-2.5 rounded-2xl bg-gradient-to-r from-[#171926]/95 via-[#131520]/95 to-[#0f111a]/95 border border-[#DFB76C]/30 shadow-lg shadow-black/40 flex items-center justify-between gap-2.5 backdrop-blur-md">
-              {/* Sisi Kiri: Bintang Emas + Ticker Ulasan Berjalan */}
+            {/* SECTION ULASAN TESTIMONI: TEKS BERJALAN 100% LEBAR + TAUTAN TEKS RATA KANAN (TANPA KOTAK) */}
+            <div className="mt-6 sm:mt-7">
+              {/* Baris 1: Teks Berjalan Ulasan (Full-Width, Sangat Ramping & Halus) */}
               <div
                 onClick={onNavigateToReview}
-                className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer overflow-hidden luxury-ticker-container relative"
-                title="Buka menu ulasan lengkap"
+                className="luxury-ticker-container relative w-full py-1.5 px-2.5 rounded-xl bg-gradient-to-r from-[#171926]/90 via-[#131520]/90 to-[#0f111a]/90 border border-white/8 hover:border-[#DFB76C]/30 shadow-md shadow-black/30 flex items-center gap-2 cursor-pointer overflow-hidden group transition-all"
+                title="Ketuk untuk melihat ulasan pembeli"
               >
-                {/* Fixed Star Icon */}
-                <div className="w-6 h-6 rounded-lg bg-[#DFB76C]/15 border border-[#DFB76C]/30 flex items-center justify-center text-[#DFB76C] shrink-0 shadow-inner">
-                  <Star size={12} className="fill-[#DFB76C] text-[#DFB76C]" />
+                {/* Micro Gold Star Icon */}
+                <div className="w-5 h-5 rounded-md bg-[#DFB76C]/15 border border-[#DFB76C]/25 flex items-center justify-center text-[#DFB76C] shrink-0">
+                  <Star size={11} className="fill-[#DFB76C] text-[#DFB76C]" />
                 </div>
 
-                {/* Left & Right Fade Edges for Smooth Luxury Blend */}
-                <div className="relative overflow-hidden flex-1 mask-fade-edges">
-                  <div className="luxury-ticker-track text-xs text-slate-200 font-body">
+                {/* Full Width Marquee Track */}
+                <div className="relative overflow-hidden flex-1 ticker-mask-fade">
+                  <div className="luxury-ticker-track font-body text-[11px] text-slate-200 leading-tight">
                     {/* Track 1 */}
                     <div className="flex items-center gap-4 pr-4">
                       {collectionReviews.map((r, i) => (
                         <span key={`rev-a-${i}`} className="inline-flex items-center gap-1.5 whitespace-nowrap">
                           <span className="text-[#DFB76C] font-semibold">{r.emoji || '★'}</span>
                           <span className="text-zinc-200 font-normal">"{r.comment}"</span>
-                          <span className="text-slate-400 font-medium">— {r.name}</span>
-                          <span className="text-[#DFB76C]/70 text-[10.5px]">({r.variant})</span>
+                          <span className="inline-flex items-center gap-1 text-amber-200 font-bold bg-[#DFB76C]/15 border border-[#DFB76C]/30 px-1.5 py-0.5 rounded-md text-[10.5px] tracking-wide shadow-xs">
+                            <span className="text-[#DFB76C] text-[10px]">👤</span>
+                            <span>{r.name}</span>
+                          </span>
+                          <span className="text-[#DFB76C]/80 text-[10px] font-medium">({r.variant})</span>
                           <span className="text-slate-600 px-1">•</span>
                         </span>
                       ))}
@@ -630,8 +653,11 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                         <span key={`rev-b-${i}`} className="inline-flex items-center gap-1.5 whitespace-nowrap">
                           <span className="text-[#DFB76C] font-semibold">{r.emoji || '★'}</span>
                           <span className="text-zinc-200 font-normal">"{r.comment}"</span>
-                          <span className="text-slate-400 font-medium">— {r.name}</span>
-                          <span className="text-[#DFB76C]/70 text-[10.5px]">({r.variant})</span>
+                          <span className="inline-flex items-center gap-1 text-amber-200 font-bold bg-[#DFB76C]/15 border border-[#DFB76C]/30 px-1.5 py-0.5 rounded-md text-[10.5px] tracking-wide shadow-xs">
+                            <span className="text-[#DFB76C] text-[10px]">👤</span>
+                            <span>{r.name}</span>
+                          </span>
+                          <span className="text-[#DFB76C]/80 text-[10px] font-medium">({r.variant})</span>
                           <span className="text-slate-600 px-1">•</span>
                         </span>
                       ))}
@@ -640,17 +666,19 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                 </div>
               </div>
 
-              {/* Sisi Kanan: Badge Tombol "Semua Ulasan" */}
+              {/* Baris 2: Teks Navigasi Murni Rata Kanan (Tanpa Kotak) */}
               {onNavigateToReview && (
-                <button
-                  type="button"
-                  onClick={onNavigateToReview}
-                  className="shrink-0 py-1.5 px-2.5 rounded-xl bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:scale-95 text-slate-950 font-body text-[11px] font-bold flex items-center gap-1 shadow-md transition-all cursor-pointer whitespace-nowrap border border-[#DFB76C]/40"
-                  title="Lihat semua testimoni pembeli"
-                >
-                  <span>Semua Ulasan</span>
-                  <ArrowRight size={11} className="stroke-[2.5]" />
-                </button>
+                <div className="flex justify-end mt-1.5 px-0.5">
+                  <button
+                    type="button"
+                    onClick={onNavigateToReview}
+                    className="font-body text-[11px] text-[#DFB76C] hover:text-amber-200 active:opacity-70 transition-colors flex items-center gap-1 cursor-pointer select-none group"
+                    title="Buka menu ulasan pembeli lengkap"
+                  >
+                    <span className="group-hover:underline underline-offset-2">Semua ulasan pembeli</span>
+                    <ArrowRight size={11} className="stroke-[2.2] group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -658,10 +686,19 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
 
         {/* VIEW B: COMPACT VARIANT LIST (Original SINKI Colors, No Price on Card, No Gender/EDP Label) */}
         {(selectedCategory || isSearching) && (
-          <div className="pt-2.5 space-y-2">
+          <div
+            key={`variants-view-${selectedCategory || 'search'}-${viewTransitionKey}`}
+            className="pt-2.5 space-y-2 sinki-screen-soft-fade"
+          >
             {/* Category Contextual Subheader */}
             {selectedCategory && activeCategoryMeta && !isSearching && (
-              <div className="pb-2 mb-1 border-b border-white/10 flex items-center justify-between gap-2.5 sinki-heading-anim">
+              <div
+                style={{
+                  animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both',
+                  willChange: 'transform, opacity, filter',
+                }}
+                className="pb-2 mb-1 border-b border-white/10 flex items-center justify-between gap-2.5"
+              >
                 <div className="flex items-center gap-2 min-w-0">
                   <Category3DIcon id={activeCategoryMeta.id} sizeClass="w-5 h-5" />
                   <div className="min-w-0">
@@ -677,7 +714,13 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
             )}
 
             {isSearching && !selectedCategory && (
-              <div className="pb-1.5 flex items-center justify-between gap-2 sinki-heading-anim">
+              <div
+                style={{
+                  animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both',
+                  willChange: 'transform, opacity, filter',
+                }}
+                className="pb-1.5 flex items-center justify-between gap-2"
+              >
                 <p className="font-body text-xs text-slate-300 font-normal min-w-0 truncate">
                   Hasil pencarian{' '}
                   <span className="text-white font-semibold">"{searchQuery}"</span>
@@ -689,7 +732,13 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
             )}
 
             {displayedPerfumes.length === 0 ? (
-              <div className="py-9 px-4 text-center border border-white/10 rounded-xl bg-[#131620]">
+              <div
+                style={{
+                  animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both',
+                  willChange: 'transform, opacity, filter',
+                }}
+                className="py-9 px-4 text-center border border-white/10 rounded-xl bg-[#131620]"
+              >
                 <p className="font-heading text-[15px] font-semibold text-white leading-[1.25]">
                   Belum ada varian pada pencarian atau kategori ini
                 </p>
@@ -715,8 +764,8 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                       ? perfume.accords.slice(0, 3).join(' · ')
                       : '');
                   const usageText = (perfume.usageRecommendation || '').trim();
-                  // Staggered cadence formula identik dengan 6 kategori (60ms cadence, capped at 300ms)
-                  const cascadeDelayMs = Math.min(idx * 60, 300);
+                  // Staggered cadence formula identik dengan 6 kategori (75ms cadence per baris, capped 450ms)
+                  const cascadeDelayMs = Math.min(idx * 75, 450);
 
                   return (
                     <div
@@ -725,8 +774,10 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                       style={{
                         animation: `sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) ${cascadeDelayMs}ms both`,
                         willChange: 'transform, opacity, filter',
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
                       }}
-                      className="group p-2.5 sm:p-3 rounded-lg bg-[#141722] hover:bg-[#181c29] border border-white/10 hover:border-[#C5A059]/45 shadow-[0_4px_14px_rgba(0,0,0,0.35)] cursor-pointer sinki-cushion-press"
+                      className="group p-2.5 sm:p-3 rounded-lg bg-[#141722] hover:bg-[#181c29] border border-white/10 hover:border-[#C5A059]/45 shadow-[0_4px_14px_rgba(0,0,0,0.35)] cursor-pointer transition-all duration-200 active:scale-[0.97]"
                     >
                       {/* Compact Header Row: Clear Perfume Name + Favorite Button */}
                       <div className="flex items-start justify-between gap-2">
@@ -740,7 +791,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                             e.stopPropagation();
                             toggleFavorite(perfume.id, perfume.name);
                           }}
-                          className="p-1 -mr-1 -mt-0.5 rounded-md text-slate-400 hover:text-rose-400 transition-colors shrink-0 sinki-cushion-press-sm"
+                          className="p-1 -mr-1 -mt-0.5 rounded-md text-slate-400 hover:text-rose-400 transition-colors shrink-0 active:scale-90"
                           title="Simpan ke favorit"
                         >
                           <Heart
@@ -780,7 +831,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                             e.stopPropagation();
                             handleOpenDetail(perfume);
                           }}
-                          className="font-body py-1.5 px-2.5 rounded-md bg-white/[0.05] hover:bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#E2C27F] hover:text-[#F3E6C8] text-[11.5px] font-semibold leading-none flex items-center gap-1 shrink-0 sinki-cushion-press-sm"
+                          className="font-body py-1.5 px-2.5 rounded-md bg-white/[0.05] hover:bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#E2C27F] hover:text-[#F3E6C8] text-[11.5px] font-semibold leading-none flex items-center gap-1 shrink-0 transition-all duration-200 active:scale-[0.95]"
                         >
                           <span>Ambil Aroma Ini</span>
                           <ChevronRight size={12} className="text-[#DFB76C]" />
@@ -795,202 +846,15 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
         )}
       </div>
 
-      {/* PERFUME DETAIL SHEET (Positioned Cleanly Above BottomNavBar with Sticky Bottom Action Bar — Opsi A) */}
-      {detailPerfume && (
-        <div
-          className="fixed inset-0 z-40 bg-black/75 backdrop-blur-xs flex items-end justify-center px-0 sm:px-3 pt-3 pb-[calc(80px+env(safe-area-inset-bottom,0px))] sinki-backdrop-in"
-          onClick={handleCloseDetail}
-        >
-          <div
-            className="w-full max-w-md max-h-[calc(100dvh-96px)] md:max-h-[calc(92dvh-96px)] bg-[#121520] border-t border-b sm:border border-white/15 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden sinki-sheet-elevation"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* ZONE 1: Fixed Top Header */}
-            <div className="shrink-0 flex items-start justify-between gap-3 px-4 pt-3 pb-2.5 border-b border-white/10 bg-[#121520]">
-              <div className="min-w-0 flex-1">
-                <span className="font-body text-[11px] font-medium tracking-[0.03em] text-[#DFB76C] block mb-0.5 leading-tight">
-                  SINKI Signature Detail
-                </span>
-                <h3 className="font-heading text-base sm:text-[17px] font-bold text-white tracking-[-0.015em] leading-[1.22] break-words">
-                  {detailPerfume.name}
-                </h3>
-              </div>
-
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => toggleFavorite(detailPerfume.id, detailPerfume.name)}
-                  className="w-8 h-8 rounded-md bg-white/[0.05] hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 hover:text-rose-400 transition-colors"
-                  title="Simpan ke favorit"
-                >
-                  <Heart
-                    size={15}
-                    className={
-                      favorites.includes(detailPerfume.id) ? 'fill-rose-500 text-rose-500' : ''
-                    }
-                  />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCloseDetail}
-                  className="w-8 h-8 rounded-md bg-white/[0.05] hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
-                  title="Tutup detail"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-
-            {/* ZONE 2: Scrollable Content Area (Safe Bottom Spacing so Size Buttons & Info Are Never Covered) */}
-            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-3 pb-3.5 space-y-2">
-              {/* Fragrance Profile (Karakter Aroma, Rekomendasi Penggunaan, Komposisi Notes) */}
-              <div className="space-y-2 font-body">
-                <div className="p-2.5 rounded-lg bg-[#0e1018] border border-white/[0.07] space-y-0.5">
-                  <span className="text-[11px] font-medium text-[#DFB76C] block leading-tight">
-                    Karakter Aroma
-                  </span>
-                  <p className="text-[13px] text-slate-100 font-normal leading-[1.48]">
-                    {detailPerfume.tagline || '-'}
-                  </p>
-                </div>
-
-                {detailPerfume.usageRecommendation &&
-                  detailPerfume.usageRecommendation.trim() !== '' && (
-                    <div className="p-2.5 rounded-lg bg-[#0e1018] border border-white/[0.07] space-y-0.5">
-                      <span className="text-[11px] font-medium text-[#DFB76C] block leading-tight">
-                        Rekomendasi Penggunaan
-                      </span>
-                      <p className="text-[13px] text-slate-200 font-normal leading-[1.48]">
-                        {detailPerfume.usageRecommendation}
-                      </p>
-                    </div>
-                  )}
-
-                {detailPerfume.accords && detailPerfume.accords.length > 0 && (
-                  <div className="p-2.5 rounded-lg bg-[#0e1018] border border-white/[0.07] space-y-1.5">
-                    <span className="text-[11px] font-medium text-[#DFB76C] block leading-tight">
-                      Komposisi Notes
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {detailPerfume.accords.map((note, idx) => (
-                        <span
-                          key={`${note}-${idx}`}
-                          className="font-body px-2 py-0.5 rounded bg-[#151824] border border-white/10 text-[11.5px] font-normal text-slate-200 leading-tight"
-                        >
-                          {note}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Bottle Size Selector (10 ml, 20 ml, 30 ml, 50 ml, 100 ml) */}
-              <div className="pt-0.5 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-body text-xs font-semibold text-[#DFB76C] leading-tight">
-                    Pilih Ukuran Botol
-                  </span>
-                  {selectedBottleSize ? (
-                    <span className="font-body text-[11px] font-medium tabular-nums text-[#F3E6C8] flex items-center gap-1 leading-tight">
-                      <Check size={12} className="text-[#DFB76C]" /> {selectedBottleSize} ml dipilih
-                    </span>
-                  ) : (
-                    <span className="font-body text-[11px] text-slate-400 font-normal leading-tight">Ketuk ukuran di bawah</span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-5 gap-1.5">
-                  {COLLECTION_BOTTLE_SIZES.map((size) => {
-                    const isSelected = selectedBottleSize === size;
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => setSelectedBottleSize(size)}
-                        className={`font-body py-2 px-1 rounded-md border text-center tabular-nums whitespace-nowrap sinki-cushion-press-sm ${
-                          isSelected
-                            ? 'bg-[#C5A059]/20 border-[#DFB76C] text-white font-semibold shadow-[0_2px_12px_rgba(197,160,89,0.2)]'
-                            : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/12 hover:border-white/25 font-medium'
-                        }`}
-                      >
-                        <span className="text-xs block leading-none font-medium">{size} ml</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* ZONE 3: Sticky Bottom Action Bar — Opsi A (Always Visible Above BottomNavBar Without Scrolling) */}
-            <div className="shrink-0 bg-[#0e1018]/98 border-t border-white/12 px-4 pt-2.5 pb-3 shadow-[0_-10px_28px_rgba(0,0,0,0.65)] space-y-2">
-              {/* Row 1: Live Price & Quantity Stepper (When Selected) OR Short Size Prompt (Before Selection) */}
-              {selectedBottleSize && selectedUnitPrice && selectedTotalPrice ? (
-                <div className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-lg bg-[#171b29] border border-[#C5A059]/35">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 font-body text-[11px] font-medium text-slate-300 tabular-nums leading-tight">
-                      <span>Ukuran {selectedBottleSize} ml</span>
-                      {bottleQty > 1 && (
-                        <span className="text-slate-400 font-normal">
-                          · Rp{selectedUnitPrice.toLocaleString('id-ID')}/btl
-                        </span>
-                      )}
-                    </div>
-                    <span className="font-body text-[17px] sm:text-lg font-bold tabular-nums text-[#F3E6C8] leading-tight block mt-0.5">
-                      Rp{selectedTotalPrice.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-
-                  {/* Quantity Stepper (Original SINKI Dark Navy Stepper) */}
-                  <div className="flex items-center gap-2 bg-[#121422] px-2 py-1 rounded-md border border-white/15 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setBottleQty((prev) => Math.max(1, prev - 1))}
-                      aria-label="Kurangi jumlah botol"
-                      className="font-body w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center sinki-cushion-press-sm"
-                    >
-                      -
-                    </button>
-                    <span className="font-body text-xs sm:text-[13px] font-semibold text-white min-w-5 text-center tabular-nums">
-                      {bottleQty}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setBottleQty((prev) => prev + 1)}
-                      aria-label="Tambah jumlah botol"
-                      className="font-body w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center sinki-cushion-press-sm"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="py-1.5 px-3 rounded-md bg-[#141724] border border-dashed border-[#C5A059]/30 flex items-center justify-center gap-1.5 text-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#DFB76C] shrink-0" />
-                  <p className="font-body text-[11.5px] font-normal text-slate-300 leading-tight">
-                    Pilih ukuran botol terlebih dahulu untuk melihat harga
-                  </p>
-                </div>
-              )}
-
-              {/* Row 2: Full-Width Primary Purchase Button */}
-              <button
-                type="button"
-                onClick={handleAddToCartSubmit}
-                disabled={!selectedBottleSize}
-                className={`font-body w-full py-2.5 px-4 rounded-lg text-[13.5px] sm:text-sm font-semibold tracking-[0.01em] flex items-center justify-center gap-2 ${
-                  selectedBottleSize
-                    ? 'champagne-gold-btn shadow-[0_6px_20px_rgba(197,160,89,0.28)] hover:brightness-105 cursor-pointer sinki-cushion-press'
-                    : 'bg-white/[0.06] text-slate-500 border border-white/10 cursor-not-allowed'
-                }`}
-              >
-                <ShoppingBag size={15} />
-                <span>Tambah ke Keranjang</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* REUSABLE PERFUME DETAIL SHEET (100% Identik di Collection, Order & Review) */}
+      <PerfumeDetailModal
+        perfume={detailPerfume}
+        onClose={handleCloseDetail}
+        onShowToast={onShowToast}
+        onCartUpdated={onCartUpdated}
+        favorites={favorites}
+        onToggleFavorite={toggleFavorite}
+      />
     </div>
   );
 };

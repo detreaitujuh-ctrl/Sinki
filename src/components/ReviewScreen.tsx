@@ -12,6 +12,7 @@ import {
   RotateCcw,
   CheckCircle2,
   Search,
+  ChevronRight,
 } from 'lucide-react';
 import { TOP_11_DATA } from '../data/top11';
 import {
@@ -19,6 +20,7 @@ import {
   COLLECTION_CATEGORIES,
 } from '../data/perfumes';
 import { getStoredPerfumes, fetchPerfumesFromServer, PerfumeItem } from '../utils/perfumeStorage';
+import { PerfumeDetailModal } from './PerfumeDetailModal';
 import {
   ReviewItem,
   INITIAL_4_REVIEWS,
@@ -137,6 +139,31 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
   const [formEmojiLabel, setFormEmojiLabel] = useState('Puas');
   const [formVariant, setFormVariant] = useState(TOP_11_DATA[0].name);
   const [formComment, setFormComment] = useState('');
+  const [selectedPerfumeForDetail, setSelectedPerfumeForDetail] = useState<PerfumeItem | null>(null);
+
+  const handleOpenPerfumeDetailByName = (variantName: string) => {
+    if (!variantName) return;
+    const clean = variantName.trim().toLowerCase();
+    const found = perfumesCatalog.find(
+      (p) =>
+        p.name.toLowerCase() === clean ||
+        clean.includes(p.name.toLowerCase()) ||
+        p.name.toLowerCase().includes(clean)
+    );
+    if (found) {
+      setSelectedPerfumeForDetail(found);
+    } else {
+      setSelectedPerfumeForDetail({
+        id: `rev-var-${clean.replace(/\s+/g, '-')}`,
+        name: variantName,
+        category: 'unisex',
+        categoryLabel: 'SINKI Signature',
+        tagline: `Varian aroma favorit yang paling disukai pembeli SINKI`,
+        accords: ['Mewah', 'Tahan Lama', 'Bibit Murni'],
+        collectionCategories: ['luxury'],
+      });
+    }
+  };
 
   // Auto-open modal jika dipanggil dari kartu Collection atau Top 11
   useEffect(() => {
@@ -589,6 +616,25 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                   <p className="font-body text-[12.5px] sm:text-[13px] text-slate-200 font-normal leading-[1.45] pl-8 pr-1 line-clamp-2">
                     "{rev.comment}"
                   </p>
+
+                  {/* Baris 3: Tab Tindakan Cepat - Ambil Aroma Ini (100% Persis Menu Collection) */}
+                  <div className="pt-2 mt-1.5 border-t border-white/[0.07] flex items-center justify-between gap-2 pl-2">
+                    <span className="font-body text-[11px] text-slate-400 font-normal truncate">
+                      Varian diulas: <strong className="text-[#DFB76C] font-semibold">{rev.variant}</strong>
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenPerfumeDetailByName(rev.variant);
+                      }}
+                      className="font-body py-1.5 px-2.5 rounded-md bg-white/[0.05] hover:bg-[#C5A059]/15 border border-[#C5A059]/35 text-[#E2C27F] hover:text-[#F3E6C8] text-[11.5px] font-semibold leading-none flex items-center gap-1 shrink-0 sinki-cushion-press-sm"
+                    >
+                      <span>Ambil Aroma Ini</span>
+                      <ChevronRight size={12} className="text-[#DFB76C]" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -607,36 +653,25 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           </button>
         </div>
 
-        {/* 3. DARI HATI SINKI (UCAPAN TERIMA KASIH & APRESIASI HANGAT) */}
-        <div className="mt-2.5 p-3.5 rounded-3xl bg-gradient-to-br from-[#1e2235] via-[#181a2b] to-[#131524] border border-white/10 shadow-2xl relative overflow-hidden text-center space-y-2 backdrop-blur-md">
+        {/* 3. DARI HATI SINKI (APRESIASI RINGKAS & ELEGAN - PILIHAN 3) */}
+        <div className="mt-2.5 p-3 sm:p-3.5 rounded-2xl bg-gradient-to-br from-[#1e2235] via-[#181a2b] to-[#131524] border border-white/10 shadow-xl relative overflow-hidden text-center space-y-2 backdrop-blur-md">
           {/* Subtle Glow */}
           <div className="absolute top-0 right-0 w-36 h-36 bg-[#c5a059]/[0.08] rounded-full blur-2xl pointer-events-none" />
 
-          {/* Kalimat Apresiasi & Sentuhan Hangat Pelanggan */}
+          {/* Kalimat Apresiasi & Pesona Ringkas (Pilihan 3) */}
           <div className="space-y-1">
-            <h4 className="font-heading font-bold text-[15px] text-white tracking-[-0.015em] leading-[1.25]">
+            <h4 className="font-heading font-bold text-[14.5px] sm:text-[15px] text-white tracking-[-0.015em] leading-[1.25]">
               Dari Hati SINKI
             </h4>
-            <p className="font-body text-xs sm:text-[13px] text-slate-100 font-normal leading-[1.48] max-w-sm mx-auto">
-              Terima kasih banyak telah mempercayakan aroma terbaik Anda kepada{' '}
+            <p className="font-body text-xs sm:text-[13px] text-slate-200 font-normal leading-[1.48] max-w-sm mx-auto">
+              Hadirkan pesonamu dan rayakan setiap momen berharga bersama keharuman istimewa{' '}
               <strong className="text-[#DFB76C] font-semibold">SINKI</strong>.
-              Setiap tetes keharuman kami racik dengan ketulusan, dedikasi, dan kualitas bahan
-              terbaik agar Anda selalu tampil percaya diri dan memikat di setiap momen berharga.
             </p>
-            <p className="font-body text-[11.5px] text-zinc-300 font-normal italic leading-[1.42]">
-              "Kepuasan Anda adalah kebanggaan kami. Kami selalu menantikan kehadiran Anda
-              kembali sebagai keluarga dan pelanggan setia SINKI."
-            </p>
-          </div>
-
-          {/* Tagline Langganan */}
-          <div className="pt-0.5 font-body text-[11px] font-medium text-emerald-300 bg-emerald-500/10 py-1 px-2.5 rounded-xl border border-emerald-500/20 inline-block">
-            Semoga harimu selalu harum, bahagia, dan penuh pesona!
           </div>
 
           {/* Tombol Pesan Varian Lain (Navigasi ke Order) */}
           {onNavigateToOrder && (
-            <div className="pt-1">
+            <div className="pt-0.5">
               <button
                 type="button"
                 onClick={onNavigateToOrder}
@@ -909,6 +944,13 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           </div>,
           document.body
         )}
+
+      {/* REUSABLE PERFUME DETAIL SHEET (100% Identik di Collection, Order & Review) */}
+      <PerfumeDetailModal
+        perfume={selectedPerfumeForDetail}
+        onClose={() => setSelectedPerfumeForDetail(null)}
+        onShowToast={onShowToast}
+      />
     </div>
   );
 };

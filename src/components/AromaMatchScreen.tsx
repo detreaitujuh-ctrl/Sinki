@@ -306,13 +306,13 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           </button>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <Sparkles size={14} className="text-[#DFB76C] shrink-0" />
+              <Compass size={15} className="text-[#DFB76C] shrink-0" />
               <h2 className="font-heading text-[15px] sm:text-base font-bold text-white tracking-[-0.015em] leading-[1.2] truncate">
-                Aroma Match
+                Kuis Aroma
               </h2>
             </div>
-            <p className="font-body text-[11px] text-slate-400 font-normal leading-tight truncate">
-              Konsultan pencari aroma dalam 3 langkah
+            <p className="font-body text-[11px] text-slate-300 font-normal leading-tight truncate">
+              Bingung pilih aroma? Biar SINKI bantu temukan aroma yang pas!
             </p>
           </div>
         </div>
@@ -331,10 +331,10 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           <button
             onClick={handleReset}
             className="flex items-center gap-1 py-1 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11.5px] font-semibold text-slate-300 hover:text-white transition-colors sinki-cushion-press-sm shrink-0 font-body"
-            title="Ulangi pencarian aroma"
+            title="Ulangi kuis pencarian aroma"
           >
             <RotateCcw size={12} className="text-[#DFB76C]" />
-            <span>Ulangi</span>
+            <span>Ulangi Kuis</span>
           </button>
         )}
       </div>
@@ -347,14 +347,17 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         {step === 1 && (
           <div className="space-y-4">
             <div className="text-center space-y-1 sinki-heading-anim pb-1">
-              <span className="font-body text-[11.5px] font-semibold tracking-[0.06em] text-[#DFB76C] uppercase block">
+              <span className="font-body text-[11px] font-semibold tracking-[0.06em] text-[#DFB76C] uppercase block">
                 Langkah 1 dari 3
               </span>
               <h3 className="font-heading text-lg sm:text-[19px] font-bold text-white tracking-[-0.015em] leading-[1.25]">
-                Untuk siapa parfum ini diracik?
+                Bingung Pilih Aroma?
               </h3>
-              <p className="font-body text-xs text-slate-400 font-normal">
-                Pilih karakter persona yang paling mendekati Anda
+              <p className="font-body text-xs sm:text-[13px] text-amber-200 font-medium leading-[1.4]">
+                Biar SINKI bantu temukan aroma yang pas!
+              </p>
+              <p className="font-body text-[11.5px] text-slate-400 font-normal pt-0.5">
+                Untuk siapa parfum ini diracik? Pilih karakter persona Anda:
               </p>
             </div>
 
@@ -529,14 +532,14 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         {step === 'calculating' && (
           <div className="py-16 text-center space-y-4 sinki-heading-anim">
             <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-[#DFB76C]/25 to-[#C5A059]/10 border border-[#DFB76C]/40 flex items-center justify-center text-[#DFB76C] shadow-[0_0_30px_rgba(223,183,108,0.25)] animate-pulse">
-              <Sparkles size={28} className="animate-spin" style={{ animationDuration: '3s' }} />
+              <Compass size={28} className="animate-spin" style={{ animationDuration: '3.5s' }} />
             </div>
             <div className="space-y-1">
               <h3 className="font-heading text-base sm:text-lg font-bold text-white tracking-[-0.01em]">
-                Meracik Rekomendasi Karakter Anda...
+                Menavigasi Aroma Terbaik Karakter Anda...
               </h3>
               <p className="font-body text-xs text-slate-400 font-normal">
-                Menyelaraskan piramida aroma dengan bibit SINKI Eau de Parfum
+                Kompas SINKI sedang mencari racikan parfum yang paling pas
               </p>
             </div>
           </div>

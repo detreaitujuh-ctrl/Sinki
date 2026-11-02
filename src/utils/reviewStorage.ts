@@ -87,6 +87,9 @@ export const setCachedReviews = (reviews: ReviewItem[]) => {
   try {
     const trimmed = reviews.slice(0, MAX_REVIEWS_LIMIT);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(trimmed));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sinki_reviews_updated', { detail: trimmed }));
+    }
   } catch (err) {
     console.error('Failed setting reviews cache:', err);
   }

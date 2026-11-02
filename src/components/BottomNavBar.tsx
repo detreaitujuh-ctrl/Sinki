@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Home, LayoutGrid, Sparkles, ShoppingBag, MessageSquareText } from 'lucide-react';
+import { Home, LayoutGrid, Compass, ShoppingBag, MessageSquareText } from 'lucide-react';
 
 export type TabType = 'home' | 'collection' | 'match' | 'order' | 'review';
 
@@ -45,8 +45,8 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     },
     {
       id: 'match' as TabType,
-      label: 'Match',
-      icon: Sparkles,
+      label: 'Kuis Aroma',
+      icon: Compass,
     },
     {
       id: 'order' as TabType,
@@ -73,7 +73,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           const isPulsing = pulsingTab === item.id;
           const isCenterpiece = item.id === 'match';
 
-          // CENTERPIECE: Aroma Match
+          // CENTERPIECE: Kuis Aroma (Kompas Penunjuk Arah Aroma)
           if (isCenterpiece) {
             return (
               <button
@@ -84,12 +84,12 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                     ? 'bg-gradient-to-r from-[#382c16] via-[#8c6b29] to-[#D4AF57] text-[#F8EBCB] border-[#D4AF57]/60 shadow-[0_2px_12px_rgba(212,175,87,0.3)] scale-[0.98]'
                     : 'bg-transparent hover:bg-white/5 border-transparent'
                 }`}
-                aria-label="Aroma Match - Rekomendasi Parfum Personal SINKI"
+                aria-label="Kuis Aroma - Bingung pilih aroma biar SINKI bantu temukan aroma yang pas"
               >
-                {/* Icon Container with Sparkles */}
+                {/* Icon Container with Compass */}
                 <div className="relative">
-                  <Sparkles
-                    size={18}
+                  <Compass
+                    size={19}
                     className={`transition-all duration-700 ease-out ${
                       isPulsing
                         ? 'text-[#F8EBCB]'
