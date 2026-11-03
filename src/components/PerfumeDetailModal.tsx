@@ -25,7 +25,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
   favorites = [],
   onToggleFavorite,
 }) => {
-  const [selectedBottleSize, setSelectedBottleSize] = useState<CollectionBottleSize | null>(null);
+  const [selectedBottleSize, setSelectedBottleSize] = useState<CollectionBottleSize>(30);
   const [bottleQty, setBottleQty] = useState<number>(1);
 
   if (!perfume) return null;
@@ -130,7 +130,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
             {perfume.usageRecommendation && perfume.usageRecommendation.trim() !== '' && (
               <div className="p-2.5 rounded-[8px] sinki-arch-subbox border space-y-0.5">
                 <span className="text-[11px] font-medium text-[#DFB76C] block leading-tight">
-                  Rekomendasi Penggunaan
+                  Cocok Digunakan Saat:
                 </span>
                 <p className="text-[13px] text-slate-200 font-normal leading-[1.48]">
                   {perfume.usageRecommendation}
@@ -163,15 +163,9 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
               <span className="font-body text-xs font-semibold text-[#DFB76C] leading-tight">
                 Pilih Ukuran Botol
               </span>
-              {selectedBottleSize ? (
-                <span className="font-body text-[11px] font-medium tabular-nums text-[#F3E6C8] flex items-center gap-1 leading-tight">
-                  <Check size={12} className="text-[#DFB76C]" /> {selectedBottleSize} ml dipilih
-                </span>
-              ) : (
-                <span className="font-body text-[11px] text-slate-400 font-normal leading-tight">
-                  Ketuk ukuran di bawah
-                </span>
-              )}
+              <span className="font-body text-[11px] font-medium tabular-nums text-[#F3E6C8] flex items-center gap-1 leading-tight">
+                <Check size={12} className="text-[#DFB76C]" /> {selectedBottleSize} ml dipilih
+              </span>
             </div>
 
             <div className="grid grid-cols-5 gap-1.5">
@@ -198,7 +192,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
 
         {/* ZONE 3: Sticky Bottom Action Bar */}
         <div className="shrink-0 bg-[#0b0b0f]/98 border-t border-[#D4AF6A]/25 px-4 pt-2.5 pb-3 shadow-[0_-10px_28px_rgba(0,0,0,0.75)] space-y-2">
-          {selectedBottleSize && selectedUnitPrice && selectedTotalPrice ? (
+          {selectedUnitPrice && selectedTotalPrice ? (
             <div className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-[8px] sinki-arch-card border">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 font-body text-[11px] font-medium text-slate-300 tabular-nums leading-tight">
@@ -237,33 +231,16 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="py-1 px-3 rounded-[8px] sinki-arch-subbox border text-center">
-              <span className="font-body text-[11.5px] text-slate-300 font-normal">
-                Pilih salah satu ukuran botol di atas untuk melihat harga
-              </span>
-            </div>
-          )}
+          ) : null}
 
           {/* Big CTA Button */}
           <button
             type="button"
-            disabled={!selectedBottleSize}
             onClick={handleAddToCart}
-            className={`w-full py-2.5 px-4 rounded-[8px] font-body font-semibold text-[13px] flex items-center justify-center gap-2 transition-all shadow-md sinki-cushion-press ${
-              selectedBottleSize
-                ? 'bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:scale-[0.98] text-slate-950 shadow-black/40 cursor-pointer'
-                : 'bg-white/[0.06] text-slate-500 border border-[#D4AF6A]/15 cursor-not-allowed'
-            }`}
+            className="w-full py-2.5 px-4 rounded-[8px] font-body font-semibold text-[13px] flex items-center justify-center gap-2 transition-all shadow-md sinki-cushion-press bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:scale-[0.98] text-slate-950 shadow-black/40 cursor-pointer"
           >
-            {selectedBottleSize ? (
-              <>
-                <ShoppingBag size={15} className="shrink-0 text-slate-950" />
-                <span>Masukkan ke Tas Belanja</span>
-              </>
-            ) : (
-              <span>Pilih Ukuran Botol Terlebih Dahulu</span>
-            )}
+            <ShoppingBag size={15} className="shrink-0 text-slate-950" />
+            <span>Masukkan ke Tas Belanja</span>
           </button>
         </div>
       </div>

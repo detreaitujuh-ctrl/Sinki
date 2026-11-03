@@ -242,7 +242,7 @@ export default function App() {
       const pageNames: Record<TabType, string> = {
         home: 'Beranda',
         collection: 'Katalog Koleksi',
-        match: 'Aroma Match',
+        match: 'Racik Aroma',
         order: 'Order VIP',
         review: 'Review Pembeli',
       };

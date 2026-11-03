@@ -1,5 +1,6 @@
 import React from 'react';
-import { Home, LayoutGrid, Compass, ShoppingBag, MessageSquareText } from 'lucide-react';
+import { Home, LayoutGrid, ShoppingBag, MessageSquareText } from 'lucide-react';
+import { PerfumeBottleIcon } from './PerfumeBottleIcon';
 
 export type TabType = 'home' | 'collection' | 'match' | 'order' | 'review';
 
@@ -27,8 +28,8 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     },
     {
       id: 'match' as TabType,
-      label: 'Kuis Aroma',
-      icon: Compass,
+      label: 'Racik Aroma',
+      icon: PerfumeBottleIcon,
     },
     {
       id: 'order' as TabType,
@@ -55,8 +56,11 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       <div className="pointer-events-auto relative rounded-[10px] sinki-arch-bar backdrop-blur-2xl border p-1.5 flex items-center justify-between gap-1 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
+          const isMatchTab = item.id === 'match';
           const Icon = item.icon;
           if (!Icon) return null;
+
+          const iconSize = isMatchTab ? (isActive ? 23 : 21) : 18;
 
           return (
             <button
@@ -73,10 +77,18 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
               className="relative flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-[8px] transition-all duration-200 ease-out group active:scale-95 focus:outline-none bg-transparent hover:bg-white/[0.04] border border-transparent"
             >
               {/* Icon Container */}
-              <div className="relative">
+              <div className="relative flex items-center justify-center">
+                {/* Glow lembut hanya menyala saat tab Racik Aroma AKTIF */}
+                {isMatchTab && isActive && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 -m-1.5 rounded-full blur-md bg-[#E8C574]/25 opacity-100 pointer-events-none"
+                  />
+                )}
+
                 <Icon
-                  size={18}
-                  className={`transition-all duration-200 ease-out ${
+                  size={iconSize}
+                  className={`relative transition-all duration-200 ease-out ${
                     isActive
                       ? 'text-[#E8C574] drop-shadow-[0_1px_6px_rgba(232,197,116,0.45)]'
                       : 'text-slate-400 group-hover:text-slate-200'

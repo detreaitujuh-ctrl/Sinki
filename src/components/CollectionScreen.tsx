@@ -803,7 +803,6 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                     (perfume.accords && perfume.accords.length > 0
                       ? perfume.accords.slice(0, 3).join(' · ')
                       : '');
-                  const usageText = (perfume.usageRecommendation || '').trim();
                   // Staggered cadence formula identik dengan 6 kategori (75ms cadence per baris, capped 450ms)
                   const cascadeDelayMs = Math.min(idx * 75, 450);
 
@@ -841,21 +840,15 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                         </button>
                       </div>
 
-                      {/* Concise Aroma & Usage Info */}
-                      <div className="mt-1 space-y-0.5 font-body text-xs leading-[1.45]">
-                        {characterText && (
+                      {/* Concise Aroma Info */}
+                      {characterText && (
+                        <div className="mt-1 font-body text-xs leading-[1.45]">
                           <p className="text-slate-200 font-normal line-clamp-1">
                             <span className="text-[#C5A059] font-medium">Aroma: </span>
                             {characterText}
                           </p>
-                        )}
-                        {usageText && (
-                          <p className="text-slate-400 font-normal line-clamp-1">
-                            <span className="text-slate-300 font-medium">Cocok: </span>
-                            {usageText}
-                          </p>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
                       {/* Persuasive Action Footer */}
                       <div className="mt-2.5 pt-2 border-t border-[#D4AF6A]/20 flex items-center justify-between gap-2.5">

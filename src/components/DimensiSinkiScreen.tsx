@@ -735,14 +735,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   const [perfumesList, setPerfumesList] = useState<PerfumeItem[]>(() => perfumes || getStoredPerfumes());
   const [perfumeSearchQuery, setPerfumeSearchQuery] = useState('');
   const [perfumeCategoryFilter, setPerfumeCategoryFilter] = useState<
-    CollectionCategoryKey | PerfumeCategory | 'all'
+    CollectionCategoryKey | 'all'
   >('all');
   const [isAddingPerfume, setIsAddingPerfume] = useState(false);
   const [editingPerfume, setEditingPerfume] = useState<PerfumeItem | null>(null);
   const [editingAccordsStr, setEditingAccordsStr] = useState('');
   const [newPerfumeForm, setNewPerfumeForm] = useState<{
     name: string;
-    category: PerfumeCategory;
     tagline: string;
     accordsStr: string;
     collectionCategories: CollectionCategoryKey[];
@@ -750,7 +749,6 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     usageRecommendation: string;
   }>({
     name: '',
-    category: 'unisex',
     tagline: '',
     accordsStr: 'Warm, Floral, Woody',
     collectionCategories: ['daily_fresh'],
@@ -837,12 +835,6 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   const handleSaveEditPerfume = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPerfume || !editingPerfume.name.trim()) return;
-    const catLabels: Record<PerfumeCategory, string> = {
-      women: 'Women',
-      men: 'Men',
-      powdery: 'Powdery',
-      unisex: 'Unisex',
-    };
     const parsedAccords = editingAccordsStr
       .split(',')
       .map((s) => s.trim())
@@ -851,7 +843,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     const updatedItem: PerfumeItem = {
       ...editingPerfume,
       name: editingPerfume.name.trim(),
-      categoryLabel: catLabels[editingPerfume.category] || 'Unisex',
+      category: editingPerfume.category || 'unisex',
+      categoryLabel: editingPerfume.categoryLabel || 'SINKI Signature',
       tagline: editingPerfume.tagline.trim(),
       accords: parsedAccords.length > 0 ? parsedAccords : editingPerfume.accords,
       collectionCategories: Array.isArray(editingPerfume.collectionCategories)
@@ -874,12 +867,6 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       onShowToast('Nama varian tidak boleh kosong!');
       return;
     }
-    const catLabels: Record<PerfumeCategory, string> = {
-      women: 'Women',
-      men: 'Men',
-      powdery: 'Powdery',
-      unisex: 'Unisex',
-    };
     const accords = newPerfumeForm.accordsStr
       .split(',')
       .map((s) => s.trim())
@@ -887,8 +874,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     const newItem: PerfumeItem = {
       id: `p-${Date.now()}`,
       name: newPerfumeForm.name.trim(),
-      category: newPerfumeForm.category,
-      categoryLabel: catLabels[newPerfumeForm.category] || 'Unisex',
+      category: 'unisex',
+      categoryLabel: 'SINKI Signature',
       tagline: newPerfumeForm.tagline.trim() || 'Aroma Mewah Khas SINKI',
       accords: accords.length > 0 ? accords : ['Luxury', 'Signature'],
       isActive: true,
@@ -902,7 +889,6 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     setIsAddingPerfume(false);
     setNewPerfumeForm({
       name: '',
-      category: 'unisex',
       tagline: '',
       accordsStr: 'Warm, Floral, Woody',
       collectionCategories: ['daily_fresh'],
@@ -957,7 +943,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   const [articlesList, setArticlesList] = useState<ArticleItem[]>(() => getStoredArticles());
   const [isAddingArticle, setIsAddingArticle] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState<'tips' | 'men' | 'women' | 'promo' | 'story'>('tips');
+  const [newCategory, setNewCategory] = useState<'tips' | 'promo' | 'story'>('tips');
   const [newContent, setNewContent] = useState('');
 
   const handleAddArticleSubmit = (e: React.FormEvent) => {
@@ -968,8 +954,6 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     }
     const catLabels: Record<string, string> = {
       tips: 'Tips Perawatan',
-      men: 'Panduan Pria',
-      women: 'Panduan Wanita',
       promo: 'Info & Promo',
       story: 'Edukasi Aroma',
     };
@@ -2054,35 +2038,6 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       </button>
                     )}
                   </div>
-
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                    {(['women', 'men', 'powdery', 'unisex'] as const).map((gCat) => {
-                      const isSel = perfumeCategoryFilter === gCat;
-                      const count = perfumesList.filter((p) => p.category === gCat).length;
-                      const labels: Record<PerfumeCategory, string> = {
-                        women: 'Women',
-                        men: 'Men',
-                        powdery: 'Powdery',
-                        unisex: 'Unisex',
-                      };
-                      return (
-                        <button
-                          key={gCat}
-                          type="button"
-                          onClick={() =>
-                            setPerfumeCategoryFilter((prev) => (prev === gCat ? 'all' : gCat))
-                          }
-                          className={`shrink-0 py-1.5 px-2.5 rounded-[6px] text-xs font-semibold border transition-colors tabular-nums ${
-                            isSel
-                              ? 'sinki-arch-card-selected text-[#F3E6C8]'
-                              : 'sinki-arch-subbox text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          {labels[gCat]} ({count})
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
 
@@ -2090,20 +2045,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {perfumesList
                   .filter((item) => {
-                    const isSixCategory = COLLECTION_CATEGORIES.some(
-                      (c) => c.id === perfumeCategoryFilter
-                    );
                     let matchCategory = true;
                     if (perfumeCategoryFilter !== 'all') {
-                      if (isSixCategory) {
-                        matchCategory =
-                          Array.isArray(item.collectionCategories) &&
-                          item.collectionCategories.includes(
-                            perfumeCategoryFilter as CollectionCategoryKey
-                          );
-                      } else {
-                        matchCategory = item.category === perfumeCategoryFilter;
-                      }
+                      matchCategory =
+                        Array.isArray(item.collectionCategories) &&
+                        item.collectionCategories.includes(
+                          perfumeCategoryFilter as CollectionCategoryKey
+                        );
                     }
 
                     const q = perfumeSearchQuery.trim().toLowerCase();
@@ -2140,7 +2088,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-1.5 text-xs tabular-nums">
                                 <span className="text-[#E8C782] font-semibold">
-                                  {item.categoryLabel}
+                                  {itemCats.length > 0
+                                    ? COLLECTION_CATEGORIES.find((m) => m.id === itemCats[0])?.title || 'Collection'
+                                    : 'Aroma Signature'}
                                 </span>
                                 <span className="text-slate-600">·</span>
                                 <span className="text-slate-200 font-semibold">
@@ -2266,42 +2216,19 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     <form onSubmit={handleSaveEditPerfume} className="space-y-3.5">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs font-medium text-slate-300 block mb-1">
-                            Nama Varian *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={editingPerfume.name}
-                            onChange={(e) =>
-                              setEditingPerfume({ ...editingPerfume, name: e.target.value })
-                            }
-                            className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-xs font-medium text-slate-300 block mb-1">
-                            Profil Dasar
-                          </label>
-                          <select
-                            value={editingPerfume.category}
-                            onChange={(e) =>
-                              setEditingPerfume({
-                                ...editingPerfume,
-                                category: e.target.value as PerfumeCategory,
-                              })
-                            }
-                            className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
-                          >
-                            <option value="unisex">Unisex</option>
-                            <option value="men">Men</option>
-                            <option value="women">Women</option>
-                            <option value="powdery">Powdery</option>
-                          </select>
-                        </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
+                          Nama Varian *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editingPerfume.name}
+                          onChange={(e) =>
+                            setEditingPerfume({ ...editingPerfume, name: e.target.value })
+                          }
+                          className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
+                        />
                       </div>
 
                       {/* Tarif Harga per ml Aktual */}
@@ -2489,43 +2416,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
 
                     <form onSubmit={handleAddNewPerfume} className="space-y-3.5">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs font-medium text-slate-300 block mb-1">
-                            Nama Parfum *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="Contoh: Mykonos Slow Dance"
-                            value={newPerfumeForm.name}
-                            onChange={(e) =>
-                              setNewPerfumeForm({ ...newPerfumeForm, name: e.target.value })
-                            }
-                            className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-xs font-medium text-slate-300 block mb-1">
-                            Profil Dasar
-                          </label>
-                          <select
-                            value={newPerfumeForm.category}
-                            onChange={(e) =>
-                              setNewPerfumeForm({
-                                ...newPerfumeForm,
-                                category: e.target.value as PerfumeCategory,
-                              })
-                            }
-                            className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
-                          >
-                            <option value="unisex">Unisex</option>
-                            <option value="men">Men</option>
-                            <option value="women">Women</option>
-                            <option value="powdery">Powdery</option>
-                          </select>
-                        </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-300 block mb-1">
+                          Nama Parfum *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Contoh: Mykonos Slow Dance"
+                          value={newPerfumeForm.name}
+                          onChange={(e) =>
+                            setNewPerfumeForm({ ...newPerfumeForm, name: e.target.value })
+                          }
+                          className="w-full px-3 py-2 rounded-[6px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
+                        />
                       </div>
 
                       {/* Tarif Harga per ml */}
@@ -3885,10 +3789,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           className="w-full px-3 py-2 rounded-[8px] sinki-arch-input border text-base sm:text-sm text-white focus:outline-none"
                         >
                           <option value="tips">Tips Perawatan</option>
-                          <option value="men">Panduan Pria</option>
-                          <option value="women">Panduan Wanita</option>
-                          <option value="promo">Info & Promo</option>
                           <option value="story">Edukasi Aroma</option>
+                          <option value="promo">Info & Promo</option>
                         </select>
                       </div>
 
