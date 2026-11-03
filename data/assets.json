@@ -18,11 +18,14 @@
     "top-top-1792842000704": "https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/top11/top-1792842000704.jpg",
     "top-12": "https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/top11/top-1792842000704.jpg"
   },
-  "updatedAt": "2026-10-31T09:07:51.866Z",
+  "heroBottles": [],
+  "heroStageEffect": "royal-elevation",
+  "heroStageEnabled": true,
   "heroMediaType": "video",
   "heroVideoUrl": "https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/hero_video.mp4",
-  "heroVideoPoster": "https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/sinki_hero_poster.jpg",
-  "heroVideoFit": "cover",
-  "heroVideoPosition": "center",
-  "heroHeightMode": "full"
+  "heroVideoPoster": "https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/sinki_hero_poster.jpg?v=1793714392287",
+  "heroVideoFit": "contain",
+  "heroVideoPosition": "top",
+  "heroHeightMode": "compact",
+  "updatedAt": "2026-11-03T14:01:45.227Z"
 }

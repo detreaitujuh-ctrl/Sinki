@@ -345,25 +345,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </div>
 
       {/* LAYER 1 (TERDEPAN / Z-20): TOP BAR MELAYANG ELEGAN */}
-      <header className="relative z-20 flex items-center justify-between pt-0 pb-1 shrink-0">
-        {/* Top-Left: Pure Typography "SINKI" (Logo dihapus, tersisa teks elegan) */}
+      <header className="relative z-20 flex items-center justify-between pt-2 sm:pt-2.5 pb-1 shrink-0">
+        {/* Top-Left: Pure Typography "SINKI" (Warna Champagne Silk Gold Lembut, Tenang & Elegan) */}
         <div
-          className="flex items-center select-none py-1 px-1"
+          className="flex items-center select-none py-0.5 px-1"
           title="SINKI Parfums"
         >
-          <span className="font-heading text-base sm:text-lg font-bold tracking-[0.22em] text-transparent bg-clip-text bg-gradient-to-r from-[#FBF2D5] via-[#E4C373] to-[#C5A059] uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+          <span className="font-heading text-2xl sm:text-3xl font-bold tracking-[0.22em] text-[#F3E5C8] uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.92)]">
             SINKI
           </span>
         </div>
 
-        {/* Top-Right: 3-line hamburger menu button ("Garis 3") */}
+        {/* Top-Right: 3-line hamburger menu button ("Garis 3" Champagne Silk Gold Melayang) */}
         <button
           onClick={onOpenDrawer}
-          className="w-8 h-8 rounded-[8px] sinki-arch-bar hover:border-[#E8C782]/65 border text-[#E8C782] hover:text-[#FBF2D5] flex items-center justify-center transition-all active:scale-90 backdrop-blur-xs"
+          className="p-1.5 text-[#F3E5C8] hover:text-[#FFF5E0] flex items-center justify-center transition-all active:scale-90 select-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
           title="Menu Utama"
           aria-label="Menu"
         >
-          <Menu size={16} />
+          <Menu size={22} className="stroke-[2.2]" />
         </button>
       </header>
 
@@ -431,34 +431,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           3. Minimalist swipe indicator
       */}
       <section className="relative z-10 space-y-2 shrink-0">
-        {/* Story Box "Define your presence" with Quiet Luxury Clean Typography */}
-        <div className="py-2.5 px-3.5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border flex items-center justify-between gap-3 backdrop-blur-md transition-all">
+        {/* Slogan "Define your presence" with Floating Quiet Luxury Typography */}
+        <div className="flex items-center justify-between gap-3 px-1 py-1">
           {/* Story Text */}
           <div className="flex-1 min-w-0">
-            <h2 className="font-heading text-[14.5px] sm:text-[15px] font-semibold tracking-[-0.015em] text-white leading-[1.22]">
+            <h2 className="font-heading text-[14.5px] sm:text-[15px] font-semibold tracking-[-0.015em] text-white leading-[1.22] drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
               Define your presence
             </h2>
-            <p className="font-body text-xs text-slate-200 font-normal italic leading-[1.42] mt-0.5 line-clamp-2">
+            <p className="font-body text-xs text-slate-300 font-normal italic leading-[1.42] mt-0.5 line-clamp-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
               “Aroma yang di tinggal lebih lama dari pada kesan pertama”
             </p>
           </div>
 
-          {/* Standalone Model 1: 3 Bulatan Terhubung Garis (Share2) Berukuran Kecil */}
+          {/* Standalone Model 1: 3 Bulatan Terhubung Garis (Share2) Berukuran Kecil Berwarna Putih */}
           <button
             onClick={handleShare}
-            className="group shrink-0 relative p-2 text-[#DFB76C] hover:text-[#F0DFB6] hover:scale-110 active:scale-90 transition-all duration-200 flex items-center justify-center select-none"
+            className="group shrink-0 relative p-1.5 text-white hover:text-slate-200 hover:scale-110 active:scale-90 transition-all duration-200 flex items-center justify-center select-none"
             title="Bagikan SINKI"
             aria-label="Bagikan"
           >
             {copied ? (
               <Check
-                size={15}
-                className="text-[#DFB76C] stroke-[2.5] filter drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] animate-in zoom-in-75 duration-200"
+                size={16}
+                className="text-white stroke-[2.5] filter drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] animate-in zoom-in-75 duration-200"
               />
             ) : (
               <Share2
-                size={15}
-                className="text-[#DFB76C] group-hover:text-[#F0DFB6] stroke-[2.2] filter drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] transition-colors"
+                size={16}
+                className="text-white group-hover:text-slate-200 stroke-[2.2] filter drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] transition-colors"
               />
             )}
           </button>
