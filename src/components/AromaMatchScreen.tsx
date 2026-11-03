@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import {
   Sparkles,
-  ArrowLeft,
-  RotateCcw,
   ShoppingBag,
   Clock,
   Flame,
@@ -296,53 +294,8 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       {/* Pendaran Cahaya Halo Emas Lembut di Belakang */}
       <div className="absolute top-0 right-1/4 w-72 h-72 bg-[#C5A059]/[0.05] rounded-full blur-[120px] pointer-events-none" />
 
-      {/* TOP HEADER MINIMALIS */}
-      <div className="relative z-10 px-4 pt-3.5 pb-3 shrink-0 sinki-arch-header border-b backdrop-blur-md flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <button
-            onClick={step === 1 ? onBackToHome : () => setStep((prev) => (prev === 2 ? 1 : 2))}
-            className="w-8 h-8 rounded-[6px] sinki-arch-subbox hover:border-[#E8C782]/60 border flex items-center justify-center text-[#E8C782] hover:text-[#F3E6C8] transition-colors sinki-cushion-press-sm shrink-0"
-            title="Kembali"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <Compass size={15} className="text-[#DFB76C] shrink-0" />
-              <h2 className="font-heading text-[15px] sm:text-base font-bold text-white tracking-[-0.015em] leading-[1.2] truncate">
-                Kuis Aroma
-              </h2>
-            </div>
-            <p className="font-body text-[11px] text-slate-300 font-normal leading-tight truncate">
-              Bingung pilih aroma? Biar SINKI bantu temukan aroma yang pas!
-            </p>
-          </div>
-        </div>
-
-        {/* Indikator Langkah Ramping (1 / 2 / 3) */}
-        {step !== 'calculating' && step !== 'result' && (
-          <div className="flex items-center gap-1.5 sinki-arch-subbox px-2.5 py-1 rounded-[6px] border shrink-0 font-body">
-            <span className="text-[11px] font-semibold tabular-nums text-[#DFB76C]">
-              Langkah {step}
-            </span>
-            <span className="text-[10px] text-slate-400">/ 3</span>
-          </div>
-        )}
-
-        {step === 'result' && (
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-1 py-1 px-2.5 rounded-[6px] sinki-arch-subbox hover:border-[#E8C782]/60 border text-[11.5px] font-semibold text-slate-200 hover:text-white transition-colors sinki-cushion-press-sm shrink-0 font-body"
-            title="Ulangi kuis pencarian aroma"
-          >
-            <RotateCcw size={12} className="text-[#DFB76C]" />
-            <span>Ulangi Kuis</span>
-          </button>
-        )}
-      </div>
-
       {/* KONTEN UTAMA: RUANG LAPANG (AIRY ZEN LUXURY - TIDAK PADAT) */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-4 flex flex-col justify-center max-w-md mx-auto w-full">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-4 pb-28 flex flex-col justify-center max-w-md mx-auto w-full">
         {/* ==========================================
             LANGKAH 1: PERSONA & KARAKTER DIRI
             ========================================== */}
@@ -467,6 +420,15 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                 );
               })}
             </div>
+
+            {/* Tombol Balik ke Langkah 1 */}
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="font-body text-xs text-slate-400 hover:text-[#E8C574] font-medium pt-1 transition-colors block mx-auto cursor-pointer"
+            >
+              ← Kembali ke Langkah 1
+            </button>
           </div>
         )}
 
@@ -528,6 +490,15 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                 );
               })}
             </div>
+
+            {/* Tombol Balik ke Langkah 2 */}
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              className="font-body text-xs text-slate-400 hover:text-[#E8C574] font-medium pt-1 transition-colors block mx-auto cursor-pointer"
+            >
+              ← Kembali ke Langkah 2
+            </button>
           </div>
         )}
 

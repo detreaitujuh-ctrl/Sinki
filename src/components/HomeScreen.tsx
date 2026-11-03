@@ -261,7 +261,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const tickerText = currentTicker.text.trim() || 'Tahan 8 jam, dia aja yang gak tahan 😏';
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-between p-3.5 pb-20 sinki-arch-canvas sinki-home-stage-canvas text-slate-100 overflow-y-auto no-scrollbar">
+    <div className="relative w-full h-full flex flex-col justify-between p-3.5 pb-24 sm:pb-28 sinki-arch-canvas sinki-home-stage-canvas text-slate-100 overflow-y-auto no-scrollbar">
       {/* LAYER 2: HERO BACKDROP BOTOL PARFUM & VIDEO SINEMATIK (Panggung Tengah di bawah Teks Judul) */}
       <div className={`absolute inset-x-0 top-0 ${heightClass} pointer-events-none overflow-hidden z-0`}>
         {/* Base dark canvas */}

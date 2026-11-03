@@ -457,7 +457,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
       )}
 
       {/* 2. DAFTAR ULASAN RAMPING (MUAT BANYAK ULASAN) */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-2 pb-20 space-y-1.5">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-2 pb-24 sm:pb-28 space-y-1.5">
         
         {/* Label Terverifikasi Asli + Kolom Pencarian Ulasan Ramping */}
         <div className="sinki-heading-anim space-y-1.5">
@@ -594,7 +594,8 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                           e.stopPropagation();
                           handleOpenPerfumeDetailByName(rev.variant);
                         }}
-                        className="text-[#DFB76C] hover:text-[#FFF0CA] font-medium truncate inline-flex items-center gap-0.5 min-w-0 cursor-pointer"
+                        style={{ color: 'var(--arch-gold-bright)' }}
+                        className="hover:brightness-125 font-medium truncate inline-flex items-center gap-0.5 min-w-0 cursor-pointer"
                         title={`Lihat varian ${rev.variant}`}
                       >
                         <span className="truncate">{rev.variant}</span>

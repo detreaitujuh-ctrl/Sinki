@@ -1026,10 +1026,10 @@ html[data-sinki-theme="royal-bronze"] {
     from 0deg,
     transparent 0deg,
     transparent 260deg,
-    rgba(223, 183, 108, 0.15) 290deg,
-    rgba(240, 215, 155, 0.85) 330deg,
-    rgba(255, 255, 255, 1) 348deg,
-    rgba(223, 183, 108, 0.5) 356deg,
+    var(--arch-glow-tl) 290deg,
+    var(--arch-gold-bright) 330deg,
+    var(--arch-rim-glint, #ffffff) 348deg,
+    var(--arch-gold) 356deg,
     transparent 360deg
   );
   animation: border-beam-spin 3s linear infinite;
@@ -1042,9 +1042,9 @@ html[data-sinki-theme="royal-bronze"] {
   position: absolute;
   inset: 1.25px;
   background:
-    radial-gradient(125% 95% at 0% 0%, rgba(212, 175, 106, 0.14) 0%, transparent 70%),
-    radial-gradient(115% 90% at 100% 100%, rgba(188, 145, 72, 0.1) 0%, transparent 65%),
-    #0d0d11;
+    radial-gradient(125% 95% at 0% 0%, var(--arch-glow-tl) 0%, transparent 70%),
+    radial-gradient(115% 90% at 100% 100%, var(--arch-glow-br) 0%, transparent 65%),
+    var(--arch-card-top);
   border-radius: calc(0.5rem - 1.25px);
   z-index: 1;
   pointer-events: none;

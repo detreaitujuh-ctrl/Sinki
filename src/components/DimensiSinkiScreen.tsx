@@ -1196,68 +1196,6 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         style={{ background: 'var(--arch-glow-br)' }}
       />
 
-      {/* 2. Haute Parfumerie Metallic Hairline Drafting Grid with Soft Vignette Mask */}
-      <div
-        className="absolute inset-0 bg-[size:44px_44px]"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, var(--arch-border-faint) 1px, transparent 1px), linear-gradient(to bottom, var(--arch-border-faint) 1px, transparent 1px)',
-          opacity: 0.4,
-          maskImage: 'radial-gradient(ellipse 90% 80% at 50% 35%, black 40%, rgba(0,0,0,0.45) 75%, transparent 100%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at 50% 35%, black 40%, rgba(0,0,0,0.45) 75%, transparent 100%)',
-        }}
-      />
-
-      {/* 3. Watermark Geometris Flacon Parfumerie (Terlihat Jelas tapi Halus di Belakang Konten) */}
-      <svg
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[780px] h-[780px] max-w-none pointer-events-none select-none opacity-[0.08]"
-        style={{ color: 'var(--arch-gold)' }}
-        viewBox="0 0 500 500"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Faceted octagonal cut */}
-        <polygon
-          points="150,50 350,50 450,150 450,350 350,450 150,450 50,350 50,150"
-          stroke="currentColor"
-          strokeWidth="1.2"
-          strokeDasharray="8 6"
-        />
-        {/* Concentric diamond facets */}
-        <polygon
-          points="250,70 430,250 250,430 70,250"
-          stroke="currentColor"
-          strokeWidth="1"
-        />
-        <polygon
-          points="250,110 390,250 250,390 110,250"
-          stroke="currentColor"
-          strokeWidth="0.8"
-          strokeDasharray="4 4"
-        />
-        {/* Concentric circles */}
-        <circle cx="250" cy="250" r="170" stroke="currentColor" strokeWidth="0.8" strokeDasharray="3 5" opacity="0.8" />
-        <circle cx="250" cy="250" r="95" stroke="currentColor" strokeWidth="1.2" />
-        <circle cx="250" cy="250" r="35" stroke="currentColor" strokeWidth="0.8" />
-        {/* Center Starburst Emblem */}
-        <path
-          d="M250 160 L258 242 L340 250 L258 258 L250 340 L242 258 L160 250 L242 242 Z"
-          stroke="currentColor"
-          strokeWidth="1.2"
-          fill="currentColor"
-          fillOpacity="0.15"
-        />
-        <path
-          d="M250 195 L288 212 L305 250 L288 288 L250 305 L212 288 L195 250 L212 212 Z"
-          stroke="currentColor"
-          strokeWidth="0.8"
-          strokeDasharray="2 3"
-        />
-        {/* Precision drafting crosshairs */}
-        <line x1="250" y1="20" x2="250" y2="480" stroke="currentColor" strokeWidth="0.8" strokeDasharray="6 8" opacity="0.6" />
-        <line x1="20" y1="250" x2="480" y2="250" stroke="currentColor" strokeWidth="0.8" strokeDasharray="6 8" opacity="0.6" />
-      </svg>
-
       {/* 4. Fine Atelier Corner Marks */}
       <div className="absolute top-4 left-6 flex items-center gap-2 text-xs font-body tracking-[0.14em] text-amber-400/15 uppercase">
         <span>+</span>

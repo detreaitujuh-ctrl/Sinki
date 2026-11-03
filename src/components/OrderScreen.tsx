@@ -296,7 +296,7 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
       </div>
 
       {/* Main Scrollable Content */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-3.5 pb-8 space-y-3">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-3.5 pb-28 space-y-3">
 
         {/* STATE A: KERANJANG TERISI (CART HAS ITEMS) */}
         {hasCartItems ? (
