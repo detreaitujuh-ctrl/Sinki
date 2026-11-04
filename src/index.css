@@ -16,250 +16,181 @@
   --leading-heading: 1.22;
   --leading-body: 1.48;
 
-  /* Luxury Architectural Surface & Metallic Tokens (Default: Champagne Gold) */
-  --arch-canvas: #060609;
-  --arch-canvas-top: #0a0a0e;
-  --arch-canvas-mid: #07070a;
-  --arch-canvas-bot: #040406;
-  --arch-header-top: rgba(14, 14, 19, 0.94);
-  --arch-header-bot: rgba(8, 8, 12, 0.96);
-  --arch-card-top: #101015;
-  --arch-card-bot: #09090d;
-  --arch-card-hover-top: #15141b;
-  --arch-card-hover-bot: #0c0c10;
-  --arch-card-sel-top: #191612;
-  --arch-card-sel-bot: #0e0d0b;
-  --arch-bar-top: rgba(16, 15, 20, 0.95);
-  --arch-bar-bot: rgba(9, 9, 13, 0.97);
-  --arch-input-top: #0f0f13;
-  --arch-input-bot: #08080b;
-  --arch-subbox-top: rgba(19, 18, 24, 0.92);
-  --arch-subbox-bot: rgba(10, 10, 14, 0.95);
-  --arch-modal-top: #131318;
-  --arch-modal-bot: #08080c;
+  /* Luxury Forest Waterfall Surface & High-Luminance Crystal Tokens (Default #1: Moonlight Silver) */
+  --arch-canvas: #070d0a;
+  --arch-canvas-top: #0b1510;
+  --arch-canvas-mid: #08100c;
+  --arch-canvas-bot: #050a08;
+  --arch-header-top: rgba(8, 15, 11, 0.26);
+  --arch-header-bot: rgba(6, 12, 9, 0.38);
+  --arch-card-top: rgba(14, 22, 18, 0.56);
+  --arch-card-bot: rgba(8, 13, 10, 0.66);
+  --arch-card-hover-top: rgba(19, 29, 24, 0.64);
+  --arch-card-hover-bot: rgba(10, 16, 13, 0.72);
+  --arch-card-sel-top: rgba(22, 34, 29, 0.68);
+  --arch-card-sel-bot: rgba(12, 19, 16, 0.76);
+  --arch-bar-top: rgba(13, 20, 16, 0.60);
+  --arch-bar-bot: rgba(7, 12, 9, 0.72);
+  --arch-input-top: rgba(12, 19, 15, 0.56);
+  --arch-input-bot: rgba(7, 12, 9, 0.66);
+  --arch-subbox-top: rgba(15, 24, 19, 0.56);
+  --arch-subbox-bot: rgba(9, 15, 12, 0.66);
+  --arch-modal-top: rgba(11, 18, 14, 0.92);
+  --arch-modal-bot: rgba(6, 11, 8, 0.96);
 
-  --arch-gold: #D4AF6A;
-  --arch-gold-bright: #E8C782;
-  --arch-gold-soft: #F6EAD0;
-  --arch-gold-deep: #9E7835;
-  --arch-btn-gradient: linear-gradient(135deg, #E5C684 0%, #C5A059 55%, #9A742F 100%);
-  --arch-title-gradient: linear-gradient(115deg, #F6EAD0 0%, #D4AF6A 50%, #9B782E 100%);
+  --arch-gold: #D6E4F2;
+  --arch-gold-bright: #EFF6FC;
+  --arch-gold-soft: #FFFFFF;
+  --arch-gold-deep: #8CA6BF;
+  --arch-text-accent: #A9CFF2;
+  --arch-text-accent-bright: #C4E2FC;
+  --arch-text-accent-soft: #E3F1FE;
+  --arch-btn-gradient: linear-gradient(135deg, #FFFFFF 0%, #DFECF7 52%, #9FB6CD 100%);
+  --arch-title-gradient: linear-gradient(115deg, #FFFFFF 0%, #D9ECFC 52%, #98B8D8 100%);
 
-  --arch-border-default: rgba(212, 175, 106, 0.44);
-  --arch-border-subtle: rgba(212, 175, 106, 0.28);
-  --arch-border-faint: rgba(212, 175, 106, 0.16);
-  --arch-border-hover: rgba(232, 199, 130, 0.72);
-  --arch-border-modal: rgba(212, 175, 106, 0.48);
+  --arch-border-default: rgba(226, 240, 252, 0.85);
+  --arch-border-subtle: rgba(220, 236, 250, 0.58);
+  --arch-border-faint: rgba(220, 236, 250, 0.35);
+  --arch-border-hover: rgba(255, 255, 255, 0.98);
+  --arch-border-modal: rgba(226, 240, 252, 0.86);
 
-  --arch-glow-tl: rgba(218, 182, 114, 0.22);
-  --arch-glow-tl-mid: rgba(212, 175, 106, 0.055);
-  --arch-glow-br: rgba(194, 152, 78, 0.17);
-  --arch-glow-hover-tl: rgba(236, 204, 138, 0.28);
-  --arch-glow-hover-br: rgba(206, 164, 88, 0.22);
-  --arch-glow-sel-tl: rgba(242, 212, 148, 0.34);
-  --arch-glow-sel-br: rgba(212, 170, 94, 0.25);
-  --arch-specular-top: rgba(252, 238, 205, 0.28);
-  --arch-rim-glint: rgba(255, 246, 222, 0.92);
-  --arch-smoke-canvas-opacity: 0.24;
-  --arch-smoke-card-opacity: 0.20;
-  --arch-badge-bg: rgba(212, 175, 106, 0.16);
-  --arch-badge-bg-soft: rgba(212, 175, 106, 0.1);
+  --arch-glow-tl: rgba(232, 244, 255, 0.36);
+  --arch-glow-tl-mid: rgba(214, 232, 248, 0.11);
+  --arch-glow-br: rgba(196, 222, 246, 0.28);
+  --arch-glow-hover-tl: rgba(242, 250, 255, 0.44);
+  --arch-glow-hover-br: rgba(210, 232, 250, 0.35);
+  --arch-glow-sel-tl: rgba(248, 252, 255, 0.48);
+  --arch-glow-sel-br: rgba(216, 236, 252, 0.38);
+  --arch-specular-top: rgba(255, 255, 255, 0.62);
+  --arch-rim-glint: #FFFFFF;
+  --arch-smoke-canvas-opacity: 0.20;
+  --arch-smoke-card-opacity: 0.14;
+  --arch-badge-bg: rgba(190, 224, 252, 0.22);
+  --arch-badge-bg-soft: rgba(190, 224, 252, 0.14);
 }
 
-/* 2. PLATINUM ARGENT & ONYX (Monochrome Haute Horlogerie) */
-html[data-sinki-theme="platinum-silver"] {
-  --arch-canvas: #06070a;
-  --arch-canvas-top: #0a0c11;
-  --arch-canvas-mid: #07080c;
-  --arch-canvas-bot: #040507;
-  --arch-header-top: rgba(13, 16, 22, 0.94);
-  --arch-header-bot: rgba(8, 10, 14, 0.96);
-  --arch-card-top: #10131a;
-  --arch-card-bot: #090b0f;
-  --arch-card-hover-top: #151922;
-  --arch-card-hover-bot: #0c0f14;
-  --arch-card-sel-top: #171c26;
-  --arch-card-sel-bot: #0d1017;
-  --arch-bar-top: rgba(15, 18, 25, 0.95);
-  --arch-bar-bot: rgba(8, 10, 14, 0.97);
-  --arch-input-top: #0e1117;
-  --arch-input-bot: #080a0e;
-  --arch-subbox-top: rgba(17, 21, 29, 0.92);
-  --arch-subbox-bot: rgba(10, 12, 17, 0.95);
-  --arch-modal-top: #12161f;
-  --arch-modal-bot: #080a0f;
+/* 2. PEARL SILK IVORY (Putih Mutiara Gading Halus - Quiet Luxury) */
+html[data-sinki-theme="pearl-ivory"] {
+  --arch-gold: #EFE6D5;
+  --arch-gold-bright: #FAF5EA;
+  --arch-gold-soft: #FFFFFF;
+  --arch-gold-deep: #B5A78E;
+  --arch-text-accent: #E6CE9E;
+  --arch-text-accent-bright: #F4E2BC;
+  --arch-text-accent-soft: #FCF1DA;
+  --arch-btn-gradient: linear-gradient(135deg, #FFFDF9 0%, #F0E7D6 54%, #BFB096 100%);
+  --arch-title-gradient: linear-gradient(115deg, #FFFFFF 0%, #F5E6C8 52%, #C4AF8A 100%);
 
-  --arch-gold: #AEBDD0;
-  --arch-gold-bright: #D4DFEC;
-  --arch-gold-soft: #F1F5FA;
-  --arch-gold-deep: #7B8B9F;
-  --arch-btn-gradient: linear-gradient(135deg, #EEF3F8 0%, #B8C6D8 55%, #8494A8 100%);
-  --arch-title-gradient: linear-gradient(115deg, #FFFFFF 0%, #C6D3E3 50%, #8393A7 100%);
+  --arch-border-default: rgba(247, 239, 224, 0.85);
+  --arch-border-subtle: rgba(245, 236, 218, 0.58);
+  --arch-border-faint: rgba(245, 236, 218, 0.35);
+  --arch-border-hover: rgba(255, 253, 247, 0.98);
+  --arch-border-modal: rgba(247, 239, 224, 0.86);
 
-  --arch-border-default: rgba(188, 202, 220, 0.42);
-  --arch-border-subtle: rgba(188, 202, 220, 0.27);
-  --arch-border-faint: rgba(188, 202, 220, 0.16);
-  --arch-border-hover: rgba(220, 230, 242, 0.72);
-  --arch-border-modal: rgba(188, 202, 220, 0.46);
-
-  --arch-glow-tl: rgba(202, 216, 234, 0.21);
-  --arch-glow-tl-mid: rgba(196, 210, 228, 0.05);
-  --arch-glow-br: rgba(150, 168, 192, 0.16);
-  --arch-glow-hover-tl: rgba(220, 232, 246, 0.27);
-  --arch-glow-hover-br: rgba(166, 184, 206, 0.21);
-  --arch-glow-sel-tl: rgba(228, 238, 250, 0.33);
-  --arch-glow-sel-br: rgba(172, 190, 212, 0.24);
-  --arch-specular-top: rgba(242, 247, 255, 0.28);
-  --arch-rim-glint: rgba(255, 255, 255, 0.92);
-  --arch-badge-bg: rgba(184, 198, 216, 0.16);
-  --arch-badge-bg-soft: rgba(184, 198, 216, 0.1);
+  --arch-glow-tl: rgba(252, 245, 230, 0.36);
+  --arch-glow-tl-mid: rgba(242, 232, 212, 0.11);
+  --arch-glow-br: rgba(236, 224, 200, 0.28);
+  --arch-glow-hover-tl: rgba(255, 250, 240, 0.44);
+  --arch-glow-hover-br: rgba(242, 232, 210, 0.35);
+  --arch-glow-sel-tl: rgba(255, 252, 245, 0.48);
+  --arch-glow-sel-br: rgba(246, 236, 216, 0.38);
+  --arch-specular-top: rgba(255, 252, 245, 0.60);
+  --arch-rim-glint: #FFFFFF;
+  --arch-badge-bg: rgba(242, 224, 190, 0.22);
+  --arch-badge-bg-soft: rgba(242, 224, 190, 0.14);
 }
 
-/* 3. ROSE CUIVRE & VELVET NOIR (Parisian Couture Rose Gold) */
-html[data-sinki-theme="rose-gold"] {
-  --arch-canvas: #080608;
-  --arch-canvas-top: #100b0e;
-  --arch-canvas-mid: #090709;
-  --arch-canvas-bot: #050405;
-  --arch-header-top: rgba(19, 13, 16, 0.94);
-  --arch-header-bot: rgba(10, 7, 9, 0.96);
-  --arch-card-top: #150f12;
-  --arch-card-bot: #0b080a;
-  --arch-card-hover-top: #1b1317;
-  --arch-card-hover-bot: #0f0b0d;
-  --arch-card-sel-top: #201518;
-  --arch-card-sel-bot: #120c0e;
-  --arch-bar-top: rgba(21, 14, 18, 0.95);
-  --arch-bar-bot: rgba(10, 7, 9, 0.97);
-  --arch-input-top: #120d10;
-  --arch-input-bot: #0a0709;
-  --arch-subbox-top: rgba(23, 16, 20, 0.92);
-  --arch-subbox-bot: rgba(12, 9, 11, 0.95);
-  --arch-modal-top: #171014;
-  --arch-modal-bot: #0a0709;
+/* 3. LUMINOUS DEW JADE (Hijau Giok Embun Cerah - Botanical Fresh) */
+html[data-sinki-theme="dew-jade"] {
+  --arch-gold: #7CEAC0;
+  --arch-gold-bright: #AEF7DA;
+  --arch-gold-soft: #E8FFF5;
+  --arch-gold-deep: #3DA880;
+  --arch-text-accent: #7CEAC0;
+  --arch-text-accent-bright: #AEF7DA;
+  --arch-text-accent-soft: #DCFFF0;
+  --arch-btn-gradient: linear-gradient(135deg, #D2FEEE 0%, #82EEC4 52%, #42B087 100%);
+  --arch-title-gradient: linear-gradient(115deg, #ECFFF7 0%, #96F2CE 52%, #46B48B 100%);
 
-  --arch-gold: #D89F92;
-  --arch-gold-bright: #ECBBB0;
-  --arch-gold-soft: #F9E3DE;
-  --arch-gold-deep: #A1695D;
-  --arch-btn-gradient: linear-gradient(135deg, #F0C6BC 0%, #D49A8D 55%, #9E6659 100%);
-  --arch-title-gradient: linear-gradient(115deg, #FAE6E1 0%, #DDA599 50%, #9E6659 100%);
+  --arch-border-default: rgba(138, 242, 202, 0.84);
+  --arch-border-subtle: rgba(138, 242, 202, 0.56);
+  --arch-border-faint: rgba(138, 242, 202, 0.34);
+  --arch-border-hover: rgba(198, 253, 232, 0.98);
+  --arch-border-modal: rgba(138, 242, 202, 0.86);
 
-  --arch-border-default: rgba(216, 159, 146, 0.44);
-  --arch-border-subtle: rgba(216, 159, 146, 0.28);
-  --arch-border-faint: rgba(216, 159, 146, 0.16);
-  --arch-border-hover: rgba(236, 187, 176, 0.72);
-  --arch-border-modal: rgba(216, 159, 146, 0.48);
-
-  --arch-glow-tl: rgba(222, 162, 148, 0.22);
-  --arch-glow-tl-mid: rgba(216, 156, 142, 0.055);
-  --arch-glow-br: rgba(188, 126, 114, 0.17);
-  --arch-glow-hover-tl: rgba(238, 188, 176, 0.28);
-  --arch-glow-hover-br: rgba(198, 136, 124, 0.22);
-  --arch-glow-sel-tl: rgba(244, 196, 184, 0.34);
-  --arch-glow-sel-br: rgba(204, 142, 130, 0.25);
-  --arch-specular-top: rgba(252, 232, 226, 0.28);
-  --arch-rim-glint: rgba(255, 242, 238, 0.92);
-  --arch-badge-bg: rgba(212, 154, 141, 0.16);
-  --arch-badge-bg-soft: rgba(212, 154, 141, 0.1);
+  --arch-glow-tl: rgba(134, 244, 200, 0.35);
+  --arch-glow-tl-mid: rgba(124, 234, 192, 0.11);
+  --arch-glow-br: rgba(96, 218, 172, 0.27);
+  --arch-glow-hover-tl: rgba(174, 250, 220, 0.44);
+  --arch-glow-hover-br: rgba(112, 228, 184, 0.35);
+  --arch-glow-sel-tl: rgba(190, 253, 228, 0.48);
+  --arch-glow-sel-br: rgba(122, 234, 190, 0.38);
+  --arch-specular-top: rgba(226, 255, 243, 0.56);
+  --arch-rim-glint: #F2FFFA;
+  --arch-badge-bg: rgba(134, 240, 200, 0.22);
+  --arch-badge-bg-soft: rgba(134, 240, 200, 0.14);
 }
 
-/* 4. IMPERIAL EMERALD & MALACHITE (Royal Niche Atelier) */
-html[data-sinki-theme="imperial-emerald"] {
-  --arch-canvas: #050807;
-  --arch-canvas-top: #08100d;
-  --arch-canvas-mid: #060a08;
-  --arch-canvas-bot: #030605;
-  --arch-header-top: rgba(10, 18, 15, 0.94);
-  --arch-header-bot: rgba(6, 11, 9, 0.96);
-  --arch-card-top: #0d1512;
-  --arch-card-bot: #070d0b;
-  --arch-card-hover-top: #111d18;
-  --arch-card-hover-bot: #09110e;
-  --arch-card-sel-top: #13221c;
-  --arch-card-sel-bot: #0b1410;
-  --arch-bar-top: rgba(12, 21, 17, 0.95);
-  --arch-bar-bot: rgba(7, 11, 9, 0.97);
-  --arch-input-top: #0b120f;
-  --arch-input-bot: #060a08;
-  --arch-subbox-top: rgba(13, 23, 19, 0.92);
-  --arch-subbox-bot: rgba(8, 13, 11, 0.95);
-  --arch-modal-top: #0e1814;
-  --arch-modal-bot: #070b09;
+/* 4. GLACIAL AQUA (Biru Kristal Air Terjun - Aquatic Luxury) */
+html[data-sinki-theme="glacial-aqua"] {
+  --arch-gold: #86E3FF;
+  --arch-gold-bright: #B8F0FF;
+  --arch-gold-soft: #ECFAFF;
+  --arch-gold-deep: #3D9EC2;
+  --arch-text-accent: #86E3FF;
+  --arch-text-accent-bright: #B8F0FF;
+  --arch-text-accent-soft: #E2F8FF;
+  --arch-btn-gradient: linear-gradient(135deg, #DCF6FF 0%, #8AE5FF 52%, #44A6CA 100%);
+  --arch-title-gradient: linear-gradient(115deg, #F0FBFF 0%, #9EEAFF 52%, #48AAD0 100%);
 
-  --arch-gold: #6BC0A1;
-  --arch-gold-bright: #90D8BD;
-  --arch-gold-soft: #DCF6EC;
-  --arch-gold-deep: #3E846B;
-  --arch-btn-gradient: linear-gradient(135deg, #9EE0C7 0%, #66B598 55%, #3D8269 100%);
-  --arch-title-gradient: linear-gradient(115deg, #DFF7ED 0%, #78C6A9 50%, #3E846B 100%);
+  --arch-border-default: rgba(148, 230, 255, 0.84);
+  --arch-border-subtle: rgba(148, 230, 255, 0.56);
+  --arch-border-faint: rgba(148, 230, 255, 0.34);
+  --arch-border-hover: rgba(212, 247, 255, 0.98);
+  --arch-border-modal: rgba(148, 230, 255, 0.86);
 
-  --arch-border-default: rgba(107, 192, 161, 0.44);
-  --arch-border-subtle: rgba(107, 192, 161, 0.28);
-  --arch-border-faint: rgba(107, 192, 161, 0.16);
-  --arch-border-hover: rgba(144, 216, 189, 0.72);
-  --arch-border-modal: rgba(107, 192, 161, 0.48);
-
-  --arch-glow-tl: rgba(108, 192, 162, 0.22);
-  --arch-glow-tl-mid: rgba(102, 181, 152, 0.055);
-  --arch-glow-br: rgba(72, 148, 120, 0.17);
-  --arch-glow-hover-tl: rgba(144, 216, 189, 0.28);
-  --arch-glow-hover-br: rgba(88, 166, 138, 0.22);
-  --arch-glow-sel-tl: rgba(154, 224, 198, 0.34);
-  --arch-glow-sel-br: rgba(94, 174, 146, 0.25);
-  --arch-specular-top: rgba(220, 248, 236, 0.28);
-  --arch-rim-glint: rgba(238, 255, 248, 0.92);
-  --arch-badge-bg: rgba(102, 181, 152, 0.16);
-  --arch-badge-bg-soft: rgba(102, 181, 152, 0.1);
+  --arch-glow-tl: rgba(144, 232, 255, 0.35);
+  --arch-glow-tl-mid: rgba(134, 227, 255, 0.11);
+  --arch-glow-br: rgba(102, 206, 242, 0.27);
+  --arch-glow-hover-tl: rgba(184, 242, 255, 0.44);
+  --arch-glow-hover-br: rgba(118, 218, 250, 0.35);
+  --arch-glow-sel-tl: rgba(200, 246, 255, 0.48);
+  --arch-glow-sel-br: rgba(128, 224, 252, 0.38);
+  --arch-specular-top: rgba(232, 250, 255, 0.58);
+  --arch-rim-glint: #F5FCFF;
+  --arch-badge-bg: rgba(144, 232, 255, 0.22);
+  --arch-badge-bg-soft: rgba(144, 232, 255, 0.14);
 }
 
-/* 5. ROYAL OUD BRONZE & SMOKED ESPRESSO (Private Reserve Oud) */
-html[data-sinki-theme="royal-bronze"] {
-  --arch-canvas: #090605;
-  --arch-canvas-top: #110c09;
-  --arch-canvas-mid: #0a0706;
-  --arch-canvas-bot: #050403;
-  --arch-header-top: rgba(20, 14, 10, 0.94);
-  --arch-header-bot: rgba(11, 8, 6, 0.96);
-  --arch-card-top: #16100c;
-  --arch-card-bot: #0c0806;
-  --arch-card-hover-top: #1d1510;
-  --arch-card-hover-bot: #100b08;
-  --arch-card-sel-top: #221811;
-  --arch-card-sel-bot: #130d09;
-  --arch-bar-top: rgba(22, 16, 12, 0.95);
-  --arch-bar-bot: rgba(11, 8, 6, 0.97);
-  --arch-input-top: #120d0a;
-  --arch-input-bot: #0a0705;
-  --arch-subbox-top: rgba(24, 17, 13, 0.92);
-  --arch-subbox-bot: rgba(13, 9, 7, 0.95);
-  --arch-modal-top: #18110d;
-  --arch-modal-bot: #0b0806;
+/* 5. WARM GOLD (Emas Kuning Cerah - Royal Nature Gold) */
+html[data-sinki-theme="warm-gold"] {
+  --arch-gold: #F2C55C;
+  --arch-gold-bright: #FFDC82;
+  --arch-gold-soft: #FFF5D4;
+  --arch-gold-deep: #B88628;
+  --arch-text-accent: #F2C55C;
+  --arch-text-accent-bright: #FFDC82;
+  --arch-text-accent-soft: #FFF2C6;
+  --arch-btn-gradient: linear-gradient(135deg, #FFE498 0%, #F2C357 52%, #C48F29 100%);
+  --arch-title-gradient: linear-gradient(115deg, #FFF9E2 0%, #F7CE68 50%, #C8922B 100%);
 
-  --arch-gold: #CE8F5A;
-  --arch-gold-bright: #E6AC79;
-  --arch-gold-soft: #F8E2CE;
-  --arch-gold-deep: #945B2E;
-  --arch-btn-gradient: linear-gradient(135deg, #ECC096 0%, #C88954 55%, #8F562A 100%);
-  --arch-title-gradient: linear-gradient(115deg, #F9E6D4 0%, #D69863 50%, #8F562A 100%);
+  --arch-border-default: rgba(246, 203, 104, 0.82);
+  --arch-border-subtle: rgba(246, 203, 104, 0.56);
+  --arch-border-faint: rgba(246, 203, 104, 0.34);
+  --arch-border-hover: rgba(255, 228, 150, 0.96);
+  --arch-border-modal: rgba(246, 203, 104, 0.86);
 
-  --arch-border-default: rgba(206, 143, 90, 0.44);
-  --arch-border-subtle: rgba(206, 143, 90, 0.28);
-  --arch-border-faint: rgba(206, 143, 90, 0.16);
-  --arch-border-hover: rgba(230, 172, 121, 0.72);
-  --arch-border-modal: rgba(206, 143, 90, 0.48);
-
-  --arch-glow-tl: rgba(212, 148, 94, 0.22);
-  --arch-glow-tl-mid: rgba(200, 137, 84, 0.055);
-  --arch-glow-br: rgba(172, 110, 60, 0.17);
-  --arch-glow-hover-tl: rgba(232, 174, 122, 0.28);
-  --arch-glow-hover-br: rgba(184, 120, 68, 0.22);
-  --arch-glow-sel-tl: rgba(238, 182, 130, 0.34);
-  --arch-glow-sel-br: rgba(190, 126, 72, 0.25);
-  --arch-specular-top: rgba(250, 228, 206, 0.28);
-  --arch-rim-glint: rgba(255, 242, 228, 0.92);
-  --arch-badge-bg: rgba(200, 137, 84, 0.16);
-  --arch-badge-bg-soft: rgba(200, 137, 84, 0.1);
+  --arch-glow-tl: rgba(255, 214, 112, 0.36);
+  --arch-glow-tl-mid: rgba(244, 198, 96, 0.11);
+  --arch-glow-br: rgba(240, 192, 86, 0.28);
+  --arch-glow-hover-tl: rgba(255, 226, 140, 0.44);
+  --arch-glow-hover-br: rgba(248, 204, 102, 0.35);
+  --arch-glow-sel-tl: rgba(255, 232, 154, 0.48);
+  --arch-glow-sel-br: rgba(250, 210, 110, 0.38);
+  --arch-specular-top: rgba(255, 247, 216, 0.54);
+  --arch-rim-glint: #FFFBEF;
+  --arch-badge-bg: rgba(244, 198, 96, 0.22);
+  --arch-badge-bg-soft: rgba(244, 198, 96, 0.14);
 }
 
 @theme {
@@ -372,8 +303,20 @@ html[data-sinki-theme="royal-bronze"] {
 
 /* Calm Atmospheric Intensity Modifier for Dense Admin Tables & Forms (Zero Layout Shift, 100% Static) */
 .sinki-admin-calm {
-  --arch-smoke-canvas-opacity: 0.16;
-  --arch-smoke-card-opacity: 0.14;
+  --arch-smoke-canvas-opacity: 0.14;
+  --arch-smoke-card-opacity: 0.12;
+  --arch-header-top: rgba(12, 17, 16, 0.94);
+  --arch-header-bot: rgba(7, 10, 10, 0.96);
+  --arch-card-top: #101615;
+  --arch-card-bot: #090d0c;
+  --arch-card-hover-top: #151d1b;
+  --arch-card-hover-bot: #0c1110;
+  --arch-bar-top: rgba(14, 20, 18, 0.95);
+  --arch-bar-bot: rgba(8, 12, 11, 0.97);
+  --arch-input-top: #0d1312;
+  --arch-input-bot: #070a0a;
+  --arch-subbox-top: rgba(16, 22, 20, 0.92);
+  --arch-subbox-bot: rgba(9, 13, 12, 0.95);
 }
 
 @layer components {
@@ -874,7 +817,7 @@ html[data-sinki-theme="royal-bronze"] {
   display: flex;
   width: max-content;
   white-space: nowrap;
-  animation: luxuryMarqueeScroll 22s linear infinite;
+  animation: luxuryMarqueeScroll var(--ticker-duration, 36s) linear infinite;
   will-change: transform;
 }
 
@@ -1214,6 +1157,98 @@ html[data-sinki-theme="royal-bronze"] {
   will-change: opacity, transform;
 }
 
+@keyframes sinkiReadableBlink {
+  0%,
+  45%,
+  100% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 0.45;
+  }
+}
+
+.sinki-readable-blink {
+  animation: sinkiReadableBlink 2.6s ease-in-out infinite;
+  will-change: opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sinki-readable-blink {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* SINKI Racik Aroma: Haute Parfumerie Liquid Elixir Fill (100% GPU Transform) */
+@keyframes sinkiElixirRise {
+  0% {
+    transform: translate3d(0, 82px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0px, 0);
+  }
+}
+
+@keyframes sinkiElixirWaveFront {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-64px, 0, 0);
+  }
+}
+
+@keyframes sinkiElixirWaveBack {
+  0% {
+    transform: translate3d(-64px, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sinkiElixirProgress {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.sinki-elixir-rise {
+  animation: sinkiElixirRise 3350ms cubic-bezier(0.42, 0, 0.25, 1) forwards;
+  will-change: transform;
+}
+
+.sinki-elixir-wave {
+  animation: sinkiElixirWaveFront 2400ms linear infinite;
+  will-change: transform;
+}
+
+.sinki-elixir-wave-back {
+  animation: sinkiElixirWaveBack 3400ms linear infinite;
+  will-change: transform;
+}
+
+.sinki-elixir-progress {
+  transform-origin: left center;
+  background: var(--arch-btn-gradient);
+  animation: sinkiElixirProgress 3350ms cubic-bezier(0.42, 0, 0.25, 1) forwards;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sinki-elixir-rise,
+  .sinki-elixir-wave,
+  .sinki-elixir-wave-back,
+  .sinki-elixir-progress {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 /* SINKI Collection Ultra-Silky Smooth Transitions (Fluid Deceleration + 2.5px Crystal Lens Focus) */
 @keyframes sinkiCardCascade {
   0% {
@@ -1422,34 +1457,53 @@ html[data-sinki-theme="royal-bronze"] {
 }
 
 /* ============================================================================
-   LUXURY THEME ACCENT HARMONIZER (Active for Platinum, Rose Gold, Emerald, Bronze)
+   LUXURY THEME ACCENT HARMONIZER (Active across ALL 5 Forest Crystal Palettes)
    Zero dimension/layout impact — strictly maps metallic colors, borders & gradients
    ============================================================================ */
-html[data-sinki-theme]:not([data-sinki-theme="champagne-gold"]) {
-  /* Soft Champagne Text -> Soft Metallic Highlight */
+html {
+  /* Soft Champagne Text -> Soft Crystal Highlight (Distinct from #FFFFFF Headings) */
   & .text-\[\#F3E6C8\],
   & .text-\[\#F8EBCB\],
+  & .text-\[\#F0DFB6\],
+  & .text-\[\#FFF3D6\],
   & .text-amber-100,
-  & .text-amber-200 {
-    color: var(--arch-gold-soft) !important;
+  & .text-amber-100\/90,
+  & .text-amber-200,
+  & .hover\:text-\[\#FFF0CA\]:hover,
+  & .hover\:text-\[\#F3E6C8\]:hover,
+  & .hover\:text-amber-200:hover,
+  & .group:hover .group-hover\:text-\[\#F3E6C8\],
+  & .group:hover .group-hover\:text-\[\#F0DFB6\] {
+    color: var(--arch-text-accent-soft) !important;
   }
 
-  /* Bright Champagne Text -> Bright Metallic Accent */
+  /* Bright Champagne Text -> Bright Crystal Accent (Counts, Prices, Active Highlights) */
   & .text-\[\#E8C782\],
   & .text-\[\#E8C574\],
+  & .text-\[\#E2C27F\],
   & .text-\[\#DFB76C\],
-  & .text-amber-300 {
-    color: var(--arch-gold-bright) !important;
+  & .text-\[\#DFB76C\]\/90,
+  & .text-\[\#DFB76C\]\/85,
+  & .text-\[\#DFB76C\]\/80,
+  & .text-amber-300,
+  & .hover\:text-\[\#E8C574\]:hover {
+    color: var(--arch-text-accent-bright) !important;
   }
 
-  /* Base Gold Text -> Base Metallic Accent */
+  /* Base Gold Text -> Base Crystal Accent (Icons, Arrows, Labels) */
   & .text-\[\#D4AF6A\],
+  & .text-\[\#D4AF6A\]\/80,
   & .text-\[\#D4AF57\],
   & .text-\[\#C5A059\],
   & .text-amber-400,
   & .text-amber-400\/80,
   & .text-amber-300\/85 {
-    color: var(--arch-gold) !important;
+    color: var(--arch-text-accent) !important;
+  }
+
+  /* Harmonize SVG Fill Icons (e.g. Marquee Star) */
+  & .fill-\[\#DFB76C\] {
+    fill: var(--arch-text-accent-bright) !important;
   }
 
   /* Primary Metallic CTA Buttons */
@@ -1458,8 +1512,9 @@ html[data-sinki-theme]:not([data-sinki-theme="champagne-gold"]) {
     background-image: var(--arch-btn-gradient) !important;
   }
 
-  /* Brand Gradient Wordmarks in Admin */
-  & .from-\[\#FFF5C2\] {
+  /* Brand Gradient Wordmarks in Admin & Order Total */
+  & .from-\[\#FFF5C2\],
+  & .from-\[\#F0DFB6\] {
     background-image: var(--arch-title-gradient) !important;
   }
 
@@ -1488,20 +1543,164 @@ html[data-sinki-theme]:not([data-sinki-theme="champagne-gold"]) {
   & .bg-\[\#D4AF6A\]\/10,
   & .bg-\[\#D4AF6A\]\/15,
   & .bg-\[\#D4AF6A\]\/20,
-  & .bg-\[\#D4AF6A\]\/25 {
+  & .bg-\[\#D4AF6A\]\/25,
+  & .bg-\[\#DFB76C\]\/10,
+  & .bg-\[\#DFB76C\]\/15,
+  & .bg-\[\#C5A059\]\/15,
+  & .bg-\[\#C5A059\]\/20 {
     background-color: var(--arch-badge-bg) !important;
   }
 
   /* Hairline Dividers & Accent Borders */
   & .border-\[\#D4AF6A\]\/15,
   & .border-\[\#D4AF6A\]\/20,
-  & .border-\[\#D4AF6A\]\/25 {
+  & .border-\[\#D4AF6A\]\/25,
+  & .border-\[\#DFB76C\]\/30 {
     border-color: var(--arch-border-subtle) !important;
   }
 
   & .border-\[\#D4AF6A\]\/35,
   & .border-\[\#D4AF6A\]\/40,
+  & .border-\[\#DFB76C\]\/35,
   & .border-\[\#DFB76C\]\/40 {
     border-color: var(--arch-border-default) !important;
   }
 }
+
+/* ============================================================================
+   FOREST WATERFALL HIGH-LUMINANCE CALIBRATION (Semua 5 Pilihan Tema Baru)
+   - Di kecerahan layar HP standar (40%-50%), kotak, garis kristal, teks, serta
+     pohon, air terjun & pantulan air langsung tampil terang, hidup & tajam
+   - Di menu Home, panggung video tetap murni 100% tanpa tertutupi latar hutan
+   ============================================================================ */
+main[data-active-tab]:not([data-active-tab="home"]) {
+  background-color: #07120c;
+}
+
+main[data-active-tab]:not([data-active-tab="home"])::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 1;
+  -webkit-mask-image: none;
+  mask-image: none;
+  background-image: url("/assets/forest/sinki-forest-waterfall.jpg");
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  filter: brightness(1.22) contrast(1.06) saturate(1.14);
+}
+
+/* Di menu Home, jaga panggung video 100% bersih tanpa gambar hutan di belakangnya,
+   namun kotak kartu & tombol di Home tetap memakai kaca kristal cerah anti-redup */
+main[data-active-tab="home"] {
+  --arch-card-top: rgba(16, 17, 18, 0.56);
+  --arch-card-bot: rgba(9, 10, 11, 0.68);
+  --arch-bar-top: rgba(15, 16, 17, 0.60);
+  --arch-bar-bot: rgba(8, 9, 10, 0.72);
+}
+
+/* Buka kanvas dalam pada 4 menu agar latar pohon, air terjun & pantulan air utuh dari atas ke bawah */
+main[data-active-tab]:not([data-active-tab="home"]) .sinki-arch-canvas {
+  background: transparent;
+}
+
+main[data-active-tab]:not([data-active-tab="home"]) .sinki-arch-canvas::before {
+  content: none;
+}
+
+main[data-active-tab]:not([data-active-tab="home"]) .sinki-match-result-base {
+  background-color: rgba(5, 11, 8, 0.22);
+}
+
+/* Header ringan di 4 menu supaya dahan pohon berdaun di kiri-atas terlihat terang */
+main[data-active-tab]:not([data-active-tab="home"]) .sinki-arch-header {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    inset 0 -1px 0 0 var(--arch-border-subtle);
+}
+
+/* Efek Kaca Bercahaya (Self-Illuminated Smoked Crystal) di SEMUA 5 Menu termasuk Home */
+main[data-active-tab] .sinki-arch-card,
+main[data-active-tab] .sinki-arch-card-selected {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.55),
+    0 0 14px var(--arch-badge-bg-soft),
+    inset 0 1px 0 0 var(--arch-specular-top);
+}
+
+main[data-active-tab] .sinki-arch-card::after,
+main[data-active-tab] .sinki-arch-card-selected::after,
+main[data-active-tab] .sinki-arch-bar::after {
+  opacity: 0.96;
+}
+
+main[data-active-tab] .sinki-arch-input,
+main[data-active-tab] .sinki-arch-subbox {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 0 var(--arch-specular-top);
+}
+
+main[data-active-tab] .sinki-arch-bar {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.62),
+    0 0 16px var(--arch-badge-bg-soft),
+    inset 0 1px 0 0 var(--arch-specular-top);
+}
+
+.sinki-arch-modal {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Judul bagian Collection berkilau sesuai warna aksen teks kristal aktif */
+.sinki-collection-heading {
+  color: var(--arch-text-accent-bright);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.78);
+}
+
+/* Hierarki 3-Lapis Teks Anti-Redup di 5 Menu Pengunjung & Portal Modal/Pop-up:
+   1. Judul utama tetap #FFFFFF murni
+   2. Teks deskripsi/isi: Putih sejuk lembut (#ECF1F7) — terang jelas, tidak menyaingi judul
+   3. Keterangan kecil: Perak lembut (#D6E0EC) — tetap tajam tanpa terlihat kusam */
+main[data-active-tab],
+.sinki-arch-modal {
+  & .text-slate-200,
+  & .text-slate-300,
+  & .text-slate-300\/95,
+  & .text-slate-300\/90,
+  & .text-zinc-200,
+  & .text-zinc-300 {
+    color: #ECF1F7;
+  }
+
+  & .text-slate-400,
+  & .text-zinc-400 {
+    color: #D6E0EC;
+  }
+
+  & input::placeholder,
+  & textarea::placeholder {
+    color: rgba(226, 236, 247, 0.72);
+  }
+}
+
+/* Jaga kartu ulasan aktif ber-border-beam agar cahaya putar tidak bocor ke tengah kartu */
+main[data-active-tab] .border-beam-active::after {
+  background:
+    radial-gradient(125% 95% at 0% 0%, var(--arch-glow-tl) 0%, transparent 70%),
+    radial-gradient(115% 90% at 100% 100%, var(--arch-glow-br) 0%, transparent 65%),
+    rgba(10, 17, 13, 0.84);
+}
+

@@ -78,25 +78,31 @@ export const normalizePerfumes = (list: PerfumeItem[]): PerfumeItem[] => {
       resolvedCategories = [];
     }
 
-    const resolvedPrice: PricePerMlRate =
-      item.pricePerMl === 4000
-        ? 4000
-        : item.pricePerMl === 3000
-        ? 3000
-        : fallback?.pricePerMl || 3000;
+    const resolvedPrice: PricePerMlRate | undefined = resolvedCategories.includes('new_trending')
+      ? 4000
+      : resolvedCategories.includes('viral_hits')
+      ? 3000
+      : undefined;
 
     const resolvedUsage =
       item.usageRecommendation !== undefined
         ? item.usageRecommendation
         : fallback?.usageRecommendation || '';
 
-    return {
+    const normalizedItem: PerfumeItem = {
       ...item,
       isActive: item.isActive !== false,
       collectionCategories: resolvedCategories,
-      pricePerMl: resolvedPrice,
       usageRecommendation: resolvedUsage,
     };
+
+    if (resolvedPrice !== undefined) {
+      normalizedItem.pricePerMl = resolvedPrice;
+    } else {
+      delete normalizedItem.pricePerMl;
+    }
+
+    return normalizedItem;
   });
 };
 

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingBag, ChevronRight, ArrowLeft } from 'lucide-react';
-import { PerfumeBottleIcon } from './PerfumeBottleIcon';
 import { PerfumeItem, COLLECTION_CATEGORIES } from '../data/perfumes';
 import { TOP_11_DATA } from '../data/top11';
 import { getStoredPerfumes } from '../utils/perfumeStorage';
@@ -426,16 +425,29 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
   const [viewTransitionKey, setViewTransitionKey] = useState<number>(0);
+  const [craftingPhase, setCraftingPhase] = useState<0 | 1 | 2>(0);
+  const craftingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearCraftingTimers = () => {
+    craftingTimersRef.current.forEach((t) => clearTimeout(t));
+    craftingTimersRef.current = [];
+  };
+
+  useEffect(() => {
+    return () => clearCraftingTimers();
+  }, []);
 
   const catalog = perfumes.length > 0 ? perfumes : getStoredPerfumes();
 
   // Reset kuis ke Langkah 1
   const handleReset = () => {
+    clearCraftingTimers();
     setStep(1);
     setSelectedPersona(null);
     setSelectedOccasion(null);
     setSelectedVibe(null);
     setMatchResult(null);
+    setCraftingPhase(0);
     setViewTransitionKey((k) => k + 1);
   };
 
@@ -455,22 +467,35 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     }, 220);
   };
 
-  // Handler Langkah 3 -> Analisis Mikro 1.2 detik
+  // Handler Langkah 3 -> Liquid Elixir Fill (3.6 detik tenang & anggun) + Preload Foto Botol
   const handleSelectVibe = (id: string) => {
+    clearCraftingTimers();
     setSelectedVibe(id);
+    setCraftingPhase(0);
     setStep('calculating');
 
-    setTimeout(() => {
-      const result = resolveBestMatch(
-        selectedPersona || 'unisex',
-        selectedOccasion || 'harian',
-        id,
-        catalog,
-        top11Photos
-      );
+    const result = resolveBestMatch(
+      selectedPersona || 'unisex',
+      selectedOccasion || 'harian',
+      id,
+      catalog,
+      top11Photos
+    );
+
+    // Preload gambar botol parfum di balik layar selagi cairan emas mengisi flacon
+    if (result.photoUrl && typeof Image !== 'undefined') {
+      const preload = new Image();
+      preload.src = result.photoUrl;
+    }
+
+    const t1 = setTimeout(() => setCraftingPhase(1), 1200);
+    const t2 = setTimeout(() => setCraftingPhase(2), 2400);
+    const t3 = setTimeout(() => {
       setMatchResult(result);
       setStep('result');
-    }, 1200);
+    }, 3600);
+
+    craftingTimersRef.current = [t1, t2, t3];
   };
 
   const handleOrderResult = () => {
@@ -495,14 +520,14 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         {/* 1. LAYER LATAR BELAKANG PANGGUNG MEWAH DINAMIS SESUAI SENSAI WANGI */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           {/* Latar Belakang Dasar Marmer Hitam Obsidian */}
-          <div className="absolute inset-0 bg-[#08080b]" />
+          <div className="absolute inset-0 bg-[#08080b] sinki-match-result-base" />
 
           {/* Lampu Sorot Arsitektural Butik Paris dari Atas (Top Downlight Spotlight) */}
           <div
             className="absolute -top-10 left-1/2 -translate-x-1/2 w-80 h-96 pointer-events-none"
             style={{
               background:
-                'radial-gradient(ellipse at 50% 0%, rgba(223, 183, 108, 0.28) 0%, rgba(197, 160, 89, 0.12) 45%, transparent 75%)',
+                'radial-gradient(ellipse at 50% 0%, var(--arch-glow-tl) 0%, var(--arch-glow-tl-mid) 45%, transparent 75%)',
             }}
           />
 
@@ -827,20 +852,159 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         )}
 
         {/* ==========================================
-            MOMEN MERACIK FORMULA (1.2 DETIK)
+            MOMEN MERACIK FORMULA: LIQUID ELIXIR FILL (3.6 DETIK TENANG & ANGGUN)
             ========================================== */}
         {step === 'calculating' && (
-          <div className="py-16 text-center space-y-4 sinki-heading-anim">
-            <div className="w-16 h-16 mx-auto rounded-[10px] sinki-arch-card border flex items-center justify-center text-[#DFB76C] animate-pulse shadow-[0_0_28px_rgba(223,183,108,0.28)]">
-              <PerfumeBottleIcon size={34} className="text-[#E8C574]" strokeWidth={1.9} />
+          <div
+            key={`step-calc-${viewTransitionKey}`}
+            className="py-10 flex flex-col items-center justify-center text-center space-y-5 sinki-screen-soft-fade select-none"
+          >
+            {/* Siluet Flacon Kristal SINKI dengan Cairan Emas Naik Halus */}
+            <div className="relative flex items-center justify-center">
+              {/* Pendaran Halus Statis di Belakang Botol (Tanpa Kedip) */}
+              <div className="absolute w-28 h-28 rounded-full boutique-spotlight-glow blur-xl pointer-events-none" />
+
+              <svg
+                width="108"
+                height="140"
+                viewBox="0 0 120 156"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="relative z-10 drop-shadow-[0_14px_28px_rgba(0,0,0,0.85)]"
+                aria-hidden="true"
+              >
+                <defs>
+                  <clipPath id="sinki-elixir-chamber">
+                    <rect x="32" y="55" width="56" height="80" rx="7" />
+                  </clipPath>
+
+                  <linearGradient id="sinki-elixir-liquid" x1="60" y1="55" x2="60" y2="140" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="var(--arch-gold-soft)" stopOpacity="0.96" />
+                    <stop offset="28%" stopColor="var(--arch-gold-bright)" stopOpacity="0.92" />
+                    <stop offset="72%" stopColor="var(--arch-gold)" stopOpacity="0.88" />
+                    <stop offset="100%" stopColor="var(--arch-gold-deep)" stopOpacity="0.95" />
+                  </linearGradient>
+
+                  <linearGradient id="sinki-flacon-rim" x1="28" y1="16" x2="92" y2="140" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="var(--arch-gold-soft)" />
+                    <stop offset="50%" stopColor="var(--arch-gold)" />
+                    <stop offset="100%" stopColor="var(--arch-gold-deep)" />
+                  </linearGradient>
+                </defs>
+
+                {/* Ruang Dalam Kaca Flacon + Cairan Konsentrat Naik */}
+                <g clipPath="url(#sinki-elixir-chamber)">
+                  <rect x="32" y="55" width="56" height="80" rx="7" fill="rgba(255,255,255,0.025)" />
+
+                  <g className="sinki-elixir-rise">
+                    {/* Riak Gelombang Belakang (Efek Kedalaman Cairan 3D) */}
+                    <path
+                      className="sinki-elixir-wave-back"
+                      d="M 0 59.5 Q 16 63, 32 59.5 T 64 59.5 T 96 59.5 T 128 59.5 T 160 59.5 T 192 59.5 L 192 165 L 0 165 Z"
+                      fill="var(--arch-gold-bright)"
+                      fillOpacity="0.38"
+                    />
+                    {/* Riak Gelombang Utama Konsentrat Emas */}
+                    <path
+                      className="sinki-elixir-wave"
+                      d="M 0 60 Q 16 56.5, 32 60 T 64 60 T 96 60 T 128 60 T 160 60 T 192 60 L 192 165 L 0 165 Z"
+                      fill="url(#sinki-elixir-liquid)"
+                    />
+                  </g>
+
+                  {/* Pantulan Vertikal Kaca Kristal Kiri */}
+                  <rect x="35.5" y="59" width="3.5" height="70" rx="1.75" fill="#FFFFFF" fillOpacity="0.16" />
+                </g>
+
+                {/* Tutup Kristal Faceted (Stopper) */}
+                <rect
+                  x="43"
+                  y="16"
+                  width="34"
+                  height="19"
+                  rx="3.5"
+                  stroke="url(#sinki-flacon-rim)"
+                  strokeWidth="1.6"
+                  fill="rgba(255,255,255,0.02)"
+                />
+                <rect
+                  x="48"
+                  y="20"
+                  width="24"
+                  height="11"
+                  rx="1.5"
+                  stroke="var(--arch-gold)"
+                  strokeOpacity="0.35"
+                  strokeWidth="0.9"
+                />
+
+                {/* Leher & Cincin Atomizer */}
+                <path
+                  d="M50 35V48.5H70V35"
+                  stroke="url(#sinki-flacon-rim)"
+                  strokeWidth="1.5"
+                />
+                <line
+                  x1="46"
+                  y1="42"
+                  x2="74"
+                  y2="42"
+                  stroke="var(--arch-gold-bright)"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                />
+
+                {/* Badan Utama Flacon Kristal */}
+                <rect
+                  x="28"
+                  y="49"
+                  width="64"
+                  height="90"
+                  rx="10"
+                  stroke="url(#sinki-flacon-rim)"
+                  strokeWidth="1.8"
+                />
+
+                {/* Dasar Kaca Tebal Khas Botol Parfum Mewah */}
+                <path
+                  d="M32 133.5H88"
+                  stroke="var(--arch-gold-soft)"
+                  strokeOpacity="0.32"
+                  strokeWidth="1"
+                  strokeLinecap="round"
+                />
+
+                {/* Bingkai Etiket Tipis di Tengah Botol */}
+                <rect
+                  x="44"
+                  y="83"
+                  width="32"
+                  height="22"
+                  rx="2.5"
+                  stroke="var(--arch-gold-soft)"
+                  strokeOpacity="0.36"
+                  strokeWidth="0.95"
+                />
+              </svg>
             </div>
-            <div className="space-y-1">
-              <h3 className="font-heading text-base sm:text-lg font-bold text-white tracking-[-0.01em]">
-                Sedang Meracik Formula Terbaik...
-              </h3>
-              <p className="font-body text-xs text-slate-400 font-normal">
-                SINKI sedang mencocokkan bibit parfum terbaik dengan karakter Anda
-              </p>
+
+            {/* Teks Tahapan Peracikan & Garis Progres Tipis */}
+            <div className="space-y-3 max-w-xs mx-auto w-full px-4">
+              <div className="space-y-1">
+                <h3 className="font-heading text-base sm:text-[17px] font-semibold text-white tracking-[-0.015em] leading-snug">
+                  Meracik Aroma Khas Anda
+                </h3>
+                <p className="font-body text-xs text-slate-300 font-normal leading-relaxed transition-opacity duration-200">
+                  {craftingPhase === 0 && 'Memilih bibit murni terbaik...'}
+                  {craftingPhase === 1 && 'Menyelaraskan karakter aroma pilihan Anda...'}
+                  {craftingPhase === 2 && 'Menyempurnakan racikan siap saji...'}
+                </p>
+              </div>
+
+              {/* Hairline Progress Bar Sinkron dengan Pengisian Cairan */}
+              <div className="w-40 h-[2px] mx-auto rounded-full bg-white/10 overflow-hidden">
+                <div className="w-full h-full rounded-full sinki-elixir-progress" />
+              </div>
             </div>
           </div>
         )}

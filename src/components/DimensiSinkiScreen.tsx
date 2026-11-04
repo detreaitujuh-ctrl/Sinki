@@ -270,13 +270,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
   const handleResetLuxuryTheme = async () => {
     if (isSavingTheme) return;
-    setSelectedThemeId('champagne-gold');
-    applyThemeToDocument('champagne-gold');
+    setSelectedThemeId('moonlight-silver');
+    applyThemeToDocument('moonlight-silver');
     setIsSavingTheme(true);
     try {
       const saved = await resetThemeToDefault();
       onThemeUpdated?.(saved);
-      onShowToast('Tema dikembalikan ke Champagne Gold (Default Signature).');
+      onShowToast('Tema dikembalikan ke Moonlight Silver (Default Signature).');
     } finally {
       setIsSavingTheme(false);
     }
@@ -788,12 +788,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   };
 
   const handleOpenEditPerfume = (item: PerfumeItem) => {
+    const cats = Array.isArray(item.collectionCategories) ? [...item.collectionCategories] : [];
     setEditingPerfume({
       ...item,
-      collectionCategories: Array.isArray(item.collectionCategories)
-        ? [...item.collectionCategories]
-        : [],
-      pricePerMl: item.pricePerMl === 4000 ? 4000 : 3000,
+      collectionCategories: cats,
+      pricePerMl: cats.includes('new_trending')
+        ? 4000
+        : cats.includes('viral_hits')
+        ? 3000
+        : undefined,
       usageRecommendation: item.usageRecommendation || '',
     });
     setEditingAccordsStr((item.accords || []).join(', '));
@@ -840,6 +843,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       .map((s) => s.trim())
       .filter(Boolean);
 
+    const resolvedCats = Array.isArray(editingPerfume.collectionCategories)
+      ? editingPerfume.collectionCategories
+      : [];
+    const resolvedRate: PricePerMlRate | undefined = resolvedCats.includes('new_trending')
+      ? 4000
+      : resolvedCats.includes('viral_hits')
+      ? 3000
+      : undefined;
+
     const updatedItem: PerfumeItem = {
       ...editingPerfume,
       name: editingPerfume.name.trim(),
@@ -847,10 +859,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       categoryLabel: editingPerfume.categoryLabel || 'SINKI Signature',
       tagline: editingPerfume.tagline.trim(),
       accords: parsedAccords.length > 0 ? parsedAccords : editingPerfume.accords,
-      collectionCategories: Array.isArray(editingPerfume.collectionCategories)
-        ? editingPerfume.collectionCategories
-        : [],
-      pricePerMl: editingPerfume.pricePerMl === 4000 ? 4000 : 3000,
+      collectionCategories: resolvedCats,
+      pricePerMl: resolvedRate,
       usageRecommendation: (editingPerfume.usageRecommendation || '').trim(),
     };
     const updated = perfumesList.map((p) => (p.id === updatedItem.id ? updatedItem : p));
@@ -871,6 +881,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
+    const resolvedCats = newPerfumeForm.collectionCategories;
+    const resolvedRate: PricePerMlRate | undefined = resolvedCats.includes('new_trending')
+      ? 4000
+      : resolvedCats.includes('viral_hits')
+      ? 3000
+      : undefined;
+
     const newItem: PerfumeItem = {
       id: `p-${Date.now()}`,
       name: newPerfumeForm.name.trim(),
@@ -879,8 +896,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       tagline: newPerfumeForm.tagline.trim() || 'Aroma Mewah Khas SINKI',
       accords: accords.length > 0 ? accords : ['Luxury', 'Signature'],
       isActive: true,
-      collectionCategories: newPerfumeForm.collectionCategories,
-      pricePerMl: newPerfumeForm.pricePerMl,
+      collectionCategories: resolvedCats,
+      pricePerMl: resolvedRate,
       usageRecommendation: newPerfumeForm.usageRecommendation.trim(),
     };
     const updated = [newItem, ...perfumesList];
@@ -1619,7 +1636,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5 truncate">
-                      Klik salah satu dari 5 palet mewah untuk mengubah suasana seluruh website secara instan.
+                      Klik salah satu dari 5 warna kristal berlatar Pohon & Air Terjun (Anti-Redup).
                     </p>
                   </div>
                 </div>
@@ -1902,7 +1919,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     Katalog Varian & 6 Kategori Collection ({perfumesList.length})
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-[1.45]">
-                    Kelola 6 kategori Collection (Daily Fresh, Professional, Attraction, Luxury, Viral Hits, New & Trending), tarif per ml, dan rekomendasi penggunaan.
+                    Kelola 4 Kategori Utama (Daily Fresh, Professional, Attraction, Luxury), Viral Hits (Rp3.000/ml), dan New & Trending (Rp4.000/ml).
                   </p>
                 </div>
 
@@ -1984,6 +2001,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         Array.isArray(p.collectionCategories) &&
                         p.collectionCategories.includes(cat.id)
                     ).length;
+                    const catRateBadge =
+                      cat.id === 'viral_hits'
+                        ? 'Rp3.000/ml'
+                        : cat.id === 'new_trending'
+                        ? 'Rp4.000/ml'
+                        : null;
 
                     return (
                       <button
@@ -2011,7 +2034,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           </span>
                         </div>
                         <span className="text-xs text-slate-400 line-clamp-1 mt-1">
-                          {cat.subtitle}
+                          {catRateBadge ? `${catRateBadge} · ${cat.subtitle}` : cat.subtitle}
                         </span>
                       </button>
                     );
@@ -2073,6 +2096,26 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                       (c) => c.id === perfumeCategoryFilter
                     );
 
+                    // Keterangan tarif per ml HANYA tampil untuk Viral Hits (Rp3.000/ml) & New & Trending (Rp4.000/ml)
+                    const cardPerMlBadge =
+                      perfumeCategoryFilter === 'new_trending'
+                        ? `Rp ${(pricingForm.premiumRatePerMl || 4000).toLocaleString('id-ID')}/ml`
+                        : perfumeCategoryFilter === 'viral_hits'
+                        ? `Rp ${(pricingForm.mykonosRatePerMl || 3000).toLocaleString('id-ID')}/ml`
+                        : perfumeCategoryFilter === 'all'
+                        ? itemCats.includes('new_trending')
+                          ? `Rp ${(pricingForm.premiumRatePerMl || 4000).toLocaleString('id-ID')}/ml`
+                          : itemCats.includes('viral_hits')
+                          ? `Rp ${(pricingForm.mykonosRatePerMl || 3000).toLocaleString('id-ID')}/ml`
+                          : null
+                        : null;
+
+                    const primaryCategoryTitle = activeSixCatFilter
+                      ? activeSixCatFilter.title
+                      : itemCats.length > 0
+                      ? COLLECTION_CATEGORIES.find((m) => m.id === itemCats[0])?.title || 'Collection'
+                      : 'Aroma Signature';
+
                     return (
                       <div
                         key={item.id}
@@ -2088,14 +2131,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-1.5 text-xs tabular-nums">
                                 <span className="text-[#E8C782] font-semibold">
-                                  {itemCats.length > 0
-                                    ? COLLECTION_CATEGORIES.find((m) => m.id === itemCats[0])?.title || 'Collection'
-                                    : 'Aroma Signature'}
+                                  {primaryCategoryTitle}
                                 </span>
-                                <span className="text-slate-600">·</span>
-                                <span className="text-slate-200 font-semibold">
-                                  Rp {(item.pricePerMl === 4000 ? 4000 : 3000).toLocaleString('id-ID')}/ml
-                                </span>
+                                {cardPerMlBadge && (
+                                  <>
+                                    <span className="text-slate-600">·</span>
+                                    <span className="text-slate-200 font-semibold">
+                                      {cardPerMlBadge}
+                                    </span>
+                                  </>
+                                )}
                                 <span className="text-slate-600">·</span>
                                 <span
                                   className={
@@ -2231,38 +2276,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         />
                       </div>
 
-                      {/* Tarif Harga per ml Aktual */}
+                      {/* 4 Kategori Kebutuhan (Multi-Pilihan — Harga Paket Botol Reguler) */}
                       <div>
                         <label className="text-xs font-medium text-slate-300 block mb-1.5">
-                          Tarif Harga Aktual per ml
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {([3000, 4000] as const).map((rate) => {
-                            const selected = (editingPerfume.pricePerMl || 3000) === rate;
-                            return (
-                              <button
-                                key={rate}
-                                type="button"
-                                onClick={() =>
-                                  setEditingPerfume({ ...editingPerfume, pricePerMl: rate })
-                                }
-                                className={`py-2 px-3 rounded-[6px] border text-xs sm:text-sm tabular-nums font-semibold transition-colors ${
-                                  selected
-                                    ? 'sinki-arch-card-selected text-[#F3E6C8]'
-                                    : 'sinki-arch-subbox text-slate-400 hover:text-white'
-                                }`}
-                              >
-                                Rp {rate.toLocaleString('id-ID')} / ml
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* 4 Kategori Kebutuhan (Multi-Pilihan) */}
-                      <div>
-                        <label className="text-xs font-medium text-slate-300 block mb-1.5">
-                          Kategori Kebutuhan (Bisa Pilih Lebih dari Satu)
+                          4 Kategori Utama (Harga Paket Botol Reguler)
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                           {COLLECTION_CATEGORIES.filter((c) => c.group === 'need').map((cat) => {
@@ -2296,16 +2313,17 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </div>
                       </div>
 
-                      {/* 2 Kategori Tren & Popularitas (Pilihan Bebas) */}
+                      {/* 2 Kategori Tren & Popularitas (Khusus Tarif per ml: Viral Hits 3.000/ml & New & Trending 4.000/ml) */}
                       <div>
                         <label className="text-xs font-medium text-slate-300 block mb-1.5">
-                          Kategori Tren & Popularitas (Opsional)
+                          Kategori Khusus Tarif per ml (Opsional)
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                           {COLLECTION_CATEGORIES.filter((c) => c.group === 'trend').map((cat) => {
                             const checked = (editingPerfume.collectionCategories || []).includes(
                               cat.id
                             );
+                            const rateNote = cat.id === 'viral_hits' ? 'Rp3.000/ml' : 'Rp4.000/ml';
                             return (
                               <button
                                 key={cat.id}
@@ -2319,13 +2337,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                     ),
                                   })
                                 }
-                                className={`p-2 rounded-[6px] border text-left flex items-center justify-between text-xs transition-colors ${
+                                className={`p-2 rounded-[6px] border text-left flex items-center justify-between gap-1 text-xs transition-colors ${
                                   checked
                                     ? 'sinki-arch-card-selected text-white font-semibold'
                                     : 'sinki-arch-subbox text-slate-400 hover:text-slate-200'
                                 }`}
                               >
-                                <span>{cat.title}</span>
+                                <span className="truncate">
+                                  {cat.title} · {rateNote}
+                                </span>
                                 {checked && <Check size={13} className="text-[#E8C782] shrink-0" />}
                               </button>
                             );
@@ -2432,38 +2452,10 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         />
                       </div>
 
-                      {/* Tarif Harga per ml */}
+                      {/* 4 Kategori Utama (Harga Paket Botol Reguler) */}
                       <div>
                         <label className="text-xs font-medium text-slate-300 block mb-1.5">
-                          Tarif Harga Aktual per ml
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {([3000, 4000] as const).map((rate) => {
-                            const selected = newPerfumeForm.pricePerMl === rate;
-                            return (
-                              <button
-                                key={rate}
-                                type="button"
-                                onClick={() =>
-                                  setNewPerfumeForm({ ...newPerfumeForm, pricePerMl: rate })
-                                }
-                                className={`py-2 px-3 rounded-[6px] border text-xs sm:text-sm tabular-nums font-semibold transition-colors ${
-                                  selected
-                                    ? 'sinki-arch-card-selected text-[#F3E6C8]'
-                                    : 'sinki-arch-subbox text-slate-400 hover:text-white'
-                                }`}
-                              >
-                                Rp {rate.toLocaleString('id-ID')} / ml
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Kategori Kebutuhan */}
-                      <div>
-                        <label className="text-xs font-medium text-slate-300 block mb-1.5">
-                          Kategori Kebutuhan (Multi-Pilihan)
+                          4 Kategori Utama (Harga Paket Botol Reguler)
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                           {COLLECTION_CATEGORIES.filter((c) => c.group === 'need').map((cat) => {
@@ -2495,14 +2487,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </div>
                       </div>
 
-                      {/* Kategori Tren & Popularitas */}
+                      {/* Kategori Khusus Tarif per ml (Viral Hits 3.000/ml & New & Trending 4.000/ml) */}
                       <div>
                         <label className="text-xs font-medium text-slate-300 block mb-1.5">
-                          Kategori Tren & Popularitas (Opsional)
+                          Kategori Khusus Tarif per ml (Opsional)
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                           {COLLECTION_CATEGORIES.filter((c) => c.group === 'trend').map((cat) => {
                             const checked = newPerfumeForm.collectionCategories.includes(cat.id);
+                            const rateNote = cat.id === 'viral_hits' ? 'Rp3.000/ml' : 'Rp4.000/ml';
                             return (
                               <button
                                 key={cat.id}
@@ -2516,13 +2509,15 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                                     ),
                                   })
                                 }
-                                className={`p-2 rounded-[6px] border text-left flex items-center justify-between text-xs transition-colors ${
+                                className={`p-2 rounded-[6px] border text-left flex items-center justify-between gap-1 text-xs transition-colors ${
                                   checked
                                     ? 'sinki-arch-card-selected text-white font-semibold'
                                     : 'sinki-arch-subbox text-slate-400 hover:text-slate-200'
                                 }`}
                               >
-                                <span>{cat.title}</span>
+                                <span className="truncate">
+                                  {cat.title} · {rateNote}
+                                </span>
                                 {checked && <Check size={13} className="text-[#E8C782] shrink-0" />}
                               </button>
                             );
@@ -3938,13 +3933,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
                     <div>
                       <h3 className="font-heading text-base sm:text-lg font-semibold text-white tracking-[-0.015em] leading-[1.25] flex flex-wrap items-center gap-2">
-                        <span>5 Pilihan Warna Tema Luxury Architectural</span>
+                        <span>5 Pilihan Warna Tema Forest Waterfall (Anti-Redup)</span>
                         <span className="font-body text-xs text-[#E8C782] bg-[#D4AF6A]/15 px-2.5 py-0.5 rounded-[5px] border border-[#D4AF6A]/35 font-semibold">
                           Aktif: {activeThemeMeta.name}
                         </span>
                       </h3>
                       <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-[1.45]">
-                        Ubah nuansa garis metalik, pendaran sudut kotak, dan aksen tombol di seluruh halaman pengunjung maupun dashboard admin tanpa mengubah ukuran kotak.
+                        Seluruh 5 pilihan sudah berlatar Pohon, Hutan & Air Terjun (video Home tetap bersih) dengan garis kotak bercahaya terang di layar HP standar.
                       </p>
                     </div>
                   </div>
@@ -3952,12 +3947,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <button
                     type="button"
                     onClick={handleResetLuxuryTheme}
-                    disabled={isSavingTheme || selectedThemeId === 'champagne-gold'}
+                    disabled={isSavingTheme || selectedThemeId === 'moonlight-silver'}
                     className="py-1.5 px-3 rounded-[8px] sinki-arch-subbox border hover:border-[#D4AF6A]/55 disabled:opacity-45 text-slate-300 hover:text-white text-xs sm:text-sm font-medium flex items-center gap-1.5 active:scale-95 transition-all self-start sm:self-auto shrink-0"
-                    title="Kembalikan ke tema bawaan Champagne Gold"
+                    title="Kembalikan ke tema bawaan Moonlight Silver"
                   >
                     <RotateCcw size={12} />
-                    <span>Default Champagne Gold</span>
+                    <span>Default Moonlight Silver</span>
                   </button>
                 </div>
 

@@ -58,7 +58,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
         <div>
           <div className="flex items-center justify-between pb-3.5 border-b border-[#D4AF6A]/25 sinki-heading-anim">
             <div>
-              <span className="font-heading font-bold text-base tracking-[0.16em] block text-transparent bg-clip-text bg-gradient-to-r from-[#F0DFB6] via-[#C5A059] to-[#8C6826] drop-shadow-sm select-none">
+              <span className="font-heading font-bold text-base tracking-[0.16em] block text-[var(--arch-gold)] transition-colors duration-200 drop-shadow-sm select-none">
                 SINKI
               </span>
               <span className="font-body text-[11px] tracking-[0.06em] font-medium block mt-0.5 text-slate-300 select-none">

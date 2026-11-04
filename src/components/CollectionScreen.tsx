@@ -24,6 +24,7 @@ import {
   addToCart,
 } from '../utils/cartStorage';
 import { ReviewItem, getCachedReviews, fetchReviewsFromSupabase } from '../utils/reviewStorage';
+import { useConstantTickerSpeed } from '../utils/useConstantTickerSpeed';
 import { PerfumeDetailModal } from './PerfumeDetailModal';
 
 interface CollectionScreenProps {
@@ -292,6 +293,15 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
       window.removeEventListener('focus', sync);
     };
   }, []);
+
+  const collectionTickerTrackRef = useConstantTickerSpeed(26);
+  const marqueeReviews = useMemo(
+    () =>
+      collectionReviews.length === 1
+        ? [...collectionReviews, ...collectionReviews]
+        : collectionReviews,
+    [collectionReviews]
+  );
 
   const [catalogPerfumes, setCatalogPerfumes] = useState<PerfumeItem[]>(() =>
     perfumes && perfumes.length > 0 ? perfumes : getStoredPerfumes()
@@ -570,7 +580,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                 aria-hidden="true"
                 className="sinki-tapered-line-left h-[1px] flex-1 max-w-[68px]"
               />
-              <h1 className="font-heading text-[15px] sm:text-base font-semibold text-white tracking-[-0.015em] leading-[1.2] shrink-0">
+              <h1 className="sinki-collection-heading font-heading text-[15px] sm:text-base font-semibold text-white tracking-[-0.015em] leading-[1.2] shrink-0">
                 Temukan Aroma Karaktermu
               </h1>
               <span
@@ -654,17 +664,20 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                 className="luxury-ticker-container relative w-full py-1.5 px-2.5 rounded-[8px] sinki-arch-bar hover:border-[#E8C782]/65 border flex items-center gap-2 cursor-pointer overflow-hidden group transition-all"
                 title="Ketuk untuk melihat ulasan pembeli"
               >
-                {/* Micro Gold Star Icon */}
+                {/* Micro Crystal Star Icon */}
                 <div className="w-5 h-5 rounded-[6px] bg-[#DFB76C]/15 border border-[#DFB76C]/35 flex items-center justify-center text-[#DFB76C] shrink-0">
-                  <Star size={11} className="fill-[#DFB76C] text-[#DFB76C]" />
+                  <Star size={11} className="fill-current text-[#DFB76C]" />
                 </div>
 
                 {/* Full Width Marquee Track */}
                 <div className="relative overflow-hidden flex-1 ticker-mask-fade">
-                  <div className="luxury-ticker-track font-body text-[11px] text-slate-200 leading-tight">
+                  <div
+                    ref={collectionTickerTrackRef}
+                    className="luxury-ticker-track font-body text-[11px] text-slate-200 leading-tight"
+                  >
                     {/* Track 1 */}
                     <div className="flex items-center gap-4 pr-4">
-                      {collectionReviews.map((r, i) => (
+                      {marqueeReviews.map((r, i) => (
                         <span key={`rev-a-${i}`} className="inline-flex items-center gap-1.5 whitespace-nowrap">
                           <span className="text-[#DFB76C] font-semibold">{r.emoji || '★'}</span>
                           <span className="text-zinc-200 font-normal">"{r.comment}"</span>
@@ -673,13 +686,13 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                             <span>{r.name}</span>
                           </span>
                           <span className="text-[#DFB76C]/80 text-[10px] font-medium">({r.variant})</span>
-                          <span className="text-slate-600 px-1">•</span>
+                          <span className="text-white/40 px-1">•</span>
                         </span>
                       ))}
                     </div>
                     {/* Track 2 (Duplicate for Seamless Loop) */}
                     <div className="flex items-center gap-4 pr-4" aria-hidden="true">
-                      {collectionReviews.map((r, i) => (
+                      {marqueeReviews.map((r, i) => (
                         <span key={`rev-b-${i}`} className="inline-flex items-center gap-1.5 whitespace-nowrap">
                           <span className="text-[#DFB76C] font-semibold">{r.emoji || '★'}</span>
                           <span className="text-zinc-200 font-normal">"{r.comment}"</span>
@@ -688,7 +701,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                             <span>{r.name}</span>
                           </span>
                           <span className="text-[#DFB76C]/80 text-[10px] font-medium">({r.variant})</span>
-                          <span className="text-slate-600 px-1">•</span>
+                          <span className="text-white/40 px-1">•</span>
                         </span>
                       ))}
                     </div>
@@ -864,10 +877,10 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                             e.stopPropagation();
                             handleOpenDetail(perfume);
                           }}
-                          className="font-body py-1.5 px-2.5 rounded-[6px] sinki-arch-subbox hover:bg-[#C5A059]/20 border border-[#D4AF6A]/45 hover:border-[#E8C782]/70 text-[#E2C27F] hover:text-[#F3E6C8] text-[11.5px] font-semibold leading-none flex items-center gap-1 shrink-0 transition-all duration-200 active:scale-[0.95]"
+                          className="font-body py-1.5 px-2.5 rounded-[6px] sinki-arch-subbox hover:bg-[var(--arch-badge-bg)] border border-[var(--arch-border-default)] hover:border-[var(--arch-border-hover)] text-[var(--arch-text-accent-bright)] hover:text-white text-[11.5px] font-semibold leading-none flex items-center gap-1 shrink-0 transition-all duration-200 active:scale-[0.95]"
                         >
                           <span>Ambil Aroma Ini</span>
-                          <ChevronRight size={12} className="text-[#DFB76C]" />
+                          <ChevronRight size={12} className="text-[var(--arch-text-accent-bright)]" />
                         </button>
                       </div>
                     </div>

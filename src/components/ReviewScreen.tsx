@@ -587,14 +587,14 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                         {rev.name}
                       </span>
                       <CheckCircle2 size={9.5} className="text-emerald-400 shrink-0" />
-                      <span aria-hidden="true" className="text-slate-600 shrink-0">·</span>
+                      <span aria-hidden="true" className="text-white/40 shrink-0">·</span>
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpenPerfumeDetailByName(rev.variant);
                         }}
-                        style={{ color: 'var(--arch-gold-bright)' }}
+                        style={{ color: 'var(--arch-text-accent-bright)' }}
                         className="hover:brightness-125 font-medium truncate inline-flex items-center gap-0.5 min-w-0 cursor-pointer"
                         title={`Lihat varian ${rev.variant}`}
                       >

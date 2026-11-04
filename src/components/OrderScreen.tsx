@@ -7,10 +7,8 @@ import {
   Clock,
   Trash2,
   Plus,
-  Sparkles,
   CheckCircle2,
   MessageSquare,
-  ArrowRight,
   ChevronRight,
   ChevronDown,
 } from 'lucide-react';
@@ -163,8 +161,8 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
             <span className="font-heading text-[13px] font-semibold text-white group-hover:text-[#F3E6C8] transition-colors">
               4 Kategori Utama
             </span>
-            <span className="text-[11px] tabular-nums text-emerald-300 font-medium">
-              6–8 Jam <span aria-hidden="true" className="text-slate-500">·</span> Mulai Rp {Math.round(regulerMinPrice / 1000)}rb
+            <span className="text-[11px] tabular-nums text-[var(--arch-text-accent-bright)] font-semibold">
+              6–8 Jam <span aria-hidden="true" className="text-white/45">·</span> Mulai Rp {Math.round(regulerMinPrice / 1000)}rb
             </span>
           </div>
           <p className="text-[11.5px] text-slate-300 leading-snug">
@@ -185,11 +183,11 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
       >
         <div className="space-y-0.5 min-w-0">
           <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5">
-            <span className="font-heading text-[13px] font-semibold text-amber-200 group-hover:text-amber-100 transition-colors">
+            <span className="font-heading text-[13px] font-semibold text-white group-hover:text-[#F3E6C8] transition-colors">
               Viral Hits
             </span>
-            <span className="text-[11px] tabular-nums text-[#DFB76C] font-semibold">
-              8–12 Jam <span aria-hidden="true" className="text-slate-500">·</span> Rp {viralRatePerMl.toLocaleString('id-ID')}/ml
+            <span className="text-[11px] tabular-nums text-[var(--arch-text-accent-bright)] font-semibold">
+              8–12 Jam <span aria-hidden="true" className="text-white/45">·</span> Rp {viralRatePerMl.toLocaleString('id-ID')}/ml
             </span>
           </div>
           <p className="text-[11.5px] text-slate-300 leading-snug">
@@ -210,11 +208,11 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
       >
         <div className="space-y-0.5 min-w-0">
           <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5">
-            <span className="font-heading text-[13px] font-semibold text-[#DFB76C] group-hover:text-[#FFF0CA] transition-colors">
+            <span className="font-heading text-[13px] font-semibold text-white group-hover:text-[#F3E6C8] transition-colors">
               New & Trending
             </span>
-            <span className="text-[11px] tabular-nums text-rose-300 font-semibold">
-              Seharian <span aria-hidden="true" className="text-slate-500">·</span> Rp {trendingRatePerMl.toLocaleString('id-ID')}/ml
+            <span className="text-[11px] tabular-nums text-[var(--arch-text-accent-bright)] font-semibold">
+              Seharian <span aria-hidden="true" className="text-white/45">·</span> Rp {trendingRatePerMl.toLocaleString('id-ID')}/ml
             </span>
           </div>
           <p className="text-[11.5px] text-slate-300 leading-snug">
@@ -305,13 +303,13 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
             <div className="sinki-cascade-row-0 p-3 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border space-y-2 transition-colors">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-[6px] bg-gradient-to-br from-[#DFB76C] to-[#A07C3A] text-slate-950 flex items-center justify-center shadow-md shrink-0">
+                  <div className="w-8 h-8 rounded-[6px] champagne-gold-btn text-slate-950 flex items-center justify-center shadow-md shrink-0">
                     <Truck size={16} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-body text-[11px] text-emerald-400 font-semibold leading-tight">
-                        Gratis Ongkir Jabodetabek
+                      <span className="font-body text-[11px] text-white font-semibold leading-tight">
+                        Gratis Ongkir Se-Jabodetabek
                       </span>
                       <span className="font-body text-[10.5px] tabular-nums text-zinc-300 font-medium bg-white/[0.06] px-1.5 py-0.5 rounded-[4px] border border-[#D4AF6A]/25 leading-none">
                         Min. Rp {minFreeShipping.toLocaleString('id-ID')}
@@ -483,8 +481,8 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                 onClick={() => setIsGuideExpandedInCart((prev) => !prev)}
                 className="w-full px-4 py-3 flex items-center justify-between gap-2 text-left hover:bg-white/[0.03] transition-colors cursor-pointer"
               >
-                <span className="font-heading text-xs sm:text-[13px] font-semibold text-[#DFB76C] flex items-center gap-1.5">
-                  <Clock size={13} className="shrink-0" />
+                <span className="font-heading text-xs sm:text-[13px] font-semibold text-white flex items-center gap-1.5">
+                  <Clock size={13} className="text-[#DFB76C] shrink-0" />
                   <span>Lihat Perbedaan Kualitas & Ketahanan Aroma</span>
                 </span>
                 <ChevronDown
@@ -609,9 +607,9 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                 </div>
               </div>
 
-              {/* Single-Line Text-Only Guarantee Footer */}
+              {/* Single-Line Text-Only Authenticity Footer */}
               <p className="pt-2 border-t border-[#D4AF6A]/20 text-center font-body text-[10.5px] sm:text-[11px] text-slate-400 whitespace-nowrap">
-                Garansi Pecah 100% <span aria-hidden="true" className="mx-1.5 text-slate-600">·</span> Bibit Murni Eropa
+                Bibit Murni Eropa
               </p>
             </div>
           </div>
@@ -638,11 +636,9 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
                   <button
                     type="button"
                     onClick={onNavigateToCollection}
-                    className="w-full py-3 px-4 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:scale-98 text-slate-950 font-body font-semibold text-xs sm:text-[13.5px] flex items-center justify-center gap-2 shadow-lg shadow-black/40 transition-all"
+                    className="w-full py-3 px-4 rounded-[8px] bg-gradient-to-r from-[#DFB76C] via-[#C5A059] to-[#A07C3A] hover:brightness-105 active:scale-98 text-slate-950 font-body font-semibold text-xs sm:text-[13.5px] flex items-center justify-center shadow-lg shadow-black/40 transition-all"
                   >
-                    <Sparkles size={16} className="shrink-0" />
                     <span>Jelajahi 6 Koleksi Aroma SINKI</span>
-                    <ArrowRight size={15} className="shrink-0" />
                   </button>
                 </div>
               )}
@@ -651,8 +647,9 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
             {/* Panduan Kategori & Ketahanan SINKI */}
             <div className="sinki-cascade-row-1 p-4 rounded-[10px] sinki-arch-card border space-y-2">
               <div className="flex items-center justify-between gap-2 pb-1 border-b border-[#D4AF6A]/20">
-                <span className="font-heading text-xs sm:text-[13px] font-semibold text-[#DFB76C] flex items-center gap-1.5">
-                  <Clock size={13} /> Panduan Kualitas & Ketahanan Aroma
+                <span className="font-heading text-xs sm:text-[13px] font-semibold text-white flex items-center gap-1.5">
+                  <Clock size={13} className="text-[#DFB76C] shrink-0" />
+                  <span>Panduan Kualitas & Ketahanan Aroma</span>
                 </span>
                 <span className="font-body text-[11px] text-slate-400">
                   Ketuk untuk buka koleksi
@@ -662,12 +659,15 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
               {renderQualityGuideRows()}
             </div>
 
-            {/* Single-Line Text-Only Promo & Guarantee */}
-            <p className="sinki-cascade-row-2 pt-0.5 text-center font-body text-[10.5px] sm:text-[11px] text-slate-400 tabular-nums whitespace-nowrap">
-              Gratis Ongkir Se-Jabodetabek (Min. Rp {Math.round(minFreeShipping / 1000)}rb)
-              <span aria-hidden="true" className="mx-1.5 text-slate-600">·</span>
-              Garansi Pecah 100%
-            </p>
+            {/* Single-Line Promo with Leading Icon & Clear Readable Blink */}
+            <div className="sinki-cascade-row-2 pt-0.5 flex items-center justify-center">
+              <p className="inline-flex items-center justify-center gap-1.5 font-body text-[11px] sm:text-xs font-medium text-white tabular-nums whitespace-nowrap">
+                <Truck size={13} className="text-[var(--arch-text-accent-bright)] shrink-0 stroke-[2.1]" />
+                <span className="sinki-readable-blink">
+                  Gratis Ongkir Se-Jabodetabek (Min. Rp {Math.round(minFreeShipping / 1000)}rb)
+                </span>
+              </p>
+            </div>
           </div>
         )}
       </div>

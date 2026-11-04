@@ -150,6 +150,10 @@ export default function App() {
       }
     });
 
+    // Preload scenic forest waterfall background for instant 0ms tab transitions
+    const preloadForest = new Image();
+    preloadForest.src = '/assets/forest/sinki-forest-waterfall.jpg';
+
     // Sync ticker config from server immediately
     fetchTickerFromServer().then((cfg) => {
       if (cfg) setTickerConfig(cfg);
@@ -351,7 +355,10 @@ export default function App() {
       <div className="hidden md:block absolute -bottom-40 -right-40 w-96 h-96 bg-amber-600/[0.05] rounded-full blur-[140px] pointer-events-none" />
 
       {/* Mobile App Container */}
-      <main className="relative w-full max-w-md h-full md:h-[92dvh] md:max-h-[880px] sinki-arch-canvas sinki-canvas-frame-only md:rounded-[10px] md:border md:border-[#D4AF6A]/40 md:shadow-[0_24px_75px_rgba(0,0,0,0.92)] flex flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)] md:pt-0">
+      <main
+        data-active-tab={activeTab}
+        className="relative w-full max-w-md h-full md:h-[92dvh] md:max-h-[880px] sinki-arch-canvas sinki-canvas-frame-only md:rounded-[10px] md:border md:border-[#D4AF6A]/40 md:shadow-[0_24px_75px_rgba(0,0,0,0.92)] flex flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)] md:pt-0"
+      >
         {/* Subtle Top Notch Line for App Realism on Desktop */}
         <div className="relative z-10 hidden md:flex justify-center pt-2 pb-1 shrink-0">
           <div className="w-20 h-1 rounded-[4px] bg-[#D4AF6A]/25" />

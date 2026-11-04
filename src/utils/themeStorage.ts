@@ -1,11 +1,11 @@
 import { SUPABASE_STORAGE_BASE, getOwnerToken } from './assetStorage';
 
 export type LuxuryThemeId =
-  | 'champagne-gold'
-  | 'platinum-silver'
-  | 'rose-gold'
-  | 'imperial-emerald'
-  | 'royal-bronze';
+  | 'moonlight-silver'
+  | 'pearl-ivory'
+  | 'dew-jade'
+  | 'glacial-aqua'
+  | 'warm-gold';
 
 export interface LuxuryThemeConfig {
   id: LuxuryThemeId;
@@ -26,64 +26,64 @@ export interface LuxuryThemeOption {
 
 export const LUXURY_THEMES: LuxuryThemeOption[] = [
   {
-    id: 'champagne-gold',
-    name: 'Champagne Gold',
-    subtitle: 'Klasik Haute Parfumerie · Emas Sampanye & Obsidian',
+    id: 'moonlight-silver',
+    name: 'Moonlight Silver',
+    subtitle: 'Perak Kristal & Putih Es · Paling Terang Menyatu Buih Air Terjun',
     badge: 'Signature',
-    canvasHex: '#08080b',
-    surfaceHex: '#131318',
-    accentHex: '#D4AF6A',
-    brightHex: '#E8C782',
-    softHex: '#F3E6C8',
+    canvasHex: '#07110d',
+    surfaceHex: '#101d19',
+    accentHex: '#D6E4F2',
+    brightHex: '#EFF6FC',
+    softHex: '#FFFFFF',
   },
   {
-    id: 'platinum-silver',
-    name: 'Platinum Argent',
-    subtitle: 'Monokrom Horlogerie · Perak Platinum & Onyx',
-    badge: 'Horlogerie',
-    canvasHex: '#07080b',
-    surfaceHex: '#111319',
-    accentHex: '#A9B8CB',
-    brightHex: '#CEDAE8',
-    softHex: '#EDF2F8',
+    id: 'pearl-ivory',
+    name: 'Pearl Silk Ivory',
+    subtitle: 'Putih Mutiara Gading · Lembut Tenang & Sangat Bersih di Mata',
+    badge: 'Quiet Luxury',
+    canvasHex: '#08110c',
+    surfaceHex: '#141e18',
+    accentHex: '#EFE6D5',
+    brightHex: '#FAF5EA',
+    softHex: '#FFFFFF',
   },
   {
-    id: 'rose-gold',
-    name: 'Rose Cuivre',
-    subtitle: 'Couture Paris · Emas Mawar & Velvet Noir',
-    badge: 'Couture',
-    canvasHex: '#0a0709',
-    surfaceHex: '#161114',
-    accentHex: '#D49A8D',
-    brightHex: '#E8B6AA',
-    softHex: '#F7DFDA',
+    id: 'dew-jade',
+    name: 'Luminous Dew Jade',
+    subtitle: 'Hijau Giok Embun Cerah · Segar Alami Senada Pucuk Daun & Air',
+    badge: 'Botanical',
+    canvasHex: '#06120c',
+    surfaceHex: '#0e2218',
+    accentHex: '#7CEAC0',
+    brightHex: '#AEF7DA',
+    softHex: '#E8FFF5',
   },
   {
-    id: 'imperial-emerald',
-    name: 'Imperial Emerald',
-    subtitle: 'Royal Niche Atelier · Zamrud Malachite & Emas Sage',
-    badge: 'Royal Atelier',
-    canvasHex: '#060a09',
-    surfaceHex: '#0e1613',
-    accentHex: '#66B598',
-    brightHex: '#8AD2B7',
-    softHex: '#D6F3E7',
+    id: 'glacial-aqua',
+    name: 'Glacial Aqua',
+    subtitle: 'Biru Kristal Air Terjun · Sejuk Bening Bagaikan Tetesan Embun',
+    badge: 'Aquatic',
+    canvasHex: '#061113',
+    surfaceHex: '#0e2025',
+    accentHex: '#86E3FF',
+    brightHex: '#B8F0FF',
+    softHex: '#ECFAFF',
   },
   {
-    id: 'royal-bronze',
-    name: 'Royal Oud Bronze',
-    subtitle: 'Private Reserve · Perunggu Cognac & Kayu Oud',
-    badge: 'Reserve',
-    canvasHex: '#0b0806',
-    surfaceHex: '#17120e',
-    accentHex: '#C88954',
-    brightHex: '#E2A773',
-    softHex: '#F6DEC8',
+    id: 'warm-gold',
+    name: 'Warm Gold',
+    subtitle: 'Emas Kuning Cerah · Hangat Mewah Kontras di Atas Hutan Gelap',
+    badge: 'Royal Gold',
+    canvasHex: '#08110b',
+    surfaceHex: '#152015',
+    accentHex: '#F2C55C',
+    brightHex: '#FFDC82',
+    softHex: '#FFF5D4',
   },
 ];
 
 export const DEFAULT_THEME: LuxuryThemeConfig = {
-  id: 'champagne-gold',
+  id: 'moonlight-silver',
 };
 
 const THEME_LOCAL_KEY = 'sinki_luxury_theme_v1';
@@ -95,6 +95,15 @@ const SUPABASE_THEME_UPLOAD_URL =
 const SUPABASE_SERVICE_ROLE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
 
+const LEGACY_THEME_MAP: Record<string, LuxuryThemeId> = {
+  'forest-waterfall': 'warm-gold',
+  'champagne-gold': 'moonlight-silver',
+  'platinum-silver': 'moonlight-silver',
+  'rose-gold': 'pearl-ivory',
+  'imperial-emerald': 'dew-jade',
+  'royal-bronze': 'warm-gold',
+};
+
 export const isValidThemeId = (val: unknown): val is LuxuryThemeId => {
   return (
     typeof val === 'string' &&
@@ -102,9 +111,17 @@ export const isValidThemeId = (val: unknown): val is LuxuryThemeId => {
   );
 };
 
-export const applyThemeToDocument = (themeId: LuxuryThemeId): void => {
+export const resolveLuxuryThemeId = (val: unknown): LuxuryThemeId => {
+  if (isValidThemeId(val)) return val;
+  if (typeof val === 'string' && LEGACY_THEME_MAP[val]) {
+    return LEGACY_THEME_MAP[val];
+  }
+  return DEFAULT_THEME.id;
+};
+
+export const applyThemeToDocument = (themeId: LuxuryThemeId | string): void => {
   if (typeof document === 'undefined') return;
-  const resolved = isValidThemeId(themeId) ? themeId : 'champagne-gold';
+  const resolved = resolveLuxuryThemeId(themeId);
   document.documentElement.setAttribute('data-sinki-theme', resolved);
 };
 
@@ -113,9 +130,9 @@ export const getStoredTheme = (): LuxuryThemeConfig => {
     const raw = localStorage.getItem(THEME_LOCAL_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && isValidThemeId(parsed.id)) {
+      if (parsed && typeof parsed.id === 'string') {
         return {
-          id: parsed.id,
+          id: resolveLuxuryThemeId(parsed.id),
           updatedAt: parsed.updatedAt,
         };
       }
@@ -202,9 +219,7 @@ export const syncThemeDirectlyToCloud = async (
 export const saveThemeToServer = async (
   themeId: LuxuryThemeId
 ): Promise<LuxuryThemeConfig> => {
-  const resolvedId: LuxuryThemeId = isValidThemeId(themeId)
-    ? themeId
-    : 'champagne-gold';
+  const resolvedId: LuxuryThemeId = resolveLuxuryThemeId(themeId);
 
   const toSave: LuxuryThemeConfig = {
     id: resolvedId,
@@ -245,5 +260,5 @@ export const saveThemeToServer = async (
 };
 
 export const resetThemeToDefault = async (): Promise<LuxuryThemeConfig> => {
-  return await saveThemeToServer('champagne-gold');
+  return await saveThemeToServer('moonlight-silver');
 };

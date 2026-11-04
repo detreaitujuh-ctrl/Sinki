@@ -20,6 +20,7 @@ import {
 } from '../utils/assetStorage';
 import { getShortShareUrl } from '../utils/shareUtils';
 import { TickerConfig, TICKER_FONTS, getStoredTicker } from '../utils/tickerStorage';
+import { useConstantTickerSpeed } from '../utils/useConstantTickerSpeed';
 import {
   SocialLinks,
   getStoredSocialLinks,
@@ -259,6 +260,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const currentTicker = tickerConfig || getStoredTicker();
   const activeFont = TICKER_FONTS.find((f) => f.id === currentTicker.font) || TICKER_FONTS[0];
   const tickerText = currentTicker.text.trim() || 'Tahan 8 jam, dia aja yang gak tahan 😏';
+  const homeTickerTrackRef = useConstantTickerSpeed(26);
 
   return (
     <div className="relative w-full h-full flex flex-col justify-between p-3.5 pb-24 sm:pb-28 sinki-arch-canvas sinki-home-stage-canvas text-slate-100 overflow-y-auto no-scrollbar">
@@ -290,7 +292,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               setVideoFailed(true);
               setVideoPlaying(false);
             }}
-            className={`absolute inset-0 w-full h-full ${fitClass} ${posClass} filter contrast-[1.04] brightness-[0.98]`}
+            className={`absolute inset-0 w-full h-full ${fitClass} ${posClass} filter contrast-[1.03] brightness-100`}
           />
         )}
 
@@ -304,26 +306,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           loading="eager"
           decoding="async"
           fetchPriority="high"
-          className={`absolute inset-0 w-full h-full ${fitClass} ${posClass} filter contrast-[1.04] brightness-[0.98] transition-opacity duration-1000 ease-in-out ${
+          className={`absolute inset-0 w-full h-full ${fitClass} ${posClass} filter contrast-[1.03] brightness-100 transition-opacity duration-1000 ease-in-out ${
             isVideoMode && videoPlaying && !videoFailed ? 'opacity-0' : 'opacity-100'
           }`}
         />
 
-        {/* Pelindung Area Judul & Menu */}
+        {/* Pelindung Halus Area Judul & Menu (Ringan agar tidak meredupkan video) */}
         <div
           className={`absolute inset-x-0 top-0 ${
             activeHeight === 'full'
-              ? 'h-36 bg-gradient-to-b from-[#08080b]/95 via-[#08080b]/70 to-transparent'
-              : 'h-28 bg-gradient-to-b from-[#08080b] via-[#08080b]/85 to-transparent'
+              ? 'h-24 bg-gradient-to-b from-black/50 via-black/18 to-transparent'
+              : 'h-20 bg-gradient-to-b from-[#08080b]/75 via-[#08080b]/30 to-transparent'
           }`}
         />
 
-        {/* Bottom Water Ripple Exposure Fade */}
+        {/* Transisi Halus Bagian Bawah Video */}
         <div
           className={`absolute inset-x-0 bottom-0 ${
             activeHeight === 'full'
-              ? 'h-32 bg-gradient-to-t from-[#08080b] via-[#08080b]/80 to-transparent'
-              : 'h-16 bg-gradient-to-t from-[#08080b] via-[#08080b]/70 to-transparent'
+              ? 'h-28 bg-gradient-to-t from-[#08080b]/82 via-[#08080b]/35 to-transparent'
+              : 'h-14 bg-gradient-to-t from-[#08080b] via-[#08080b]/55 to-transparent'
           }`}
         />
 
@@ -346,20 +348,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* LAYER 1 (TERDEPAN / Z-20): TOP BAR MELAYANG ELEGAN */}
       <header className="relative z-20 flex items-center justify-between pt-2 sm:pt-2.5 pb-1 shrink-0">
-        {/* Top-Left: Pure Typography "SINKI" (Warna Champagne Silk Gold Lembut, Tenang & Elegan) */}
+        {/* Top-Left: Pure Typography "SINKI" (Selaras dengan Warna Tema Aktif SINKI) */}
         <div
           className="flex items-center select-none py-0.5 px-1"
           title="SINKI Parfums"
         >
-          <span className="font-heading text-2xl sm:text-3xl font-bold tracking-[0.22em] text-[#F3E5C8] uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.92)]">
+          <span className="font-heading text-2xl sm:text-3xl font-bold tracking-[0.22em] text-[var(--arch-gold)] uppercase transition-colors duration-200 drop-shadow-[0_2px_10px_rgba(0,0,0,0.92)]">
             SINKI
           </span>
         </div>
 
-        {/* Top-Right: 3-line hamburger menu button ("Garis 3" Champagne Silk Gold Melayang) */}
+        {/* Top-Right: 3-line hamburger menu button ("Garis 3" Selaras dengan Warna Tema Aktif SINKI) */}
         <button
           onClick={onOpenDrawer}
-          className="p-1.5 text-[#F3E5C8] hover:text-[#FFF5E0] flex items-center justify-center transition-all active:scale-90 select-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
+          className="p-1.5 text-[var(--arch-gold)] hover:text-[var(--arch-gold-bright)] flex items-center justify-center transition-all duration-200 active:scale-90 select-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
           title="Menu Utama"
           aria-label="Menu"
         >
@@ -529,7 +531,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         >
           {/* Running Text Area with Mask Fade */}
           <div className="flex-1 overflow-hidden relative ticker-mask-fade py-0.5 min-w-0">
-            <div className={`luxury-ticker-track font-body text-xs leading-tight text-slate-200 ${activeFont.styleClass}`}>
+            <div
+              ref={homeTickerTrackRef}
+              className={`luxury-ticker-track font-body text-xs leading-tight text-slate-200 ${activeFont.styleClass}`}
+            >
               {[0, 1, 2, 3, 4, 5].map((idx) => (
                 <span key={idx} className="inline-block pr-6 text-zinc-200 font-normal">
                   <span className="text-[#DFB76C] font-semibold mr-1.5">•</span> {tickerText}

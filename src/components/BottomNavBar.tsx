@@ -82,7 +82,8 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                 {isMatchTab && isActive && (
                   <span
                     aria-hidden="true"
-                    className="absolute inset-0 -m-1.5 rounded-full blur-md bg-[#E8C574]/25 opacity-100 pointer-events-none"
+                    style={{ backgroundColor: 'var(--arch-badge-bg)' }}
+                    className="absolute inset-0 -m-1.5 rounded-full blur-md opacity-100 pointer-events-none"
                   />
                 )}
 
@@ -90,15 +91,15 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                   size={iconSize}
                   className={`relative transition-all duration-200 ease-out ${
                     isActive
-                      ? 'text-[#E8C574] drop-shadow-[0_1px_6px_rgba(232,197,116,0.45)]'
-                      : 'text-slate-400 group-hover:text-slate-200'
+                      ? 'text-[var(--arch-text-accent-bright)] drop-shadow-[0_1px_6px_var(--arch-glow-tl)]'
+                      : 'text-white/62 group-hover:text-white/90'
                   }`}
-                  strokeWidth={isActive ? 2.2 : 1.8}
+                  strokeWidth={isActive ? 2.25 : 1.8}
                 />
 
                 {/* Order Count Badge */}
                 {typeof item.count === 'number' && item.count > 0 && (
-                  <span className="font-body tabular-nums absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-1 flex items-center justify-center text-[10px] font-semibold rounded-[4px] leading-none shadow-sm bg-[#D4AF57] text-slate-950">
+                  <span className="font-body tabular-nums absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-1 flex items-center justify-center text-[10px] font-semibold rounded-[4px] leading-none shadow-sm bg-[var(--arch-text-accent-bright)] text-slate-950">
                     {item.count}
                   </span>
                 )}
@@ -108,8 +109,8 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
               <span
                 className={`font-body text-[10px] min-[360px]:text-[10.5px] min-[390px]:text-[11px] leading-tight tracking-[0.01em] mt-0.5 transition-colors duration-200 ease-out whitespace-nowrap ${
                   isActive
-                    ? 'font-semibold text-[#E8C574] drop-shadow-sm'
-                    : 'font-medium text-slate-400 group-hover:text-slate-200'
+                    ? 'font-semibold text-[var(--arch-text-accent-bright)] drop-shadow-sm'
+                    : 'font-medium text-white/62 group-hover:text-white/90'
                 }`}
               >
                 {item.label}

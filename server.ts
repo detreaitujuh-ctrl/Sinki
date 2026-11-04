@@ -203,11 +203,11 @@ function getTickerConfig(): { text: string; font: string; updatedAt?: string } {
 
 let cachedThemeConfig: { id: string; updatedAt?: string } | null = null;
 const VALID_LUXURY_THEMES = [
-  'champagne-gold',
-  'platinum-silver',
-  'rose-gold',
-  'imperial-emerald',
-  'royal-bronze',
+  'moonlight-silver',
+  'pearl-ivory',
+  'dew-jade',
+  'glacial-aqua',
+  'warm-gold',
 ];
 
 function getThemeConfig(): { id: string; updatedAt?: string } {
@@ -226,7 +226,7 @@ function getThemeConfig(): { id: string; updatedAt?: string } {
       }
     } catch {}
   }
-  return { id: 'champagne-gold' };
+  return { id: 'moonlight-silver' };
 }
 
 const INITIAL_4_REVIEWS: any[] = [];
@@ -1492,7 +1492,7 @@ app.post('/api/owner/update-theme', async (req, res) => {
   const themeId =
     rawTheme && typeof rawTheme.id === 'string' && VALID_LUXURY_THEMES.includes(rawTheme.id)
       ? rawTheme.id
-      : 'champagne-gold';
+      : 'moonlight-silver';
 
   const updated = {
     id: themeId,
@@ -1523,21 +1523,44 @@ app.post('/api/owner/update-theme', async (req, res) => {
 
 async function hydrateDataFromSupabase() {
   try {
+    let localTheme: { id: string; updatedAt?: string } | null = null;
+    if (fs.existsSync(THEME_FILE)) {
+      try {
+        const parsedLocal = JSON.parse(fs.readFileSync(THEME_FILE, 'utf-8'));
+        if (parsedLocal && typeof parsedLocal.id === 'string' && VALID_LUXURY_THEMES.includes(parsedLocal.id)) {
+          localTheme = parsedLocal;
+        }
+      } catch {}
+    }
+
     const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download('theme_config.json');
     if (!error && data) {
       const text = await data.text();
       const parsed = JSON.parse(text);
-      if (parsed && typeof parsed.id === 'string' && VALID_LUXURY_THEMES.includes(parsed.id)) {
+      const cloudValid = parsed && typeof parsed.id === 'string' && VALID_LUXURY_THEMES.includes(parsed.id);
+      const localTs = localTheme?.updatedAt ? Date.parse(localTheme.updatedAt) : 0;
+      const cloudTs = cloudValid && parsed.updatedAt ? Date.parse(parsed.updatedAt) : 0;
+
+      if (localTheme && localTs > cloudTs) {
+        cachedThemeConfig = localTheme;
+        await supabase.storage
+          .from(SUPABASE_BUCKET)
+          .upload('theme_config.json', JSON.stringify(localTheme, null, 2), {
+            contentType: 'application/json',
+            upsert: true,
+          });
+      } else if (cloudValid) {
         fs.writeFileSync(THEME_FILE, text, 'utf-8');
         cachedThemeConfig = parsed;
       }
-    } else if (fs.existsSync(THEME_FILE)) {
-      const local = fs.readFileSync(THEME_FILE, 'utf-8');
-      cachedThemeConfig = JSON.parse(local);
-      await supabase.storage.from(SUPABASE_BUCKET).upload('theme_config.json', local, {
-        contentType: 'application/json',
-        upsert: true,
-      });
+    } else if (localTheme) {
+      cachedThemeConfig = localTheme;
+      await supabase.storage
+        .from(SUPABASE_BUCKET)
+        .upload('theme_config.json', JSON.stringify(localTheme, null, 2), {
+          contentType: 'application/json',
+          upsert: true,
+        });
     }
   } catch (err) {
     console.warn('[Supabase Hydration Notice] theme:', err);
@@ -1702,6 +1725,13 @@ async function startServer() {
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server SINKI berjalan di http://localhost:${PORT}`);
   });
+
+  const shutdown = () => {
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 500).unref();
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 
   server.on('error', (err: any) => {
     if (err.code === 'EADDRINUSE') {
