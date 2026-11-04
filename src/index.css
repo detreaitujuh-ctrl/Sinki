@@ -953,44 +953,85 @@ html[data-sinki-theme="warm-gold"] {
   }
 }
 
+/* ========================================================
+   SINKI LUXURY 100% LEAK-PROOF BORDER BEAM
+   Uses GPU mask-composite exclude so the entire interior of the
+   card is physically carved out with 0% light leakage inside.
+   ======================================================== */
+.border-beam-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.55), 0 0 14px -2px var(--arch-glow-tl-mid, rgba(214, 232, 248, 0.12));
+}
+
+.border-beam-perimeter {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  padding: 1.5px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.border-beam-disc {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 320%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(
+    from 0deg,
+    var(--arch-border-faint, rgba(255, 255, 255, 0.12)) 0deg,
+    var(--arch-border-faint, rgba(255, 255, 255, 0.12)) 270deg,
+    var(--arch-glow-tl) 295deg,
+    var(--arch-gold-bright) 330deg,
+    var(--arch-rim-glint, #ffffff) 348deg,
+    var(--arch-gold) 356deg,
+    var(--arch-border-faint, rgba(255, 255, 255, 0.12)) 360deg
+  );
+  animation: border-beam-spin 3.2s linear infinite;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Fallback for legacy single-class usage */
 .border-beam-active {
   position: relative;
   overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.5), 0 0 12px -2px var(--arch-glow-tl-mid, rgba(214, 232, 248, 0.1));
 }
 
 .border-beam-active::before {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 220%;
-  aspect-ratio: 1 / 1;
+  inset: 0;
+  border-radius: 8px;
+  padding: 1.5px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
   background: conic-gradient(
     from 0deg,
-    transparent 0deg,
-    transparent 260deg,
-    var(--arch-glow-tl) 290deg,
+    var(--arch-border-faint, rgba(255, 255, 255, 0.12)) 0deg,
+    var(--arch-border-faint, rgba(255, 255, 255, 0.12)) 270deg,
+    var(--arch-glow-tl) 295deg,
     var(--arch-gold-bright) 330deg,
     var(--arch-rim-glint, #ffffff) 348deg,
     var(--arch-gold) 356deg,
-    transparent 360deg
+    var(--arch-border-faint, rgba(255, 255, 255, 0.12)) 360deg
   );
-  animation: border-beam-spin 3s linear infinite;
+  animation: border-beam-spin 3.2s linear infinite;
   pointer-events: none;
-  z-index: 0;
-}
-
-.border-beam-active::after {
-  content: '';
-  position: absolute;
-  inset: 1.25px;
-  background:
-    radial-gradient(125% 95% at 0% 0%, var(--arch-glow-tl) 0%, transparent 70%),
-    radial-gradient(115% 90% at 100% 100%, var(--arch-glow-br) 0%, transparent 65%),
-    var(--arch-card-top);
-  border-radius: calc(0.5rem - 1.25px);
-  z-index: 1;
-  pointer-events: none;
+  z-index: 2;
 }
 
 

@@ -26,8 +26,8 @@ export const SUPABASE_STORAGE_BASE = 'https://tsxclttisxnmvdkwziqx.supabase.co/s
 export const DEFAULT_LOGO = `${SUPABASE_STORAGE_BASE}sinki_logo.png`;
 export const DEFAULT_CHIBI = `${SUPABASE_STORAGE_BASE}sinki_chibi.png`;
 export const DEFAULT_QRIS = `${SUPABASE_STORAGE_BASE}sinki_qris.jpg`;
-export const DEFAULT_HERO_VIDEO_URL = `${SUPABASE_STORAGE_BASE}hero_video.mp4`;
-export const DEFAULT_HERO_VIDEO_POSTER = `${SUPABASE_STORAGE_BASE}sinki_hero_poster.jpg`;
+export const DEFAULT_HERO_VIDEO_URL = `${SUPABASE_STORAGE_BASE}hero_video_seamless_1793800752817.mp4`;
+export const DEFAULT_HERO_VIDEO_POSTER = `${SUPABASE_STORAGE_BASE}sinki_hero_poster_1793800752817.jpg`;
 
 export type HeroStageEffect = 'royal-elevation' | 'parisian-turntable' | 'golden-aura' | 'horizon-slide';
 
@@ -75,7 +75,7 @@ export const DEFAULT_HERO_BOTTLES: string[] = [];
 
 export const getDefaultTop11Map = (): Record<string, string> => {
   const map: Record<string, string> = {};
-  for (let i = 1; i <= 50; i++) {
+  for (let i = 1; i <= 11; i++) {
     map[`top-${i}`] = `${SUPABASE_STORAGE_BASE}top11/top-${i}.jpg`;
   }
   return map;
@@ -963,28 +963,17 @@ export const extractVideoFrame = (
  * Otomatis menghapus video lama dari Supabase sebelum mengunggah video baru (Zero Waste Storage).
  */
 export const uploadVideoDirectlyToSupabase = async (
-  storagePath: string,
+  desiredPath: string,
   fileOrBlob: Blob,
   contentType = 'video/mp4',
   oldVideoUrlOrPath?: string | null
 ): Promise<string | null> => {
   try {
-    // 1. Hapus video lama dari Supabase jika ada URL video lama
-    if (oldVideoUrlOrPath) {
-      await deleteFileFromSupabase(oldVideoUrlOrPath);
-    }
+    const ext = contentType.includes('webm') ? 'webm' : contentType.includes('mov') ? 'mov' : 'mp4';
+    // Gunakan unique filename agar tidak pernah menimpa atau terhapus bersamaan dengan video lama
+    const uniquePath = `hero_video_${Date.now()}.${ext}`;
 
-    // 2. Hapus varian file video lama yang sering digunakan agar storage Supabase tetap ramping
-    if (storagePath.includes('hero_video')) {
-      const candidates = ['hero_video.webm', 'hero_video.mov', 'sinki_hero.mp4', 'sinki_hero_video.mp4'];
-      for (const stale of candidates) {
-        if (stale !== storagePath) {
-          deleteFileFromSupabase(stale).catch(() => {});
-        }
-      }
-    }
-
-    const uploadUrl = `https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/${storagePath}`;
+    const uploadUrl = `https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/${uniquePath}`;
     const res = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
@@ -996,7 +985,11 @@ export const uploadVideoDirectlyToSupabase = async (
     });
 
     if (res.ok) {
-      return `${SUPABASE_STORAGE_BASE}${storagePath}?v=${Date.now()}`;
+      // Hapus video lama HANYA setelah video baru berhasil tersimpan di Supabase
+      if (oldVideoUrlOrPath) {
+        deleteFileFromSupabase(oldVideoUrlOrPath).catch(() => {});
+      }
+      return `${SUPABASE_STORAGE_BASE}${uniquePath}`;
     }
   } catch (err) {
     console.warn('[Direct Supabase Video Upload Notice]:', err);

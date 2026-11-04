@@ -96,17 +96,43 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+
+  // Single HTML5 Video Continuous Playback Engine (True Seamless Loop)
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Sync mute state
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = isMuted;
+  }, [isMuted]);
+
+  // Initial playback setup
   useEffect(() => {
     setVideoPlaying(false);
     setVideoFailed(false);
     if (videoRef.current) {
-      videoRef.current.play().catch(() => {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().then(() => {
+        setVideoPlaying(true);
+      }).catch(() => {
         // Autoplay may need user interaction on some mobile browsers
       });
     }
   }, [activeVideoUrl, isVideoMode]);
+
+  // Resume playback on app resume / tab switch
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && isVideoMode) {
+        if (videoRef.current && videoRef.current.paused) {
+          videoRef.current.play().catch(() => {});
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isVideoMode]);
 
   // 3D Stage Bottle State - Hanya aktif jika Owner menyalakan sakelar & mengunggah PNG botol kustom
   const isStageEnabled = propHeroStageEnabled !== undefined
@@ -262,38 +288,62 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const tickerText = currentTicker.text.trim() || 'Tahan 8 jam, dia aja yang gak tahan 😏';
   const homeTickerTrackRef = useConstantTickerSpeed(26);
 
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleLogoTap = () => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, 2500);
+
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      onOpenOwnerPin?.();
+    } else if (tapCountRef.current === 3) {
+      onShowToast('2 ketukan lagi untuk Portal Owner...');
+    } else if (tapCountRef.current === 4) {
+      onShowToast('1 ketukan lagi...');
+    }
+  };
+
   return (
-    <div className="relative w-full h-full flex flex-col justify-between p-3.5 pb-24 sm:pb-28 sinki-arch-canvas sinki-home-stage-canvas text-slate-100 overflow-y-auto no-scrollbar">
+    <div className="relative w-full h-full flex flex-col justify-between p-3.5 pb-28 sm:pb-32 sinki-arch-canvas sinki-home-stage-canvas text-slate-100 overflow-y-auto no-scrollbar">
       {/* LAYER 2: HERO BACKDROP BOTOL PARFUM & VIDEO SINEMATIK (Panggung Tengah di bawah Teks Judul) */}
       <div className={`absolute inset-x-0 top-0 ${heightClass} pointer-events-none overflow-hidden z-0`}>
         {/* Base dark canvas */}
         <div className="absolute inset-0 bg-[#08080b]" />
 
-        {/* 1. Video Layer: Diputar autoplay, loop, muted di latar belakang */}
+        {/* 1. Video Layer: Single Element Continuous Playback Engine (True Seamless Loop) */}
         {isVideoMode && activeVideoUrl && (
-          <video
-            ref={videoRef}
-            src={activeVideoUrl}
-            poster={activePoster}
-            autoPlay
-            loop
-            muted={isMuted}
-            playsInline
-            onCanPlay={() => {
-              if (videoRef.current) {
-                videoRef.current.play().catch(() => {});
-              }
-            }}
-            onPlaying={() => {
-              setVideoPlaying(true);
-              setVideoFailed(false);
-            }}
-            onError={() => {
-              setVideoFailed(true);
-              setVideoPlaying(false);
-            }}
-            className={`absolute inset-0 w-full h-full ${fitClass} ${posClass} filter contrast-[1.03] brightness-100`}
-          />
+          <div className="absolute inset-0 w-full h-full overflow-hidden">
+            <video
+              ref={videoRef}
+              key={activeVideoUrl}
+              src={activeVideoUrl}
+              autoPlay
+              loop
+              muted={isMuted}
+              playsInline
+              preload="auto"
+              disablePictureInPicture
+              onCanPlay={() => {
+                if (videoRef.current && videoRef.current.paused) {
+                  videoRef.current.play().catch(() => {});
+                }
+              }}
+              onPlaying={() => {
+                setVideoPlaying(true);
+                setVideoFailed(false);
+              }}
+              onError={() => {
+                setVideoFailed(true);
+                setVideoPlaying(false);
+              }}
+              className={`absolute inset-0 w-full h-full ${fitClass} ${posClass} filter contrast-[1.03] brightness-100 pointer-events-none`}
+            />
+          </div>
         )}
 
         {/* 2. Gambar Botol Parfum Hero / Poster:
@@ -306,8 +356,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           loading="eager"
           decoding="async"
           fetchPriority="high"
-          className={`absolute inset-0 w-full h-full ${fitClass} ${posClass} filter contrast-[1.03] brightness-100 transition-opacity duration-1000 ease-in-out ${
-            isVideoMode && videoPlaying && !videoFailed ? 'opacity-0' : 'opacity-100'
+          className={`absolute inset-0 w-full h-full ${fitClass} ${posClass} filter contrast-[1.03] brightness-100 transition-opacity duration-500 ease-out ${
+            isVideoMode && videoPlaying && !videoFailed ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
         />
 
@@ -348,10 +398,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* LAYER 1 (TERDEPAN / Z-20): TOP BAR MELAYANG ELEGAN */}
       <header className="relative z-20 flex items-center justify-between pt-2 sm:pt-2.5 pb-1 shrink-0">
-        {/* Top-Left: Pure Typography "SINKI" (Selaras dengan Warna Tema Aktif SINKI) */}
+        {/* Top-Left: Pure Typography "SINKI" (Ketuk 5x membuka PIN Owner) */}
         <div
-          className="flex items-center select-none py-0.5 px-1"
-          title="SINKI Parfums"
+          onClick={handleLogoTap}
+          className="flex items-center select-none py-0.5 px-1 cursor-pointer active:scale-95 transition-transform"
+          title="SINKI Parfums (Ketuk 5x untuk Portal Owner)"
         >
           <span className="font-heading text-2xl sm:text-3xl font-bold tracking-[0.22em] text-[var(--arch-gold)] uppercase transition-colors duration-200 drop-shadow-[0_2px_10px_rgba(0,0,0,0.92)]">
             SINKI

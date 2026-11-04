@@ -30,6 +30,8 @@ import {
   HeroHeightMode,
   HeroStageEffect,
   fetchServerAssets,
+  getOwnerToken,
+  clearOwnerToken,
 } from './utils/assetStorage';
 import { PricingConfig, getStoredPricing } from './utils/pricingStorage';
 import { TickerConfig, getStoredTicker, fetchTickerFromServer } from './utils/tickerStorage';
@@ -133,87 +135,94 @@ export default function App() {
   } | null>(null);
   const [reviewTargetVariant, setReviewTargetVariant] = useState<string | null>(null);
 
+  // Prioritas 100% Home di awal: Hanya render tab 'home' saat pertama kali masuk
+  const [mountedTabs, setMountedTabs] = useState<Set<TabType>>(() => new Set<TabType>(['home']));
+
+  // Langsung siapkan tab saat pengunjung menekan tombol navigasi
   useEffect(() => {
-    // Preload initial stored Top 11 photos immediately into browser cache
-    Object.values(top11Photos).forEach((photoUrl) => {
-      if (photoUrl && typeof photoUrl === 'string') {
+    setMountedTabs((prev) => {
+      if (prev.has(activeTab)) return prev;
+      const next = new Set(prev);
+      next.add(activeTab);
+      return next;
+    });
+  }, [activeTab]);
+
+  useEffect(() => {
+    // 1. Prioritaskan data Home dalam SATU batch sinkron (Hero assets, Theme, Social)
+    // Menghilangkan re-render beruntun / layar berkedip berkali-kali
+    Promise.allSettled([
+      fetchServerAssets(),
+      fetchSocialLinksFromServer(),
+      fetchThemeFromServer(),
+    ]).then(([assetsResult, socialResult, themeResult]) => {
+      if (assetsResult.status === 'fulfilled' && assetsResult.value) {
+        const assets = assetsResult.value;
+        const logoVal = assets.logo;
+        if (logoVal) setCustomLogo((prev) => (prev !== logoVal ? logoVal : prev));
+        const chibiVal = assets.chibi;
+        if (chibiVal) setCustomChibi((prev) => (prev !== chibiVal ? chibiVal : prev));
+        const qrisVal = assets.qrisImage;
+        if (qrisVal) setCustomQris((prev) => (prev !== qrisVal ? qrisVal : prev));
+        if (assets.top11 && Object.keys(assets.top11).length > 0) {
+          setTop11Photos((prev) => ({ ...prev, ...assets.top11 }));
+        }
+        if (assets.heroBottles && assets.heroBottles.length > 0) {
+          setHeroBottles(assets.heroBottles);
+        }
+        if (assets.heroStageEffect) setHeroStageEffect(assets.heroStageEffect);
+        if (assets.heroStageEnabled !== undefined) setHeroStageEnabled(assets.heroStageEnabled);
+        if (assets.heroMediaType) setHeroMediaType(assets.heroMediaType);
+        if (assets.heroVideoUrl) setHeroVideoUrl(assets.heroVideoUrl);
+        if (assets.heroVideoPoster) setHeroVideoPoster(assets.heroVideoPoster);
+        if (assets.heroVideoFit) setHeroVideoFit(assets.heroVideoFit);
+        if (assets.heroVideoPosition) setHeroVideoPosition(assets.heroVideoPosition);
+        if (assets.heroHeightMode) setHeroHeightMode(assets.heroHeightMode);
+        if (assets.pricing) setPricing(assets.pricing);
+        if (assets.ticker && assets.ticker.text) setTickerConfig(assets.ticker);
+      }
+      if (socialResult.status === 'fulfilled' && socialResult.value) {
+        setSocialLinks(socialResult.value);
+      }
+      if (themeResult.status === 'fulfilled' && themeResult.value) {
+        setLuxuryTheme(themeResult.value);
+      }
+    });
+
+    // 2. Tunda muat 4 menu lain, katalog parfum, dan foto botol (Lazy Background Load setelah Home mulus)
+    const lazyTimer = setTimeout(() => {
+      // Siapkan 4 menu lain di background tanpa mengganggu Home
+      setMountedTabs(new Set<TabType>(['home', 'collection', 'match', 'order', 'review']));
+
+      // Muat katalog parfum dan bestseller di background
+      fetchTopPerfumesFromServer().catch(() => {});
+      fetchPerfumesFromServer()
+        .then((list) => {
+          if (Array.isArray(list) && list.length > 0) {
+            setCatalogPerfumes(list);
+          }
+        })
+        .catch(() => {});
+
+      // Preload foto botol Top 11 yang valid saja (maksimal 11 botol, bukan 50 slot kosong)
+      const currentTop11 = getStoredTop11();
+      const validPhotos = Array.from(
+        new Set(
+          Object.values(currentTop11).filter(
+            (url) => typeof url === 'string' && url.startsWith('http')
+          )
+        )
+      ).slice(0, 11);
+
+      validPhotos.forEach((photoUrl) => {
         const preloadImg = new Image();
         preloadImg.src = photoUrl;
-      }
-    });
+      });
 
-    // Preload hero 3D bottles
-    heroBottles.forEach((bottleUrl) => {
-      if (bottleUrl && typeof bottleUrl === 'string') {
-        const preloadImg = new Image();
-        preloadImg.src = bottleUrl;
-      }
-    });
-
-    // Preload scenic forest waterfall background for instant 0ms tab transitions
-    const preloadForest = new Image();
-    preloadForest.src = '/assets/forest/sinki-forest-waterfall.jpg';
-
-    // Sync ticker config from server immediately
-    fetchTickerFromServer().then((cfg) => {
-      if (cfg) setTickerConfig(cfg);
-    });
-
-    // Sync social links from server immediately
-    fetchSocialLinksFromServer().then((links) => {
-      if (links) setSocialLinks(links);
-    });
-
-    // Sync luxury architectural theme from server/cloud immediately
-    fetchThemeFromServer().then((themeCfg) => {
-      if (themeCfg) setLuxuryTheme(themeCfg);
-    });
-
-    // Sync top bestseller perfumes and catalog from server/cloud immediately
-    fetchTopPerfumesFromServer().catch(() => {});
-    fetchPerfumesFromServer()
-      .then((list) => {
-        if (Array.isArray(list) && list.length > 0) {
-          setCatalogPerfumes(list);
-        }
-      })
-      .catch(() => {});
-
-    // Sync with server on initial load (includes ticker, logo, chibi, qris, pricing, hero bottles & stage effect)
-    fetchServerAssets().then((assets) => {
-      if (assets.logo) setCustomLogo(assets.logo);
-      if (assets.chibi) setCustomChibi(assets.chibi);
-      if (assets.qrisImage) setCustomQris(assets.qrisImage);
-      if (assets.top11) {
-        setTop11Photos(assets.top11);
-        // Preload all updated bottle images in background immediately into browser cache
-        Object.values(assets.top11).forEach((photoUrl) => {
-          if (photoUrl && typeof photoUrl === 'string') {
-            const preloadImg = new Image();
-            preloadImg.src = photoUrl;
-          }
-        });
-      }
-      if (assets.heroBottles && assets.heroBottles.length > 0) {
-        setHeroBottles(assets.heroBottles);
-        assets.heroBottles.forEach((bottleUrl) => {
-          if (bottleUrl && typeof bottleUrl === 'string') {
-            const preloadImg = new Image();
-            preloadImg.src = bottleUrl;
-          }
-        });
-      }
-      if (assets.heroStageEffect) setHeroStageEffect(assets.heroStageEffect);
-      if (assets.heroStageEnabled !== undefined) setHeroStageEnabled(assets.heroStageEnabled);
-      if (assets.heroMediaType) setHeroMediaType(assets.heroMediaType);
-      if (assets.heroVideoUrl) setHeroVideoUrl(assets.heroVideoUrl);
-      if (assets.heroVideoPoster) setHeroVideoPoster(assets.heroVideoPoster);
-      if (assets.heroVideoFit) setHeroVideoFit(assets.heroVideoFit);
-      if (assets.heroVideoPosition) setHeroVideoPosition(assets.heroVideoPosition);
-      if (assets.heroHeightMode) setHeroHeightMode(assets.heroHeightMode);
-      if (assets.pricing) setPricing(assets.pricing);
-      if (assets.ticker) setTickerConfig(assets.ticker);
-    });
+      // Preload background alam air terjun
+      const preloadForest = new Image();
+      preloadForest.src = '/assets/forest/sinki-forest-waterfall.jpg';
+    }, 1200);
 
     // Auto-refresh running text when visitor returns to tab or every 30s
     const handleTickerRefresh = () => {
@@ -234,6 +243,7 @@ export default function App() {
     const tickerInterval = setInterval(handleTickerRefresh, 30000);
 
     return () => {
+      clearTimeout(lazyTimer);
       window.removeEventListener('focus', handleTickerRefresh);
       document.removeEventListener('visibilitychange', handleTickerRefresh);
       clearInterval(tickerInterval);
@@ -272,101 +282,21 @@ export default function App() {
     }, 3000);
   };
 
-  // JIKA SEDANG MEMBUKA RUTE RAHASIA /dimensi-sinki: TAMPILKAN DASHBOARD DIMENSI-SINKI
-  if (isDimensiRoute) {
-    return (
-      <div className="w-full h-screen bg-[#08080b] text-slate-100 flex justify-center items-center">
-        <DimensiSinkiScreen
-          onExitToPublic={() => {
-            window.history.pushState({}, "", "/");
-            setIsDimensiRoute(false);
-          }}
-          onShowToast={showToast}
-          currentLogo={customLogo}
-          currentChibi={customChibi}
-          currentQris={customQris}
-          top11Photos={top11Photos}
-          pricing={pricing}
-          tickerConfig={tickerConfig}
-          perfumes={catalogPerfumes}
-          socialLinks={socialLinks}
-          luxuryTheme={luxuryTheme}
-          heroBottles={heroBottles}
-          heroStageEffect={heroStageEffect}
-          heroStageEnabled={heroStageEnabled}
-          heroMediaType={heroMediaType}
-          heroVideoUrl={heroVideoUrl}
-          heroVideoPoster={heroVideoPoster}
-          heroVideoFit={heroVideoFit}
-          heroVideoPosition={heroVideoPosition}
-          heroHeightMode={heroHeightMode}
-          onAssetsUpdated={(newLogo, newChibi) => {
-            setCustomLogo(newLogo);
-            setCustomChibi(newChibi);
-          }}
-          onQrisUpdated={(newQris) => {
-            setCustomQris(newQris);
-          }}
-          onHeroBottlesUpdated={(updatedBottles) => {
-            setHeroBottles(updatedBottles);
-          }}
-          onHeroStageEffectUpdated={(effect) => {
-            setHeroStageEffect(effect);
-          }}
-          onHeroStageEnabledUpdated={(enabled) => {
-            setHeroStageEnabled(enabled);
-          }}
-          onHeroVideoUpdated={(settings) => {
-            if (settings.heroMediaType !== undefined) setHeroMediaType(settings.heroMediaType);
-            if (settings.heroVideoUrl !== undefined) setHeroVideoUrl(settings.heroVideoUrl);
-            if (settings.heroVideoPoster !== undefined) setHeroVideoPoster(settings.heroVideoPoster);
-            if (settings.heroVideoFit !== undefined) setHeroVideoFit(settings.heroVideoFit);
-            if (settings.heroVideoPosition !== undefined) setHeroVideoPosition(settings.heroVideoPosition);
-            if (settings.heroHeightMode !== undefined) setHeroHeightMode(settings.heroHeightMode);
-          }}
-          onTop11PhotoUpdated={(variantId, newPhoto) => {
-            setTop11Photos((prev) => ({ ...prev, [variantId]: newPhoto }));
-          }}
-          onPricingUpdated={(newPricing) => {
-            setPricing(newPricing);
-          }}
-          onTickerUpdated={(newTicker) => {
-            setTickerConfig(newTicker);
-          }}
-          onPerfumesUpdated={(newList) => {
-            setCatalogPerfumes(newList);
-          }}
-          onSocialLinksUpdated={(newLinks) => {
-            setSocialLinks(newLinks);
-          }}
-          onThemeUpdated={(newTheme) => {
-            setLuxuryTheme(newTheme);
-          }}
-        />
-        {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
-      </div>
-    );
-  }
-
   return (
     <div className="relative w-full h-[100dvh] bg-[#08080b] flex items-center justify-center overflow-hidden font-sans selection:bg-amber-500/25">
       {/* Desktop Ambient Glow */}
       <div className="hidden md:block absolute -top-40 -left-40 w-96 h-96 bg-amber-500/[0.06] rounded-full blur-[140px] pointer-events-none" />
       <div className="hidden md:block absolute -bottom-40 -right-40 w-96 h-96 bg-amber-600/[0.05] rounded-full blur-[140px] pointer-events-none" />
 
-      {/* Mobile App Container */}
+      {/* Mobile App Container (True Smartphone View: ramping & jenjang di laptop, full height tanpa kotak buntet) */}
       <main
         data-active-tab={activeTab}
-        className="relative w-full max-w-md h-full md:h-[92dvh] md:max-h-[880px] sinki-arch-canvas sinki-canvas-frame-only md:rounded-[10px] md:border md:border-[#D4AF6A]/40 md:shadow-[0_24px_75px_rgba(0,0,0,0.92)] flex flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)] md:pt-0"
+        className="relative w-full max-w-[400px] h-full md:h-[100dvh] sinki-arch-canvas sinki-canvas-frame-only md:border-x md:border-[#D4AF6A]/30 md:shadow-[0_0_80px_rgba(0,0,0,0.95),0_0_40px_rgba(212,175,106,0.12)] flex flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)] md:pt-0"
       >
-        {/* Subtle Top Notch Line for App Realism on Desktop */}
-        <div className="relative z-10 hidden md:flex justify-center pt-2 pb-1 shrink-0">
-          <div className="w-20 h-1 rounded-[4px] bg-[#D4AF6A]/25" />
-        </div>
 
         {/* Stable Tab Views Container (Bebas Efek Geser/Swipe Horizontal) */}
         <div className="relative z-10 flex-1 w-full h-full overflow-hidden">
-          {/* View 1: Home Screen */}
+          {/* View 1: Home Screen (Prioritas 100% pertama kali masuk) */}
           <div className={`w-full h-full ${activeTab === 'home' ? 'block' : 'hidden'}`}>
             <HomeScreen
               onShowToast={showToast}
@@ -389,69 +319,77 @@ export default function App() {
             />
           </div>
 
-          {/* View 2: Collection */}
-          <div className={`w-full h-full ${activeTab === 'collection' ? 'block' : 'hidden'}`}>
-            <CollectionScreen
-              onBackToHome={() => setActiveTab('home')}
-              onNavigateToReview={() => setActiveTab('review')}
-              onShowToast={showToast}
-              scrollToTopTrigger={collectionScrollTrigger}
-              perfumes={catalogPerfumes}
-              onCartUpdated={() => setCartItems(getStoredCart())}
-              targetCategory={collectionTargetCategory}
-              onClearTargetCategory={() => setCollectionTargetCategory(null)}
-            />
-          </div>
+          {/* View 2: Collection (Lazy Background Mounted) */}
+          {mountedTabs.has('collection') && (
+            <div className={`w-full h-full ${activeTab === 'collection' ? 'block' : 'hidden'}`}>
+              <CollectionScreen
+                onBackToHome={() => setActiveTab('home')}
+                onNavigateToReview={() => setActiveTab('review')}
+                onShowToast={showToast}
+                scrollToTopTrigger={collectionScrollTrigger}
+                perfumes={catalogPerfumes}
+                onCartUpdated={() => setCartItems(getStoredCart())}
+                targetCategory={collectionTargetCategory}
+                onClearTargetCategory={() => setCollectionTargetCategory(null)}
+              />
+            </div>
+          )}
 
-          {/* View 3: Aroma Match (Personalized Haute Scent Profiler) */}
-          <div className={`w-full h-full ${activeTab === 'match' ? 'block' : 'hidden'}`}>
-            <AromaMatchScreen
-              onBackToHome={() => setActiveTab('home')}
-              onNavigateToOrder={(perfume) => {
-                setSelectedPerfumeForOrder({
-                  name: perfume.name,
-                  category: perfume.category,
-                  pricePerMl: perfume.pricePerMl,
-                });
-                setActiveTab('order');
-              }}
-              onShowToast={showToast}
-              perfumes={catalogPerfumes}
-              top11Photos={top11Photos}
-            />
-          </div>
+          {/* View 3: Aroma Match (Lazy Background Mounted) */}
+          {mountedTabs.has('match') && (
+            <div className={`w-full h-full ${activeTab === 'match' ? 'block' : 'hidden'}`}>
+              <AromaMatchScreen
+                onBackToHome={() => setActiveTab('home')}
+                onNavigateToOrder={(perfume) => {
+                  setSelectedPerfumeForOrder({
+                    name: perfume.name,
+                    category: perfume.category,
+                    pricePerMl: perfume.pricePerMl,
+                  });
+                  setActiveTab('order');
+                }}
+                onShowToast={showToast}
+                perfumes={catalogPerfumes}
+                top11Photos={top11Photos}
+              />
+            </div>
+          )}
 
-          {/* View 4: Order (Complete Checkout & WhatsApp Consultation) */}
-          <div className={`w-full h-full ${activeTab === 'order' ? 'block' : 'hidden'}`}>
-            <OrderScreen
-              onBackToHome={() => setActiveTab('home')}
-              onNavigateToCollection={() => {
-                setCollectionTargetCategory('overview');
-                setActiveTab('collection');
-              }}
-              onNavigateToCategory={(cat) => {
-                setCollectionTargetCategory(cat);
-                setActiveTab('collection');
-              }}
-              onShowToast={showToast}
-              pricing={pricing}
-              customQris={customQris}
-              cartItems={cartItems}
-              selectedPerfumeFromCollection={selectedPerfumeForOrder}
-              onClearSelectedPerfume={() => setSelectedPerfumeForOrder(null)}
-            />
-          </div>
+          {/* View 4: Order (Lazy Background Mounted) */}
+          {mountedTabs.has('order') && (
+            <div className={`w-full h-full ${activeTab === 'order' ? 'block' : 'hidden'}`}>
+              <OrderScreen
+                onBackToHome={() => setActiveTab('home')}
+                onNavigateToCollection={() => {
+                  setCollectionTargetCategory('overview');
+                  setActiveTab('collection');
+                }}
+                onNavigateToCategory={(cat) => {
+                  setCollectionTargetCategory(cat);
+                  setActiveTab('collection');
+                }}
+                onShowToast={showToast}
+                pricing={pricing}
+                customQris={customQris}
+                cartItems={cartItems}
+                selectedPerfumeFromCollection={selectedPerfumeForOrder}
+                onClearSelectedPerfume={() => setSelectedPerfumeForOrder(null)}
+              />
+            </div>
+          )}
 
-          {/* View 5: Review (Authentic Ratings & Interactive User Reviews) */}
-          <div className={`w-full h-full ${activeTab === 'review' ? 'block' : 'hidden'}`}>
-            <ReviewScreen
-              onBackToHome={() => setActiveTab('home')}
-              onNavigateToOrder={() => setActiveTab('order')}
-              onShowToast={showToast}
-              initialVariant={reviewTargetVariant}
-              onClearTargetVariant={() => setReviewTargetVariant(null)}
-            />
-          </div>
+          {/* View 5: Review (Lazy Background Mounted) */}
+          {mountedTabs.has('review') && (
+            <div className={`w-full h-full ${activeTab === 'review' ? 'block' : 'hidden'}`}>
+              <ReviewScreen
+                onBackToHome={() => setActiveTab('home')}
+                onNavigateToOrder={() => setActiveTab('order')}
+                onShowToast={showToast}
+                initialVariant={reviewTargetVariant}
+                onClearTargetVariant={() => setReviewTargetVariant(null)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Hamburger Menu Drawer (Clean public links only) */}
@@ -461,12 +399,17 @@ export default function App() {
           onNavigateToCollection={() => setActiveTab('collection')}
           socialLinks={socialLinks}
           onOpenDimensiSinki={() => {
-            window.history.pushState({}, '', '/dimensi-sinki');
-            setIsDimensiRoute(true);
+            const token = getOwnerToken();
+            if (token) {
+              window.history.pushState({}, '', '/dimensi-sinki');
+              setIsDimensiRoute(true);
+            } else {
+              setIsPinModalOpen(true);
+            }
           }}
         />
 
-        {/* Secret Owner PIN Modal (Triggered strictly by tapping logo 5x, PIN: 1995) */}
+        {/* Secret Owner PIN Modal (Triggered by tapping logo 5x or via Dimensi Sinki menu, PIN: 1995) */}
         <PinModal
           isOpen={isPinModalOpen}
           onClose={() => setIsPinModalOpen(false)}
@@ -489,6 +432,80 @@ export default function App() {
           orderCount={getCartTotalCount(cartItems)}
         />
       </main>
+
+      {/* Secret Owner / Admin DimensiSinki Layer (Overlay di atas toko publik: Home & videonya tetap hidup di balik layar) */}
+      {isDimensiRoute && (
+        <div className="fixed inset-0 z-[60] w-full h-full bg-[#08080b] text-slate-100 flex justify-center items-center overflow-hidden">
+          <DimensiSinkiScreen
+            onExitToPublic={() => {
+              clearOwnerToken();
+              window.history.pushState({}, '', '/');
+              setIsDimensiRoute(false);
+            }}
+            onShowToast={showToast}
+            currentLogo={customLogo}
+            currentChibi={customChibi}
+            currentQris={customQris}
+            top11Photos={top11Photos}
+            pricing={pricing}
+            tickerConfig={tickerConfig}
+            perfumes={catalogPerfumes}
+            socialLinks={socialLinks}
+            luxuryTheme={luxuryTheme}
+            heroBottles={heroBottles}
+            heroStageEffect={heroStageEffect}
+            heroStageEnabled={heroStageEnabled}
+            heroMediaType={heroMediaType}
+            heroVideoUrl={heroVideoUrl}
+            heroVideoPoster={heroVideoPoster}
+            heroVideoFit={heroVideoFit}
+            heroVideoPosition={heroVideoPosition}
+            heroHeightMode={heroHeightMode}
+            onAssetsUpdated={(newLogo, newChibi) => {
+              setCustomLogo(newLogo);
+              setCustomChibi(newChibi);
+            }}
+            onQrisUpdated={(newQris) => {
+              setCustomQris(newQris);
+            }}
+            onHeroBottlesUpdated={(updatedBottles) => {
+              setHeroBottles(updatedBottles);
+            }}
+            onHeroStageEffectUpdated={(effect) => {
+              setHeroStageEffect(effect);
+            }}
+            onHeroStageEnabledUpdated={(enabled) => {
+              setHeroStageEnabled(enabled);
+            }}
+            onHeroVideoUpdated={(settings) => {
+              if (settings.heroMediaType !== undefined) setHeroMediaType(settings.heroMediaType);
+              if (settings.heroVideoUrl !== undefined) setHeroVideoUrl(settings.heroVideoUrl);
+              if (settings.heroVideoPoster !== undefined) setHeroVideoPoster(settings.heroVideoPoster);
+              if (settings.heroVideoFit !== undefined) setHeroVideoFit(settings.heroVideoFit);
+              if (settings.heroVideoPosition !== undefined) setHeroVideoPosition(settings.heroVideoPosition);
+              if (settings.heroHeightMode !== undefined) setHeroHeightMode(settings.heroHeightMode);
+            }}
+            onTop11PhotoUpdated={(variantId, newPhoto) => {
+              setTop11Photos((prev) => ({ ...prev, [variantId]: newPhoto }));
+            }}
+            onPricingUpdated={(newPricing) => {
+              setPricing(newPricing);
+            }}
+            onTickerUpdated={(newTicker) => {
+              setTickerConfig(newTicker);
+            }}
+            onPerfumesUpdated={(newList) => {
+              setCatalogPerfumes(newList);
+            }}
+            onSocialLinksUpdated={(newLinks) => {
+              setSocialLinks(newLinks);
+            }}
+            onThemeUpdated={(newTheme) => {
+              setLuxuryTheme(newTheme);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

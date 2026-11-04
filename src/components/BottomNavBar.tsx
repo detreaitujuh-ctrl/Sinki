@@ -47,13 +47,13 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   return (
     <nav
       aria-label="Navigasi Utama SINKI"
-      className="absolute left-0 right-0 z-50 max-w-md mx-auto px-3.5 pointer-events-none select-none transition-all duration-300"
+      className="absolute left-0 right-0 z-50 max-w-[400px] mx-auto px-3.5 pointer-events-none select-none transition-all duration-300"
       style={{
-        bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
+        bottom: 'calc(1.15rem + env(safe-area-inset-bottom, 0px))',
       }}
     >
-      {/* Wadah Bilah Navigasi: Luxury Architectural Bar dengan border tipis Champagne Gold */}
-      <div className="pointer-events-auto relative rounded-[10px] sinki-arch-bar backdrop-blur-2xl border p-1.5 flex items-center justify-between gap-1 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+      {/* Wadah Bilah Navigasi: Luxury Architectural Floating Dock dengan elevasi anggun */}
+      <div className="pointer-events-auto relative rounded-[14px] sinki-arch-bar backdrop-blur-2xl border p-1.5 flex items-center justify-between gap-1 shadow-[0_12px_40px_rgba(0,0,0,0.78),0_4px_16px_rgba(0,0,0,0.6)]">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           const isMatchTab = item.id === 'match';

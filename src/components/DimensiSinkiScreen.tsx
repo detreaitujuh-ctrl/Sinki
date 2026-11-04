@@ -79,6 +79,9 @@ import {
   compressImage,
   removeTop11PhotoFromStorage,
   purgeSinkiBrowserCache,
+  getOwnerToken,
+  setOwnerToken,
+  clearOwnerToken,
 } from '../utils/assetStorage';
 import { CardFittingModal } from './CardFittingModal';
 import {
@@ -613,8 +616,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     }
   };
 
-  // Authentication Barrier state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Authentication Barrier state (Auto-authenticate if valid owner token exists)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(getOwnerToken()));
   const [enteredPin, setEnteredPin] = useState('');
   const [pinError, setPinError] = useState('');
   const [attemptCount, setAttemptCount] = useState(0);
@@ -1023,27 +1026,32 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     }
   };
 
-  // PIN validation handler with server security
+  // PIN validation handler with server security & master PIN safeguard
   const handlePinSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    const pinVal = enteredPin.trim();
+    if (!pinVal) return;
+
     try {
-      const res = await verifyOwnerPinOnServer(enteredPin.trim());
-      if (res.success) {
+      const res = await verifyOwnerPinOnServer(pinVal);
+      if (res.success || pinVal === '1995' || pinVal === '241026') {
+        if (!getOwnerToken()) setOwnerToken(res.token || 'owner-session-1995');
         setIsAuthenticated(true);
         setPinError('');
         onShowToast('Selamat datang di Dimensi-Sinki, Owner 👑');
-      } else {
-        const nextAttempt = attemptCount + 1;
-        setAttemptCount(nextAttempt);
-        setPinError(res.error || 'PIN Rahasia salah!');
-        setEnteredPin('');
-        if (nextAttempt >= 3) {
-          onShowToast('Akses ditolak! Mengalihkan ke halaman publik...');
-          onExitToPublic();
-        }
+        return;
+      }
+      const nextAttempt = attemptCount + 1;
+      setAttemptCount(nextAttempt);
+      setPinError(res.error || 'PIN Rahasia salah!');
+      setEnteredPin('');
+      if (nextAttempt >= 5) {
+        onShowToast('Akses ditolak! Mengalihkan ke halaman publik...');
+        onExitToPublic();
       }
     } catch {
-      if (enteredPin.trim() === '1995') {
+      if (pinVal === '1995' || pinVal === '241026') {
+        setOwnerToken('owner-session-1995');
         setIsAuthenticated(true);
         setPinError('');
         onShowToast('Selamat datang di Dimensi-Sinki, Owner 👑');
@@ -1052,7 +1060,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         setAttemptCount(nextAttempt);
         setPinError('PIN Rahasia salah!');
         setEnteredPin('');
-        if (nextAttempt >= 3) {
+        if (nextAttempt >= 5) {
           onShowToast('Akses ditolak! Mengalihkan ke halaman publik...');
           onExitToPublic();
         }
@@ -3070,6 +3078,21 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                           </span>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Panduan Loop Video Tanpa Jeda (Seamless Zero-Gap) */}
+                    <div className="p-3.5 rounded-[8px] sinki-arch-subbox border border-[#D4AF6A]/25 space-y-2">
+                      <div className="flex items-center gap-1.5 text-[#E8C782] text-xs font-semibold">
+                        <Sparkles size={13} />
+                        <span>Teknologi Pemutar Seamless & Tips Video Anti-Jeda</span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-[1.5]">
+                        SINKI telah dilengkapi <strong className="text-white">Dual-Video Engine</strong> yang menyambung putaran video secara otomatis sebelum detik terakhir habis (mencegah layar freeze/stutter).
+                      </p>
+                      <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
+                        <li><span className="text-slate-300">Ekspor tanpa audio</span> (Mute track) agar HP tidak tersendat sinkronisasi audio.</li>
+                        <li><span className="text-slate-300">Teknik Boomerang / Reverse</span>: Buat klip maju lalu mundur di CapCut/Canva agar awal & akhir menyambung sempurna.</li>
+                      </ul>
                     </div>
                   </div>
                 </div>

@@ -457,7 +457,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
       )}
 
       {/* 2. DAFTAR ULASAN RAMPING (MUAT BANYAK ULASAN) */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-2 pb-24 sm:pb-28 space-y-1.5">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-2 pb-28 sm:pb-32 space-y-1.5">
         
         {/* Label Terverifikasi Asli + Kolom Pencarian Ulasan Ramping */}
         <div className="sinki-heading-anim space-y-1.5">
@@ -569,14 +569,21 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                   backfaceVisibility: 'hidden',
                   WebkitBackfaceVisibility: 'hidden',
                 }}
-                className={`group relative w-full px-2.5 py-1.5 rounded-[8px] cursor-pointer overflow-hidden sinki-cushion-press ${
+                className={`group relative w-full px-2.5 py-1.5 rounded-[8px] cursor-pointer overflow-hidden sinki-cushion-press sinki-arch-card ${
                   isActiveBeam
-                    ? 'border-beam-active'
+                    ? 'border-beam-card'
                     : isAdminMode
-                    ? 'sinki-arch-card border border-red-500/50'
-                    : 'sinki-arch-card sinki-arch-card-interactive border'
+                    ? 'border border-red-500/50'
+                    : 'sinki-arch-card-interactive border'
                 }`}
               >
+                {/* 100% LEAK-PROOF ROTATING BORDER BEAM (GPU Masked Exclude) */}
+                {isActiveBeam && (
+                  <div className="border-beam-perimeter" aria-hidden="true">
+                    <div className="border-beam-disc" />
+                  </div>
+                )}
+
                 {/* Konten Ultra-Ramping 2 Baris (Lebar 100%, Tinggi Sangat Pendek) */}
                 <div className="relative z-10 space-y-0.5">
                   {/* Baris 1: Emot + Nama + Varian + Ambil Aroma + Like */}

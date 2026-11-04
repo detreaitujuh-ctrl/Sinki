@@ -515,7 +515,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     return (
       <div
         key={`step-result-${viewTransitionKey}`}
-        className="relative w-full h-full flex flex-col justify-between overflow-hidden text-slate-100 sinki-screen-soft-fade select-none pb-24 sm:pb-28"
+        className="relative w-full h-full flex flex-col justify-between overflow-hidden text-slate-100 sinki-screen-soft-fade select-none pb-28 sm:pb-32"
       >
         {/* 1. LAYER LATAR BELAKANG PANGGUNG MEWAH DINAMIS SESUAI SENSAI WANGI */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
