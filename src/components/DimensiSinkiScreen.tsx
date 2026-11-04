@@ -148,6 +148,7 @@ import {
 } from '../utils/themeStorage';
 
 interface DimensiSinkiScreenProps {
+  onOpenKasir?: () => void;
   onExitToPublic: () => void;
   onShowToast: (msg: string) => void;
   currentLogo: string | null;
@@ -201,6 +202,7 @@ type MenuKey =
   | 'settings';
 
 export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
+  onOpenKasir,
   onExitToPublic,
   onShowToast,
   currentLogo,
@@ -1405,8 +1407,35 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             </button>
           </div>
 
+          {/* Quick Access: Dimensi Kasir */}
+          {onOpenKasir && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSidebarOpen(false);
+                onOpenKasir();
+              }}
+              className="w-full py-2.5 px-3 rounded-[8px] bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-emerald-600/20 border border-emerald-500/40 text-emerald-300 hover:text-white flex items-center justify-between transition-all group shadow-sm active:scale-98 cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="p-1 rounded-[5px] bg-emerald-500/30 text-emerald-300">
+                  <DollarSign size={15} />
+                </span>
+                <div className="text-left">
+                  <span className="font-heading text-xs font-bold block leading-tight text-white group-hover:text-emerald-200">
+                    Dimensi Kasir SINKI
+                  </span>
+                  <span className="text-[10px] text-emerald-400/80 block leading-tight">
+                    Catat Pesanan & Laba Bulanan
+                  </span>
+                </div>
+              </div>
+              <ChevronRight size={14} className="text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          )}
+
           {/* Navigation Menu Terorganisir per Kategori */}
-          <nav className="space-y-4 overflow-y-auto no-scrollbar max-h-[calc(100vh-210px)] pr-1">
+          <nav className="space-y-4 overflow-y-auto no-scrollbar max-h-[calc(100vh-250px)] pr-1">
             {navGroups.map((group, gIdx) => (
               <div key={gIdx} className="space-y-1.5">
                 <span className="text-xs font-semibold text-[#D4AF6A] px-2 block">

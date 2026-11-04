@@ -29,6 +29,7 @@ import {
 } from '../utils/socialStorage';
 
 interface HomeScreenProps {
+  isActive?: boolean;
   onShowToast: (message: string) => void;
   onNavigateToCollection: () => void;
   onOpenDrawer: () => void;
@@ -49,6 +50,7 @@ interface HomeScreenProps {
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
+  isActive = true,
   onShowToast,
   onNavigateToCollection,
   onOpenDrawer,
@@ -109,7 +111,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   useEffect(() => {
     setVideoPlaying(false);
     setVideoFailed(false);
-    if (videoRef.current) {
+    if (videoRef.current && isActive) {
       videoRef.current.currentTime = 0;
       videoRef.current.play().then(() => {
         setVideoPlaying(true);
@@ -117,14 +119,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         // Autoplay may need user interaction on some mobile browsers
       });
     }
-  }, [activeVideoUrl, isVideoMode]);
+  }, [activeVideoUrl, isVideoMode, isActive]);
+
+  // Pause video when leaving Home screen or returning to it
+  useEffect(() => {
+    if (!videoRef.current || !isVideoMode) return;
+    if (isActive) {
+      if (videoRef.current.paused) {
+        videoRef.current.play().then(() => {
+          setVideoPlaying(true);
+        }).catch(() => {});
+      }
+    } else {
+      if (!videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+    }
+  }, [isActive, isVideoMode]);
 
   // Resume playback on app resume / tab switch
   useEffect(() => {
     const handleVisibility = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && isVideoMode) {
-        if (videoRef.current && videoRef.current.paused) {
-          videoRef.current.play().catch(() => {});
+      if (typeof document !== 'undefined' && isVideoMode) {
+        if (document.visibilityState === 'visible' && isActive) {
+          if (videoRef.current && videoRef.current.paused) {
+            videoRef.current.play().catch(() => {});
+          }
+        } else if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
         }
       }
     };
@@ -132,7 +154,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [isVideoMode]);
+  }, [isVideoMode, isActive]);
 
   // 3D Stage Bottle State - Hanya aktif jika Owner menyalakan sakelar & mengunggah PNG botol kustom
   const isStageEnabled = propHeroStageEnabled !== undefined
@@ -172,9 +194,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
-  // Auto-slide every 4 seconds only if custom bottles are uploaded
+  // Auto-slide every 4 seconds only if custom bottles are uploaded AND screen is active
   useEffect(() => {
-    if (!hasCustomHeroBottles || activeBottles.length <= 1) return;
+    if (!isActive || !hasCustomHeroBottles || activeBottles.length <= 1) return;
 
     autoPlayTimerRef.current = setInterval(() => {
       nextBottle();
@@ -185,7 +207,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         clearInterval(autoPlayTimerRef.current);
       }
     };
-  }, [hasCustomHeroBottles, activeBottles.length, nextBottle]);
+  }, [isActive, hasCustomHeroBottles, activeBottles.length, nextBottle]);
 
   // Touch swipe gesture handlers
   const handleTouchStart = (e: React.TouchEvent) => {

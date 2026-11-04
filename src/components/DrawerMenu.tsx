@@ -1,4 +1,4 @@
-import { BookOpen, ChevronRight, Shield } from 'lucide-react';
+import { BookOpen, ChevronRight, Shield, DollarSign } from 'lucide-react';
 import { getStoredArticles, fetchArticlesFromServer, ArticleItem } from '../utils/articleStorage';
 import React from 'react';
 import { X, LayoutGrid, MessageCircle, ShoppingBag, ExternalLink } from 'lucide-react';
@@ -15,6 +15,7 @@ interface DrawerMenuProps {
   onClose: () => void;
   onNavigateToCollection: () => void;
   onOpenDimensiSinki?: () => void;
+  onOpenDimensiKasir?: () => void;
   socialLinks?: SocialLinks;
 }
 
@@ -23,6 +24,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
   onClose,
   onNavigateToCollection,
   onOpenDimensiSinki,
+  onOpenDimensiKasir,
   socialLinks: propSocialLinks,
 }) => {
   const currentSocial = propSocialLinks || getStoredSocialLinks();
@@ -31,7 +33,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
   const [articles, setArticles] = React.useState<ArticleItem[]>(() => getStoredArticles());
 
   React.useEffect(() => {
-    if (isOpen || isJournalOpen) {
+    if ((isOpen || isJournalOpen) && articles.length === 0) {
       fetchArticlesFromServer().then((list) => {
         if (Array.isArray(list) && list.length > 0) {
           setArticles(list);
@@ -86,8 +88,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                 onNavigateToCollection();
               }}
               style={{
-                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both',
-                willChange: 'transform, opacity, filter',
+                animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both',
               }}
               className="w-full flex items-center justify-between py-2 px-3 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border text-left transition-all group sinki-cushion-press cursor-pointer"
             >
@@ -104,8 +105,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
             <button
               onClick={() => setIsJournalOpen(true)}
               style={{
-                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 110ms both',
-                willChange: 'transform, opacity, filter',
+                animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both',
               }}
               className="w-full flex items-center justify-between py-2 px-3 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border text-left transition-all group sinki-cushion-press cursor-pointer"
             >
@@ -131,8 +131,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                 );
               }}
               style={{
-                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both',
-                willChange: 'transform, opacity, filter',
+                animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both',
               }}
               className="w-full flex items-center justify-between py-2 px-3 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border text-left transition-all group cursor-pointer sinki-cushion-press"
             >
@@ -151,8 +150,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 210ms both',
-                willChange: 'transform, opacity, filter',
+                animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both',
               }}
               className="w-full flex items-center justify-between py-2 px-3 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border text-left transition-all group sinki-cushion-press cursor-pointer"
             >
@@ -177,8 +175,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 260ms both',
-                willChange: 'transform, opacity, filter',
+                animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both',
               }}
               className="flex items-center justify-between py-2 px-3 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border text-[13px] text-white hover:text-[#F3E6C8] transition-colors font-medium sinki-cushion-press cursor-pointer"
             >
@@ -191,8 +188,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 310ms both',
-                willChange: 'transform, opacity, filter',
+                animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 240ms both',
               }}
               className="flex items-center justify-between py-2 px-3 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border text-[13px] text-slate-200 hover:text-[#F3E6C8] transition-colors font-medium sinki-cushion-press cursor-pointer"
             >
@@ -203,7 +199,26 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
         </div>
 
         {/* Bottom Section */}
-        <div className="pt-4 border-t border-[#D4AF6A]/20 mt-5 space-y-2.5">
+        <div className="pt-4 border-t border-[#D4AF6A]/20 mt-5 space-y-2">
+          {onOpenDimensiKasir && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenDimensiKasir();
+              }}
+              style={{
+                animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 260ms both',
+              }}
+              className="w-full flex items-center justify-between py-2 px-3 rounded-[8px] bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[13px] font-semibold transition-all group sinki-cushion-press cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <DollarSign size={14} className="text-emerald-400" />
+                <span className="text-white group-hover:text-emerald-200">Dimensi Kasir (Catat Pesanan)</span>
+              </div>
+              <ChevronRight size={14} className="text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          )}
+
           {onOpenDimensiSinki && (
             <button
               onClick={() => {
@@ -211,8 +226,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
                 onOpenDimensiSinki();
               }}
               style={{
-                animation: 'sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 360ms both',
-                willChange: 'transform, opacity, filter',
+                animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 280ms both',
               }}
               className="w-full flex items-center justify-between py-2 px-3 rounded-[8px] sinki-arch-card-selected border text-[#F3E6C8] text-[13px] font-semibold transition-all group sinki-cushion-press cursor-pointer"
             >

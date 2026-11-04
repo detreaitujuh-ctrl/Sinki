@@ -39,6 +39,7 @@ export type { ReviewItem };
 export { INITIAL_4_REVIEWS };
 
 export interface ReviewScreenProps {
+  isActive?: boolean;
   onBackToHome: () => void;
   onNavigateToOrder?: () => void;
   onShowToast: (msg: string) => void;
@@ -83,6 +84,7 @@ const INAPPROPRIATE_WORDS = [
 ];
 
 export const ReviewScreen: React.FC<ReviewScreenProps> = ({
+  isActive = true,
   onBackToHome,
   onNavigateToOrder,
   onShowToast,
@@ -108,12 +110,30 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
     };
 
     syncReviews();
-    const interval = setInterval(syncReviews, 20000); // Sinkronisasi otomatis setiap 20 detik
+    const interval = setInterval(syncReviews, 15000); // Sinkronisasi otomatis setiap 15 detik
+
+    const handleReviewsUpdated = (e: any) => {
+      if (Array.isArray(e?.detail)) {
+        setReviews(e.detail);
+      }
+    };
+    window.addEventListener('sinki_reviews_updated', handleReviewsUpdated);
+
     return () => {
       isMounted = false;
       clearInterval(interval);
+      window.removeEventListener('sinki_reviews_updated', handleReviewsUpdated);
     };
   }, []);
+
+  // Fetch segar seketika saat pengguna membuka tab Review
+  useEffect(() => {
+    if (isActive) {
+      fetchReviewsFromSupabase().then((latest) => {
+        if (Array.isArray(latest)) setReviews(latest);
+      });
+    }
+  }, [isActive]);
 
   // Sinkronisasi katalog parfum terkini (EDP Classic + Top 11)
   const [perfumesCatalog, setPerfumesCatalog] = useState<PerfumeItem[]>(getStoredPerfumes);

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { DimensiSinkiScreen } from './components/DimensiSinkiScreen';
+import { DimensiKasirScreen } from './components/DimensiKasirScreen';
 import { BottomNavBar, TabType } from './components/BottomNavBar';
 import { HomeScreen } from './components/HomeScreen';
 import { CollectionScreen } from './components/CollectionScreen';
@@ -52,24 +53,39 @@ import {
 
 const TABS: TabType[] = ['home', 'collection', 'match', 'order', 'review'];
 
+const checkIsKasir = () => {
+  const p = window.location.pathname.toLowerCase();
+  const h = window.location.hash.toLowerCase();
+  const s = window.location.search.toLowerCase();
+  return (
+    p.includes('kasir') ||
+    h.includes('kasir') ||
+    s.includes('kasir')
+  );
+};
+
+const checkIsDimensi = () => {
+  if (checkIsKasir()) return false;
+  const p = window.location.pathname.toLowerCase();
+  const h = window.location.hash.toLowerCase();
+  const s = window.location.search.toLowerCase();
+  return (
+    p.includes('dimensi') ||
+    h.includes('dimensi') ||
+    s.includes('dimensi')
+  );
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [isDimensiRoute, setIsDimensiRoute] = useState(() => {
-    return (
-      window.location.pathname === '/dimensi-sinki' ||
-      window.location.hash === '#/dimensi-sinki' ||
-      window.location.search.includes('dimensi-sinki')
-    );
-  });
+  const [isDimensiRoute, setIsDimensiRoute] = useState(checkIsDimensi);
+  const [isKasirRoute, setIsKasirRoute] = useState(checkIsKasir);
 
-  // Listen to popstate or url change for /dimensi-sinki
+  // Listen to popstate or url change for /dimensi-sinki and /dimensi-kasir
   useEffect(() => {
     const handleUrlChange = () => {
-      setIsDimensiRoute(
-        window.location.pathname === '/dimensi-sinki' ||
-        window.location.hash === '#/dimensi-sinki' ||
-        window.location.search.includes('dimensi-sinki')
-      );
+      setIsDimensiRoute(checkIsDimensi());
+      setIsKasirRoute(checkIsKasir());
     };
     window.addEventListener('popstate', handleUrlChange);
     window.addEventListener('hashchange', handleUrlChange);
@@ -224,8 +240,14 @@ export default function App() {
       preloadForest.src = '/assets/forest/sinki-forest-waterfall.jpg';
     }, 1200);
 
-    // Auto-refresh running text when visitor returns to tab or every 30s
+    // Auto-refresh running text every 60s without spamming on every iframe focus
+    let lastRefreshTime = Date.now();
     const handleTickerRefresh = () => {
+      const now = Date.now();
+      // Debounce: don't refresh more often than once every 45s
+      if (now - lastRefreshTime < 45000) return;
+      lastRefreshTime = now;
+
       if (!document.hidden) {
         fetchTickerFromServer().then((cfg) => {
           if (cfg) setTickerConfig(cfg);
@@ -240,7 +262,7 @@ export default function App() {
     };
     window.addEventListener('focus', handleTickerRefresh);
     document.addEventListener('visibilitychange', handleTickerRefresh);
-    const tickerInterval = setInterval(handleTickerRefresh, 30000);
+    const tickerInterval = setInterval(handleTickerRefresh, 60000);
 
     return () => {
       clearTimeout(lazyTimer);
@@ -299,6 +321,7 @@ export default function App() {
           {/* View 1: Home Screen (Prioritas 100% pertama kali masuk) */}
           <div className={`w-full h-full ${activeTab === 'home' ? 'block' : 'hidden'}`}>
             <HomeScreen
+              isActive={activeTab === 'home' && !isDrawerOpen && !isDimensiRoute && !isKasirRoute}
               onShowToast={showToast}
               onNavigateToCollection={() => setActiveTab('collection')}
               onOpenDrawer={() => setIsDrawerOpen(true)}
@@ -382,6 +405,7 @@ export default function App() {
           {mountedTabs.has('review') && (
             <div className={`w-full h-full ${activeTab === 'review' ? 'block' : 'hidden'}`}>
               <ReviewScreen
+                isActive={activeTab === 'review'}
                 onBackToHome={() => setActiveTab('home')}
                 onNavigateToOrder={() => setActiveTab('order')}
                 onShowToast={showToast}
@@ -398,6 +422,10 @@ export default function App() {
           onClose={() => setIsDrawerOpen(false)}
           onNavigateToCollection={() => setActiveTab('collection')}
           socialLinks={socialLinks}
+          onOpenDimensiKasir={() => {
+            window.history.pushState({}, '', '/dimensi-kasir');
+            setIsKasirRoute(true);
+          }}
           onOpenDimensiSinki={() => {
             const token = getOwnerToken();
             if (token) {
@@ -433,10 +461,34 @@ export default function App() {
         />
       </main>
 
+      {/* Dimensi Kasir Layer (Khusus Catat Pesanan WhatsApp & Laporan Laba Bersih) */}
+      {isKasirRoute && (
+        <div className="fixed inset-0 z-[65] w-full h-full bg-[#080d0a] text-slate-100 overflow-y-auto">
+          <DimensiKasirScreen
+            onBackToAdmin={() => {
+              window.history.pushState({}, '', '/dimensi-sinki');
+              setIsKasirRoute(false);
+              setIsDimensiRoute(true);
+            }}
+            onBackToPublic={() => {
+              window.history.pushState({}, '', '/');
+              setIsKasirRoute(false);
+              setIsDimensiRoute(false);
+            }}
+            onShowToast={showToast}
+          />
+        </div>
+      )}
+
       {/* Secret Owner / Admin DimensiSinki Layer (Overlay di atas toko publik: Home & videonya tetap hidup di balik layar) */}
-      {isDimensiRoute && (
+      {isDimensiRoute && !isKasirRoute && (
         <div className="fixed inset-0 z-[60] w-full h-full bg-[#08080b] text-slate-100 flex justify-center items-center overflow-hidden">
           <DimensiSinkiScreen
+            onOpenKasir={() => {
+              window.history.pushState({}, '', '/dimensi-kasir');
+              setIsDimensiRoute(false);
+              setIsKasirRoute(true);
+            }}
             onExitToPublic={() => {
               clearOwnerToken();
               window.history.pushState({}, '', '/');

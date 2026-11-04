@@ -113,6 +113,33 @@ const SOCIAL_FILE = path.join(DATA_DIR, 'social_links.json');
 const TOP_PERFUMES_FILE = path.join(DATA_DIR, 'top_perfumes.json');
 const ARTICLES_FILE = path.join(DATA_DIR, 'articles.json');
 const THEME_FILE = path.join(DATA_DIR, 'theme_config.json');
+const SALES_FILE = path.join(DATA_DIR, 'sales_records.json');
+
+function getSalesRecords(): any[] {
+  if (fs.existsSync(SALES_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(SALES_FILE, 'utf-8'));
+      if (Array.isArray(data)) return data;
+    } catch {}
+  }
+  return [];
+}
+
+async function persistSalesRecords(sales: any[]) {
+  try {
+    fs.writeFileSync(SALES_FILE, JSON.stringify(sales, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Error writing local sales file:', e);
+  }
+  try {
+    await supabase.storage.from(SUPABASE_BUCKET).upload('sales_records.json', JSON.stringify(sales, null, 2), {
+      contentType: 'application/json',
+      upsert: true,
+    });
+  } catch (err) {
+    console.warn('[Supabase Sync Notice] sales_records.json:', err);
+  }
+}
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -463,7 +490,7 @@ const getAssets = (): AssetsData => {
 let cachedShortUrl: string | null = null;
 const OFFICIAL_SHARED_URL =
   process.env.APP_URL?.replace('ais-dev-', 'ais-pre-') ||
-  'https://ais-pre-iqgrrnk73zfofeqzkumvlm-784367078456.asia-northeast1.run.app';
+  'https://ais-pre-4pzyfp5lo6mqxqlkc2pspr-379981520046.asia-southeast1.run.app';
 
 app.get('/api/short-url', async (req, res) => {
   // Derive target public URL (convert internal dev URL to public ais-pre URL)
@@ -746,6 +773,56 @@ app.post('/api/owner/update-articles', async (req, res) => {
     success: true,
     message: 'Konten panduan aroma berhasil disimpan ke cloud!',
     articles,
+  });
+});
+
+// GET & POST Sales Records (Dimensi Kasir)
+app.get('/api/sales', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  return res.json(getSalesRecords());
+});
+
+app.post('/api/owner/record-sale', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+  const { sale } = req.body;
+  if (!sale || typeof sale !== 'object' || !sale.perfumeName) {
+    return res.status(400).json({ error: 'Data transaksi penjualan tidak valid!' });
+  }
+
+  const current = getSalesRecords();
+  const newSale = {
+    ...sale,
+    id: sale.id || `sale-${Date.now()}`,
+    date: sale.date || new Date().toISOString(),
+  };
+
+  const updated = [newSale, ...current];
+  await persistSalesRecords(updated);
+  return res.json({
+    success: true,
+    message: `Penjualan ${newSale.perfumeName} (${newSale.volumeMl}ml) berhasil dicatat!`,
+    sales: updated,
+  });
+});
+
+app.post('/api/owner/delete-sale', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+  const { id } = req.body;
+  if (!id) {
+    return res.status(400).json({ error: 'ID transaksi wajib disertakan!' });
+  }
+
+  const current = getSalesRecords();
+  const updated = current.filter((s) => s.id !== id);
+  await persistSalesRecords(updated);
+  return res.json({
+    success: true,
+    message: 'Catatan transaksi penjualan berhasil dihapus!',
+    sales: updated,
   });
 });
 
@@ -1701,6 +1778,27 @@ async function hydrateDataFromSupabase() {
     }
   } catch (err) {
     console.warn('[Supabase Hydration Notice] assets:', err);
+  }
+
+  try {
+    const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download('sales_records.json');
+    if (!error && data) {
+      const text = await data.text();
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) {
+        fs.writeFileSync(SALES_FILE, text, 'utf-8');
+        console.log(`[Supabase Hydration] Sales records (${parsed.length} transaksi) berhasil dimuat dari cloud`);
+      }
+    } else if (fs.existsSync(SALES_FILE)) {
+      const local = fs.readFileSync(SALES_FILE, 'utf-8');
+      await supabase.storage.from(SUPABASE_BUCKET).upload('sales_records.json', local, {
+        contentType: 'application/json',
+        upsert: true,
+      });
+      console.log('[Supabase Hydration] Sales records lokal diupload ke cloud!');
+    }
+  } catch (err) {
+    console.warn('[Supabase Hydration Notice] sales records:', err);
   }
 }
 
