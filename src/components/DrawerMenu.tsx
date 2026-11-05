@@ -1,8 +1,15 @@
-import { BookOpen, ChevronRight, Shield, DollarSign } from 'lucide-react';
+import { BookOpen, ChevronRight, Shield, DollarSign, Volume2, VolumeX } from 'lucide-react';
 import { getStoredArticles, fetchArticlesFromServer, ArticleItem } from '../utils/articleStorage';
 import React from 'react';
 import { X, LayoutGrid, MessageCircle, ShoppingBag, ExternalLink } from 'lucide-react';
 import { openWhatsAppDirect } from '../utils/whatsappHelper';
+import {
+  getSoundEnabled,
+  setSoundEnabled,
+  getSoundVolume,
+  setSoundVolume,
+  playInteractionSound,
+} from '../utils/soundEngine';
 import {
   SocialLinks,
   getStoredSocialLinks,
@@ -31,6 +38,47 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
   const [isJournalOpen, setIsJournalOpen] = React.useState(false);
   const [selectedArticle, setSelectedArticle] = React.useState<ArticleItem | null>(null);
   const [articles, setArticles] = React.useState<ArticleItem[]>(() => getStoredArticles());
+  const [soundActive, setSoundActive] = React.useState<boolean>(() => getSoundEnabled());
+  const [soundVolume, setSoundVolumeState] = React.useState<number>(() => getSoundVolume());
+
+  React.useEffect(() => {
+    const handleSoundChange = (e: any) => {
+      if (e?.detail && typeof e.detail.enabled === 'boolean') {
+        setSoundActive(e.detail.enabled);
+      } else {
+        setSoundActive(getSoundEnabled());
+      }
+    };
+    const handleVolumeChange = (e: any) => {
+      if (e?.detail && typeof e.detail.volume === 'number') {
+        setSoundVolumeState(e.detail.volume);
+      } else {
+        setSoundVolumeState(getSoundVolume());
+      }
+    };
+    window.addEventListener('sinki_sound_changed', handleSoundChange);
+    window.addEventListener('sinki_volume_changed', handleVolumeChange);
+    return () => {
+      window.removeEventListener('sinki_sound_changed', handleSoundChange);
+      window.removeEventListener('sinki_volume_changed', handleVolumeChange);
+    };
+  }, []);
+
+  const handleToggleSound = () => {
+    const next = !soundActive;
+    setSoundActive(next);
+    setSoundEnabled(next);
+    if (next) {
+      playInteractionSound('glassTap');
+    }
+  };
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVol = parseFloat(e.target.value) / 100;
+    setSoundVolumeState(newVol);
+    setSoundVolume(newVol);
+    playInteractionSound('glassTap');
+  };
 
   React.useEffect(() => {
     if ((isOpen || isJournalOpen) && articles.length === 0) {
@@ -195,6 +243,84 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               <span className="truncate pr-2">TikTok {extractTikTokHandle(currentSocial.tiktok)}</span>
               <ExternalLink size={12} className="shrink-0 text-[#D4AF6A]/80" />
             </a>
+          </div>
+
+          {/* Pengaturan Efek Suara Interaksi (Sound ON/OFF) */}
+          <div className="mt-4 space-y-1.5">
+            <span className="font-body text-[11px] font-medium text-[#DFB76C] pl-1 block drop-shadow-sm">
+              Pengaturan Suara
+            </span>
+            <div
+              style={{
+                animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 250ms both',
+              }}
+              className="p-3 rounded-[8px] sinki-arch-card border space-y-2.5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={`w-7 h-7 rounded-[6px] flex items-center justify-center transition-colors ${
+                      soundActive
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-white/5 text-slate-400 border border-white/10'
+                    }`}
+                  >
+                    {soundActive ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                  </div>
+                  <div>
+                    <span className="text-[13px] font-medium text-white block leading-tight">
+                      Suara Interaksi
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-normal block mt-0.5">
+                      {soundActive ? `Aktif (${Math.round(soundVolume * 100)}%)` : 'Suara dimatikan'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* iOS Luxury Style Toggle Switch */}
+                <button
+                  type="button"
+                  onClick={handleToggleSound}
+                  role="switch"
+                  aria-checked={soundActive}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    soundActive ? 'bg-emerald-500' : 'bg-slate-700'
+                  }`}
+                  title={soundActive ? 'Matikan efek suara' : 'Aktifkan efek suara'}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                      soundActive ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Volume Range Slider (Hanya muncul saat suara ON) */}
+              {soundActive && (
+                <div className="pt-2 border-t border-[#D4AF6A]/15 space-y-1.5 animate-fadeIn">
+                  <div className="flex items-center justify-between text-[11px] font-body text-slate-300">
+                    <span className="text-slate-400">Kekuatan Suara</span>
+                    <span className="text-emerald-400 font-semibold tabular-nums">
+                      {Math.round(soundVolume * 100)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      step="5"
+                      value={Math.round(soundVolume * 100)}
+                      onChange={handleSliderChange}
+                      className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 transition-all"
+                      title="Geser untuk mengatur volume suara"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

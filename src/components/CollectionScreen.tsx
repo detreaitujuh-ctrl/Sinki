@@ -26,6 +26,7 @@ import {
 import { ReviewItem, getCachedReviews, fetchReviewsFromSupabase } from '../utils/reviewStorage';
 import { useConstantTickerSpeed } from '../utils/useConstantTickerSpeed';
 import { PerfumeDetailModal } from './PerfumeDetailModal';
+import { playInteractionSound } from '../utils/soundEngine';
 
 interface CollectionScreenProps {
   onBackToHome: () => void;
@@ -435,12 +436,14 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
   }, [activePerfumes, selectedCategory, trimmedQuery]);
 
   const handleSelectCategory = (catId: CollectionCategoryKey) => {
+    playInteractionSound('glassTap');
     setSelectedCategory(catId);
     setViewTransitionKey((prev) => prev + 1);
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleBackToCategories = () => {
+    playInteractionSound('digitalSoft');
     setSelectedCategory(null);
     setSearchQuery('');
     setViewTransitionKey((prev) => prev + 1);
@@ -448,6 +451,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
   };
 
   const handleOpenDetail = (perfume: PerfumeItem) => {
+    playInteractionSound('glassTap');
     setDetailPerfume(perfume);
     setSelectedBottleSize(null); // Harga hanya muncul setelah ukuran dipilih
     setBottleQty(1);
@@ -679,13 +683,15 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                     <div className="flex items-center gap-4 pr-4">
                       {marqueeReviews.map((r, i) => (
                         <span key={`rev-a-${i}`} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                          <span className="text-[#DFB76C] font-semibold">{r.emoji || '★'}</span>
-                          <span className="text-zinc-200 font-normal">"{r.comment}"</span>
                           <span className="inline-flex items-center gap-1 text-amber-200 font-bold bg-[#DFB76C]/15 border border-[#DFB76C]/30 px-1.5 py-0.5 rounded-[5px] text-[10.5px] tracking-wide shadow-xs">
                             <span className="text-[#DFB76C] text-[10px]">👤</span>
                             <span>{r.name}</span>
                           </span>
-                          <span className="text-[#DFB76C]/80 text-[10px] font-medium">({r.variant})</span>
+                          {r.variant && (
+                            <span className="text-[#DFB76C]/80 text-[10px] font-medium">({r.variant})</span>
+                          )}
+                          <span className="text-[#DFB76C] font-semibold">{r.emoji || '★'}</span>
+                          <span className="text-zinc-200 font-normal">"{r.comment}"</span>
                           <span className="text-white/40 px-1">•</span>
                         </span>
                       ))}
@@ -694,13 +700,15 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                     <div className="flex items-center gap-4 pr-4" aria-hidden="true">
                       {marqueeReviews.map((r, i) => (
                         <span key={`rev-b-${i}`} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                          <span className="text-[#DFB76C] font-semibold">{r.emoji || '★'}</span>
-                          <span className="text-zinc-200 font-normal">"{r.comment}"</span>
                           <span className="inline-flex items-center gap-1 text-amber-200 font-bold bg-[#DFB76C]/15 border border-[#DFB76C]/30 px-1.5 py-0.5 rounded-[5px] text-[10.5px] tracking-wide shadow-xs">
                             <span className="text-[#DFB76C] text-[10px]">👤</span>
                             <span>{r.name}</span>
                           </span>
-                          <span className="text-[#DFB76C]/80 text-[10px] font-medium">({r.variant})</span>
+                          {r.variant && (
+                            <span className="text-[#DFB76C]/80 text-[10px] font-medium">({r.variant})</span>
+                          )}
+                          <span className="text-[#DFB76C] font-semibold">{r.emoji || '★'}</span>
+                          <span className="text-zinc-200 font-normal">"{r.comment}"</span>
                           <span className="text-white/40 px-1">•</span>
                         </span>
                       ))}

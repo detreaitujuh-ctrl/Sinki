@@ -9,6 +9,7 @@ export interface ReviewItem {
   comment: string;
   date: string;
   likes: number;
+  createdAt?: number;
 }
 
 export const INITIAL_4_REVIEWS: ReviewItem[] = [];
@@ -19,6 +20,49 @@ const REVIEWS_FILE_NAME = 'reviews.json';
 const REVIEWS_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${REVIEWS_FILE_NAME}`;
 
 export const MAX_REVIEWS_LIMIT = 20;
+
+/**
+ * Ekstraksi timestamp numerik dari item ulasan secara akurat
+ */
+export const getReviewTimestamp = (item: ReviewItem | any): number => {
+  if (!item) return 0;
+  if (typeof item.createdAt === 'number' && !isNaN(item.createdAt)) return item.createdAt;
+  if (typeof item.createdAt === 'string') {
+    const parsed = Date.parse(item.createdAt);
+    if (!isNaN(parsed)) return parsed;
+  }
+  if (typeof item._savedAt === 'number') return item._savedAt;
+  if (typeof item.timestamp === 'number') return item.timestamp;
+
+  // Ekstraksi timestamp jika ID berformat 'rev-1793807727293'
+  if (typeof item.id === 'string') {
+    const match = item.id.match(/\d{10,14}/);
+    if (match) {
+      const num = Number(match[0]);
+      if (!isNaN(num) && num > 1000000000) return num;
+    }
+  }
+
+  // Jika date dapat di-parse
+  if (item.date && typeof item.date === 'string' && item.date !== 'Baru saja') {
+    const parsed = Date.parse(item.date);
+    if (!isNaN(parsed)) return parsed;
+  }
+
+  return 0;
+};
+
+/**
+ * Mengurutkan ulasan sehingga ulasan yang paling baru selalu berada di posisi paling atas
+ */
+export const sortReviewsNewestFirst = (list: ReviewItem[]): ReviewItem[] => {
+  if (!Array.isArray(list)) return [];
+  return [...list].sort((a, b) => {
+    const timeA = getReviewTimestamp(a);
+    const timeB = getReviewTimestamp(b);
+    return timeB - timeA; // Descending: ulasan baru di atas
+  });
+};
 
 /**
  * Menghitung jumlah ulasan riil untuk suatu varian parfum (+ base count wajar yang bertambah real-time saat diulas)
@@ -60,10 +104,8 @@ const recordLocalSubmission = (review: ReviewItem) => {
   } catch {}
 };
 
-
-
 /**
- * Mengambil ulasan dari penyimpanan lokal (instant cache)
+ * Mengambil ulasan dari penyimpanan lokal (instant cache) terurut terbaru di atas
  */
 export const getCachedReviews = (): ReviewItem[] => {
   try {
@@ -71,7 +113,7 @@ export const getCachedReviews = (): ReviewItem[] => {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed.slice(0, MAX_REVIEWS_LIMIT);
+        return sortReviewsNewestFirst(parsed).slice(0, MAX_REVIEWS_LIMIT);
       }
     }
   } catch (err) {
@@ -81,14 +123,14 @@ export const getCachedReviews = (): ReviewItem[] => {
 };
 
 /**
- * Menyimpan ulasan ke cache lokal browser
+ * Menyimpan ulasan ke cache lokal browser selalu terurut terbaru di atas
  */
 export const setCachedReviews = (reviews: ReviewItem[]) => {
   try {
-    const trimmed = reviews.slice(0, MAX_REVIEWS_LIMIT);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(trimmed));
+    const sorted = sortReviewsNewestFirst(reviews).slice(0, MAX_REVIEWS_LIMIT);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sorted));
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('sinki_reviews_updated', { detail: trimmed }));
+      window.dispatchEvent(new CustomEvent('sinki_reviews_updated', { detail: sorted }));
     }
   } catch (err) {
     console.error('Failed setting reviews cache:', err);
@@ -121,13 +163,13 @@ export const deduplicateReviews = (list: ReviewItem[]): ReviewItem[] => {
 };
 
 /**
- * Menggabungkan ulasan cloud dengan ulasan lokal terkini (Smart Merge tanpa duplikasi)
+ * Menggabungkan ulasan cloud dengan ulasan lokal terkini (Smart Merge tanpa duplikasi) terurut terbaru di atas
  */
 const smartMergeReviews = (cloudReviews: ReviewItem[]): ReviewItem[] => {
   if (!Array.isArray(cloudReviews)) cloudReviews = [];
   const localRecents = getRecentLocalSubmissions();
   if (localRecents.length === 0) {
-    return deduplicateReviews(cloudReviews).slice(0, MAX_REVIEWS_LIMIT);
+    return sortReviewsNewestFirst(deduplicateReviews(cloudReviews)).slice(0, MAX_REVIEWS_LIMIT);
   }
 
   // Cek apakah submission lokal sudah ada di cloud (berdasarkan ID atau Nama+Ulasan)
@@ -145,7 +187,7 @@ const smartMergeReviews = (cloudReviews: ReviewItem[]): ReviewItem[] => {
   };
 
   const missingLocals = localRecents.filter((r) => !isAlreadyInCloud(r));
-  const merged = deduplicateReviews([...missingLocals, ...cloudReviews]).slice(0, MAX_REVIEWS_LIMIT);
+  const merged = sortReviewsNewestFirst(deduplicateReviews([...missingLocals, ...cloudReviews])).slice(0, MAX_REVIEWS_LIMIT);
   return merged;
 };
 
@@ -194,14 +236,20 @@ export const fetchReviewsFromSupabase = async (): Promise<ReviewItem[]> => {
 export const saveReviewToSupabase = async (
   newReview: ReviewItem
 ): Promise<{ success: boolean; reviews: ReviewItem[] }> => {
-  // Hitung state terbaru secara instan (Rolling 10 Slots: ulasan baru paling atas, maks 10)
+  // Hitung state terbaru secara instan (ulasan baru selalu paling atas)
+  const now = Date.now();
+  const reviewWithTimestamp: ReviewItem = {
+    ...newReview,
+    createdAt: typeof newReview.createdAt === 'number' ? newReview.createdAt : now,
+  };
+
   const cached = getCachedReviews();
-  const trimmedName = (newReview.name || '').trim().toLowerCase();
-  const trimmedComment = (newReview.comment || '').trim().toLowerCase();
+  const trimmedName = (reviewWithTimestamp.name || '').trim().toLowerCase();
+  const trimmedComment = (reviewWithTimestamp.comment || '').trim().toLowerCase();
 
   const filtered = cached.filter(
     (r) =>
-      r.id !== newReview.id &&
+      r.id !== reviewWithTimestamp.id &&
       !(
         trimmedName &&
         trimmedComment &&
@@ -209,23 +257,23 @@ export const saveReviewToSupabase = async (
         (r.comment || '').trim().toLowerCase() === trimmedComment
       )
   );
-  const updated = deduplicateReviews([newReview, ...filtered]).slice(0, MAX_REVIEWS_LIMIT);
+  const updated = sortReviewsNewestFirst(deduplicateReviews([reviewWithTimestamp, ...filtered])).slice(0, MAX_REVIEWS_LIMIT);
   setCachedReviews(updated);
-  recordLocalSubmission(newReview);
+  recordLocalSubmission(reviewWithTimestamp);
 
   // Kirim via API backend resmi (Node / Cloudflare Worker)
   try {
     const res = await fetch('/api/reviews', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newReview),
+      body: JSON.stringify(reviewWithTimestamp),
     });
 
     const contentType = res.headers.get('content-type') || '';
     if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       if (data.reviews && Array.isArray(data.reviews)) {
-        const trimmed = deduplicateReviews(data.reviews).slice(0, MAX_REVIEWS_LIMIT);
+        const trimmed = sortReviewsNewestFirst(deduplicateReviews(data.reviews)).slice(0, MAX_REVIEWS_LIMIT);
         setCachedReviews(trimmed);
         return { success: true, reviews: trimmed };
       }

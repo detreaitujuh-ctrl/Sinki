@@ -7,6 +7,7 @@ import {
   getPerfumeBottleUnitPrice,
   addToCart,
 } from '../utils/cartStorage';
+import { playInteractionSound } from '../utils/soundEngine';
 
 interface PerfumeDetailModalProps {
   perfume: PerfumeItem | null;
@@ -44,6 +45,7 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
   const handleAddToCart = () => {
     if (!selectedBottleSize) return;
 
+    playInteractionSound('glassTap');
     const unitPrice = getPerfumeBottleUnitPrice(selectedBottleSize, perfume);
     const totalPrice = unitPrice * bottleQty;
 
@@ -175,7 +177,10 @@ export const PerfumeDetailModal: React.FC<PerfumeDetailModalProps> = ({
                   <button
                     key={size}
                     type="button"
-                    onClick={() => setSelectedBottleSize(size)}
+                    onClick={() => {
+                      playInteractionSound('glassTap');
+                      setSelectedBottleSize(size);
+                    }}
                     className={`font-body py-2 px-1 rounded-[6px] border text-center tabular-nums whitespace-nowrap sinki-cushion-press-sm ${
                       isSelected
                         ? 'sinki-arch-card-selected text-white font-semibold'

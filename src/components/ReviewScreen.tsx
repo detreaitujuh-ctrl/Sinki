@@ -31,6 +31,7 @@ import {
   deleteReviewFromSupabase,
   likeReviewInSupabase,
   resetReviewsToDefaultInSupabase,
+  sortReviewsNewestFirst,
   MAX_REVIEWS_LIMIT,
 } from '../utils/reviewStorage';
 import { verifyOwnerPinOnServer } from '../utils/assetStorage';
@@ -346,9 +347,9 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
       return;
     }
 
-    // 4. Masukkan ulasan baru di baris teratas (Posisi #1)
+    // 4. Masukkan ulasan baru di baris teratas (Posisi #1 dengan timestamp)
     const newRev: ReviewItem = {
-      id: `rev-${Date.now()}`,
+      id: `rev-${now}`,
       name: formName.trim(),
       emoji: formEmoji,
       emojiLabel: formEmojiLabel,
@@ -356,6 +357,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
       comment: formComment.trim(),
       date: 'Baru saja',
       likes: 1,
+      createdAt: now,
     };
 
     setIsSubmitting(true);
@@ -387,8 +389,9 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
     }
   };
 
-  // Hitung daftar ulasan terfilter berdasarkan pencarian
-  const filteredReviews = reviews.filter((rev) => {
+  // Pastikan setiap ulasan yang baru selalu berposisi paling atas (Newest First)
+  const sortedReviews = sortReviewsNewestFirst(reviews);
+  const filteredReviews = sortedReviews.filter((rev) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
     return (

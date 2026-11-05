@@ -22,6 +22,7 @@ import {
   getStoredPricing,
 } from '../utils/pricingStorage';
 import { openWhatsAppDirect } from '../utils/whatsappHelper';
+import { playInteractionSound } from '../utils/soundEngine';
 import {
   CartItem,
   getStoredCart,
@@ -234,6 +235,8 @@ export const OrderScreen: React.FC<OrderScreenProps> = ({
       }
       return;
     }
+
+    playInteractionSound('luxurySuccess');
 
     const itemLines = cartItems.map(
       (item, idx) =>

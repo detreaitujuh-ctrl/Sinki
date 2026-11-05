@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, LayoutGrid, ShoppingBag, MessageSquareText } from 'lucide-react';
 import { PerfumeBottleIcon } from './PerfumeBottleIcon';
+import { playInteractionSound } from '../utils/soundEngine';
 
 export type TabType = 'home' | 'collection' | 'match' | 'order' | 'review';
 
@@ -65,7 +66,10 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           return (
             <button
               key={item.id}
-              onClick={() => onTabChange(item.id)}
+              onClick={() => {
+                playInteractionSound('digitalSoft');
+                onTabChange(item.id);
+              }}
               style={
                 isActive
                   ? {

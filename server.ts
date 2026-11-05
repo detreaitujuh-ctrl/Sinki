@@ -295,11 +295,43 @@ function deduplicateServerReviews(list: any[]): any[] {
   return result;
 }
 
+function getServerReviewTimestamp(item: any): number {
+  if (!item) return 0;
+  if (typeof item.createdAt === 'number' && !isNaN(item.createdAt)) return item.createdAt;
+  if (typeof item.createdAt === 'string') {
+    const t = Date.parse(item.createdAt);
+    if (!isNaN(t)) return t;
+  }
+  if (typeof item._savedAt === 'number') return item._savedAt;
+  if (typeof item.timestamp === 'number') return item.timestamp;
+  if (typeof item.id === 'string') {
+    const match = item.id.match(/\d{10,14}/);
+    if (match) {
+      const num = Number(match[0]);
+      if (!isNaN(num) && num > 1000000000) return num;
+    }
+  }
+  if (item.date && typeof item.date === 'string' && item.date !== 'Baru saja') {
+    const parsed = Date.parse(item.date);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return 0;
+}
+
+function sortServerReviewsNewestFirst(list: any[]): any[] {
+  if (!Array.isArray(list)) return [];
+  return [...list].sort((a, b) => {
+    const timeA = getServerReviewTimestamp(a);
+    const timeB = getServerReviewTimestamp(b);
+    return timeB - timeA; // Descending: ulasan baru paling atas
+  });
+}
+
 function getReviews(): any[] {
   if (fs.existsSync(REVIEWS_FILE)) {
     try {
       const data = JSON.parse(fs.readFileSync(REVIEWS_FILE, 'utf-8'));
-      if (Array.isArray(data)) return deduplicateServerReviews(data).slice(0, 10);
+      if (Array.isArray(data)) return sortServerReviewsNewestFirst(deduplicateServerReviews(data)).slice(0, 20);
     } catch {}
   }
   return [];
@@ -1265,10 +1297,11 @@ app.post('/api/reviews', async (req, res) => {
     return res.status(400).json({ error: 'Nama dan ulasan tidak boleh kosong.' });
   }
 
+  const now = Date.now();
   const reviewId =
     typeof req.body.id === 'string' && req.body.id.trim()
       ? req.body.id.trim()
-      : `rev-${Date.now()}`;
+      : `rev-${now}`;
 
   const newReview = {
     id: reviewId,
@@ -1278,7 +1311,8 @@ app.post('/api/reviews', async (req, res) => {
     variant: typeof variant === 'string' ? variant.slice(0, 100) : 'SINKI Signature',
     comment: trimmedComment,
     date: 'Baru saja',
-    likes: 1,
+    likes: typeof req.body.likes === 'number' ? req.body.likes : 1,
+    createdAt: typeof req.body.createdAt === 'number' ? req.body.createdAt : now,
   };
 
   const current = getReviews();
@@ -1292,7 +1326,7 @@ app.post('/api/reviews', async (req, res) => {
         r.comment.trim().toLowerCase() === trimmedComment.toLowerCase()
       )
   );
-  const updated = [newReview, ...filtered].slice(0, 20);
+  const updated = sortServerReviewsNewestFirst([newReview, ...filtered]).slice(0, 20);
   await persistReviews(updated);
 
   return res.json({ success: true, reviews: updated });
@@ -1680,7 +1714,7 @@ async function hydrateDataFromSupabase() {
             localList = JSON.parse(fs.readFileSync(REVIEWS_FILE, 'utf-8'));
           } catch {}
         }
-        const merged = deduplicateServerReviews([...localList, ...cloudList]).slice(0, 10);
+        const merged = sortServerReviewsNewestFirst(deduplicateServerReviews([...localList, ...cloudList])).slice(0, 20);
         fs.writeFileSync(REVIEWS_FILE, JSON.stringify(merged, null, 2), 'utf-8');
         console.log(`[Supabase Hydration] Reviews berhasil disinkronkan dari cloud (total: ${merged.length})`);
       }

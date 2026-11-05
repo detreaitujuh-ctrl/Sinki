@@ -10,6 +10,7 @@ import { ReviewScreen } from './components/ReviewScreen';
 import { PinModal } from './components/PinModal';
 import { DrawerMenu } from './components/DrawerMenu';
 import { Toast } from './components/Toast';
+import { DesktopDeviceFrame } from './components/DesktopDeviceFrame';
 import { fetchPerfumesFromServer, getStoredPerfumes, PerfumeItem } from './utils/perfumeStorage';
 import { CollectionCategoryKey } from './data/perfumes';
 import {
@@ -50,6 +51,7 @@ import {
   fetchThemeFromServer,
   applyThemeToDocument,
 } from './utils/themeStorage';
+import { initSoundSystem, playInteractionSound } from './utils/soundEngine';
 
 const TABS: TabType[] = ['home', 'collection', 'match', 'order', 'review'];
 
@@ -93,6 +95,12 @@ export default function App() {
       window.removeEventListener('popstate', handleUrlChange);
       window.removeEventListener('hashchange', handleUrlChange);
     };
+  }, []);
+
+  // Inisialisasi sistem audio interaksi SINKI (Soft Glass & Luxury Digital)
+  useEffect(() => {
+    const cleanupSound = initSoundSystem();
+    return () => cleanupSound();
   }, []);
 
   // Custom User Assets, Pricing & Ticker Configuration
@@ -304,17 +312,20 @@ export default function App() {
     }, 3000);
   };
 
-  return (
-    <div className="relative w-full h-[100dvh] bg-[#08080b] flex items-center justify-center overflow-hidden font-sans selection:bg-amber-500/25">
-      {/* Desktop Ambient Glow */}
-      <div className="hidden md:block absolute -top-40 -left-40 w-96 h-96 bg-amber-500/[0.06] rounded-full blur-[140px] pointer-events-none" />
-      <div className="hidden md:block absolute -bottom-40 -right-40 w-96 h-96 bg-amber-600/[0.05] rounded-full blur-[140px] pointer-events-none" />
+  const activeVariantsCount = catalogPerfumes.filter((p) => p.isActive !== false).length || 68;
 
-      {/* Mobile App Container (True Smartphone View: ramping & jenjang di laptop, full height tanpa kotak buntet) */}
-      <main
-        data-active-tab={activeTab}
-        className="relative w-full max-w-[400px] h-full md:h-[100dvh] sinki-arch-canvas sinki-canvas-frame-only md:border-x md:border-[#D4AF6A]/30 md:shadow-[0_0_80px_rgba(0,0,0,0.95),0_0_40px_rgba(212,175,106,0.12)] flex flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)] md:pt-0"
+  return (
+    <>
+      <DesktopDeviceFrame
+        activeVariantsCount={activeVariantsCount}
+        whatsappUrl={socialLinks.whatsapp}
+        themeId={luxuryTheme.id}
       >
+        {/* Mobile App Container (True Smartphone View: 100% fullscreen di HP, dibungkus iPhone Pro di desktop) */}
+        <main
+          data-active-tab={activeTab}
+          className="relative w-full h-full sinki-arch-canvas flex flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)] lg:pt-0"
+        >
 
         {/* Stable Tab Views Container (Bebas Efek Geser/Swipe Horizontal) */}
         <div className="relative z-10 flex-1 w-full h-full overflow-hidden">
@@ -460,6 +471,7 @@ export default function App() {
           orderCount={getCartTotalCount(cartItems)}
         />
       </main>
+    </DesktopDeviceFrame>
 
       {/* Dimensi Kasir Layer (Khusus Catat Pesanan WhatsApp & Laporan Laba Bersih) */}
       {isKasirRoute && (
@@ -558,6 +570,6 @@ export default function App() {
           />
         </div>
       )}
-    </div>
+    </>
   );
 }

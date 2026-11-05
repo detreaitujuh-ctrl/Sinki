@@ -298,6 +298,38 @@ function deduplicateReviews(list: any[]): any[] {
   return result;
 }
 
+function getWorkerReviewTimestamp(item: any): number {
+  if (!item) return 0;
+  if (typeof item.createdAt === 'number' && !isNaN(item.createdAt)) return item.createdAt;
+  if (typeof item.createdAt === 'string') {
+    const t = Date.parse(item.createdAt);
+    if (!isNaN(t)) return t;
+  }
+  if (typeof item._savedAt === 'number') return item._savedAt;
+  if (typeof item.timestamp === 'number') return item.timestamp;
+  if (typeof item.id === 'string') {
+    const match = item.id.match(/\d{10,14}/);
+    if (match) {
+      const num = Number(match[0]);
+      if (!isNaN(num) && num > 1000000000) return num;
+    }
+  }
+  if (item.date && typeof item.date === 'string' && item.date !== 'Baru saja') {
+    const parsed = Date.parse(item.date);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return 0;
+}
+
+function sortWorkerReviewsNewestFirst(list: any[]): any[] {
+  if (!Array.isArray(list)) return [];
+  return [...list].sort((a, b) => {
+    const timeA = getWorkerReviewTimestamp(a);
+    const timeB = getWorkerReviewTimestamp(b);
+    return timeB - timeA;
+  });
+}
+
 const DEFAULT_SOCIAL_DATA = {
   tiktok: 'https://www.tiktok.com/@sinki_official',
   instagram: 'https://www.instagram.com/sinki_official',
@@ -884,7 +916,7 @@ export default {
       // 9. Reviews
       if (pathname === '/api/reviews' && request.method === 'GET') {
         const list = await readStorageJson<any[]>(env, 'reviews.json', []);
-        return jsonResponse(deduplicateReviews(list).slice(0, 10));
+        return jsonResponse(sortWorkerReviewsNewestFirst(deduplicateReviews(list)).slice(0, 20));
       }
 
       if (pathname === '/api/reviews' && request.method === 'POST') {
@@ -904,7 +936,8 @@ export default {
           return jsonResponse({ error: 'Ulasan mengandung kata yang tidak pantas.' }, 400);
         }
 
-        const reviewId = typeof body.id === 'string' && body.id.trim() ? body.id.trim() : `rev-${Date.now()}`;
+        const now = Date.now();
+        const reviewId = typeof body.id === 'string' && body.id.trim() ? body.id.trim() : `rev-${now}`;
         const newReview = {
           id: reviewId,
           name: trimmedName,
@@ -913,7 +946,8 @@ export default {
           variant: typeof variant === 'string' ? variant.slice(0, 100) : 'SINKI Signature',
           comment: trimmedComment,
           date: 'Baru saja',
-          likes: 1,
+          likes: typeof body.likes === 'number' ? body.likes : 1,
+          createdAt: typeof body.createdAt === 'number' ? body.createdAt : now,
         };
 
         const current = deduplicateReviews(await readStorageJson<any[]>(env, 'reviews.json', []));
@@ -927,7 +961,7 @@ export default {
               r.comment.trim().toLowerCase() === trimmedComment.toLowerCase()
             )
         );
-        const updated = [newReview, ...filtered].slice(0, 10);
+        const updated = sortWorkerReviewsNewestFirst([newReview, ...filtered]).slice(0, 20);
         const saved = await writeStorageJson(env, 'reviews.json', updated);
         if (!saved.ok) return jsonResponse({ error: saved.error }, 500);
         return jsonResponse({ success: true, reviews: updated });
