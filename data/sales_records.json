@@ -1,1 +1,35 @@
-[]
+[
+  {
+    "perfumeId": "df-1",
+    "perfumeName": "Blue Emotion",
+    "categoryGroup": "regular",
+    "categoryLabel": "Koleksi Reguler",
+    "volumeMl": 15,
+    "quantity": 1,
+    "unitPrice": 25000,
+    "unitCost": 18000,
+    "totalSellingPrice": 25000,
+    "totalCostPrice": 18000,
+    "netProfit": 7000,
+    "channel": "whatsapp",
+    "id": "sale-1793848260419",
+    "date": "2026-11-05T03:11:00.419Z"
+  },
+  {
+    "perfumeId": "df-1",
+    "perfumeName": "Blue Emotion",
+    "categoryGroup": "regular",
+    "categoryLabel": "Koleksi Reguler",
+    "volumeMl": 10,
+    "quantity": 1,
+    "unitPrice": 17000,
+    "unitCost": 12000,
+    "totalSellingPrice": 17000,
+    "totalCostPrice": 12000,
+    "netProfit": 5000,
+    "channel": "whatsapp",
+    "customerName": "Dd",
+    "id": "sale-1793804835970",
+    "date": "2026-11-04T15:07:15.970Z"
+  }
+]

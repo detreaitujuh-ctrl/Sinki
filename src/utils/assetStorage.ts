@@ -1,9 +1,11 @@
 import { PricingConfig, getStoredPricing } from './pricingStorage';
+import masterBottleTransparent from '../assets/images/sinki_master_bottle_transparent.png';
 
 // Utility to compress images and store them reliably on Supabase and in LocalStorage
 const LOGO_STORAGE_KEY = 'sinki_custom_logo_data';
 const CHIBI_STORAGE_KEY = 'sinki_custom_chibi_data';
 const QRIS_STORAGE_KEY = 'sinki_custom_qris_data';
+const MASTER_FLACON_STORAGE_KEY = 'sinki_custom_master_flacon_data';
 const TOP11_STORAGE_KEY = 'sinki_custom_top11_data';
 const HERO_BOTTLES_STORAGE_KEY = 'sinki_hero_bottles_v1';
 const HERO_STAGE_EFFECT_STORAGE_KEY = 'sinki_hero_stage_effect_v1';
@@ -26,8 +28,17 @@ export const SUPABASE_STORAGE_BASE = 'https://tsxclttisxnmvdkwziqx.supabase.co/s
 export const DEFAULT_LOGO = `${SUPABASE_STORAGE_BASE}sinki_logo.png`;
 export const DEFAULT_CHIBI = `${SUPABASE_STORAGE_BASE}sinki_chibi.png`;
 export const DEFAULT_QRIS = `${SUPABASE_STORAGE_BASE}sinki_qris.jpg`;
+export const DEFAULT_MASTER_FLACON = masterBottleTransparent || '/assets/sinki-master-flacon-transparent.png';
 export const DEFAULT_HERO_VIDEO_URL = `${SUPABASE_STORAGE_BASE}hero_video_seamless_1793800752817.mp4`;
 export const DEFAULT_HERO_VIDEO_POSTER = `${SUPABASE_STORAGE_BASE}sinki_hero_poster_1793800752817.jpg`;
+
+export const getStoredMasterFlacon = (): string => {
+  try {
+    return localStorage.getItem(MASTER_FLACON_STORAGE_KEY) || DEFAULT_MASTER_FLACON;
+  } catch {
+    return DEFAULT_MASTER_FLACON;
+  }
+};
 
 export type HeroStageEffect = 'royal-elevation' | 'parisian-turntable' | 'golden-aura' | 'horizon-slide';
 
@@ -190,6 +201,7 @@ export interface ServerAssetsResponse {
   logo: string | null;
   chibi: string | null;
   qrisImage?: string | null;
+  masterFlacon?: string | null;
   top11?: Record<string, string>;
   heroBottles?: string[];
   heroStageEffect?: HeroStageEffect;
@@ -215,6 +227,7 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
         if (data.logo) localStorage.setItem(LOGO_STORAGE_KEY, data.logo);
         if (data.chibi) localStorage.setItem(CHIBI_STORAGE_KEY, data.chibi);
         if (data.qrisImage) localStorage.setItem(QRIS_STORAGE_KEY, data.qrisImage);
+        if (data.masterFlacon) localStorage.setItem(MASTER_FLACON_STORAGE_KEY, data.masterFlacon);
         if (data.top11) localStorage.setItem(TOP11_STORAGE_KEY, JSON.stringify(data.top11));
         if (Array.isArray(data.heroBottles) && data.heroBottles.length > 0) {
           localStorage.setItem(HERO_BOTTLES_STORAGE_KEY, JSON.stringify(data.heroBottles));
@@ -260,6 +273,7 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
           logo: data.logo || DEFAULT_LOGO,
           chibi: data.chibi || DEFAULT_CHIBI,
           qrisImage: data.qrisImage || DEFAULT_QRIS,
+          masterFlacon: data.masterFlacon || getStoredMasterFlacon(),
           top11: {
             ...getDefaultTop11Map(),
             ...(data.top11 || {}),
@@ -288,6 +302,7 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
     logo: getStoredLogo(),
     chibi: getStoredChibi(),
     qrisImage: getStoredQris(),
+    masterFlacon: getStoredMasterFlacon(),
     top11: getStoredTop11(),
     heroBottles: getStoredHeroBottles(),
     heroStageEffect: getStoredHeroStageEffect(),
@@ -302,14 +317,19 @@ export const fetchServerAssets = async (): Promise<ServerAssetsResponse> => {
   };
 };
 
-// Save Home assets (Logo & Chibi) securely through server endpoint
+// Save Home assets (Logo, Chibi & Master Flacon) securely through server endpoint
 export const saveAssetToServer = async (
-  type: 'logo' | 'chibi',
+  type: 'logo' | 'chibi' | 'masterFlacon',
   base64Data: string,
   pin = '1995'
 ): Promise<boolean> => {
   try {
-    const storageKey = type === 'logo' ? LOGO_STORAGE_KEY : CHIBI_STORAGE_KEY;
+    const storageKey =
+      type === 'logo'
+        ? LOGO_STORAGE_KEY
+        : type === 'chibi'
+        ? CHIBI_STORAGE_KEY
+        : MASTER_FLACON_STORAGE_KEY;
     localStorage.setItem(storageKey, base64Data);
 
     const token = getOwnerToken();

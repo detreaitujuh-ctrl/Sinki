@@ -3,6 +3,7 @@ import { ShoppingBag, ChevronRight, ArrowLeft } from 'lucide-react';
 import { PerfumeItem, COLLECTION_CATEGORIES } from '../data/perfumes';
 import { TOP_11_DATA } from '../data/top11';
 import { getStoredPerfumes } from '../utils/perfumeStorage';
+import masterBottleTransparent from '../assets/images/sinki_master_bottle_transparent.png';
 
 interface AromaMatchScreenProps {
   onBackToHome: () => void;
@@ -10,6 +11,7 @@ interface AromaMatchScreenProps {
   onShowToast: (msg: string) => void;
   perfumes?: PerfumeItem[];
   top11Photos?: Record<string, string>;
+  masterFlaconPhoto?: string | null;
 }
 
 // 3 Pilihan Bersih & Lapang untuk Persona (Langkah 1)
@@ -105,7 +107,8 @@ const resolveBestMatch = (
   occasion: string,
   vibe: string,
   catalog: PerfumeItem[],
-  photos: Record<string, string>
+  photos: Record<string, string>,
+  customMasterFlacon?: string | null
 ): MatchResult => {
   // 1. Ambil seluruh varian yang AKTIF di katalog Collection SINKI
   const activeCatalog = catalog.filter((p) => p.isActive !== false);
@@ -341,18 +344,26 @@ const resolveBestMatch = (
     }
   });
 
-  // 6. Hubungkan ke Foto Botol (Bila Varian Masuk Top 11 atau Foto Khusus)
+  // 6. Hubungkan ke Foto Botol Transparan Master SINKI (Bebas Latar Belakang Kotak)
   const top11Match = TOP_11_DATA.find(
     (t) =>
       t.name.toLowerCase().includes(bestItem.name.toLowerCase()) ||
       bestItem.name.toLowerCase().includes(t.name.toLowerCase())
   );
 
-  const photo =
-    (top11Match && (photos[top11Match.id] || photos[String(top11Match.rank)])) ||
-    photos['top-1'] ||
-    photos['1'] ||
-    'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/top11/top-1.jpg';
+  // Periksa apakah varian memiliki foto khusus yang berformat transparan (png/webp) dan bukan jpg default
+  const variantPhoto = top11Match ? (photos[top11Match.id] || photos[String(top11Match.rank)]) : null;
+  const isVariantTransparent = Boolean(
+    variantPhoto && (
+      variantPhoto.includes('.png') ||
+      variantPhoto.startsWith('data:image/png') ||
+      variantPhoto.includes('.webp') ||
+      variantPhoto.includes('transparent')
+    )
+  );
+
+  const defaultMaster = masterBottleTransparent || '/assets/sinki-master-flacon-transparent.png';
+  const photo = (isVariantTransparent ? variantPhoto : null) || customMasterFlacon || defaultMaster;
 
   // 7. Susun Kalimat Hipnotis Pendek: "Inilah aroma yang selama ini Anda cari..."
   let reasonText = '';
@@ -418,6 +429,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   onShowToast,
   perfumes = [],
   top11Photos = {},
+  masterFlaconPhoto,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 'calculating' | 'result'>(1);
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
@@ -479,7 +491,8 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       selectedOccasion || 'harian',
       id,
       catalog,
-      top11Photos
+      top11Photos,
+      masterFlaconPhoto
     );
 
     // Preload gambar botol parfum di balik layar selagi cairan emas mengisi flacon
@@ -599,27 +612,52 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           </div>
         </header>
 
-        {/* 3. LAYER TENGAH: PANGGUNG 3D BOTOL PARFUM BESAR & 100% BEBAS TANPA TERTUTUP */}
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center my-auto px-2 min-h-[290px] sm:min-h-[340px]">
-          {/* Pedestal Kristal Bersinar Proporsional Lebih Lebar di Bawah Botol */}
-          <div className="stage-pedestal-crystal absolute bottom-5 w-64 sm:w-80 h-16 sm:h-20 rounded-[100%] pointer-events-none filter blur-[1.5px]" />
+        {/* 3. LAYER TENGAH: PANGGUNG DUDUKAN KAYU ALAMI (RAW TREE LOG SLICE PEDESTAL) */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-end my-auto px-2 pb-2 min-h-[300px] sm:min-h-[350px]">
+          {/* Container Integrasi Botol & Dudukan Kayu */}
+          <div className="relative flex flex-col items-center justify-end w-full max-w-sm">
+            
+            {/* A. BOTOL PARFUM SINKI: MENAPAK KOKOH DI ATAS PERMUKAAN KAYU */}
+            <div className="relative z-10 flex flex-col items-center justify-center -mb-8 sm:-mb-10 select-none cursor-pointer">
+              <img
+                src={matchResult.photoUrl}
+                alt={matchResult.perfumeName}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="max-h-[250px] sm:max-h-[300px] w-auto max-w-[80%] sm:max-w-[74%] object-contain select-none filter drop-shadow-[0_12px_20px_rgba(20,10,2,0.75)] transition-transform duration-300 hover:scale-[1.02]"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  const fallbackSrc = masterBottleTransparent || '/assets/sinki-master-flacon-transparent.png';
+                  if (!target.src.includes('sinki-master-flacon-transparent') && !target.src.includes('sinki_master_bottle_transparent')) {
+                    target.src = fallbackSrc;
+                  }
+                }}
+              />
 
-          {/* Bayangan Kontak Alas Botol di Lantai Marmer (Contact Shadow) */}
-          <div className="absolute bottom-4 w-36 sm:w-48 h-4.5 bg-black/90 rounded-[100%] blur-[6px] pointer-events-none" />
+              {/* Garis Kontak Ambient Occlusion (AO) tepat di mana kaca menyentuh kayu */}
+              <div className="absolute -bottom-[2px] w-[50%] sm:w-[54%] h-[4px] bg-[#120902] rounded-full blur-[0.8px] opacity-95 pointer-events-none" />
 
-          {/* Botol 3D Melayang Halus - Ukuran Lebih Besar & Megah */}
-          <div className="relative flex items-center justify-center stage-bottle-float cursor-pointer select-none">
-            <img
-              src={matchResult.photoUrl}
-              alt={matchResult.perfumeName}
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              className="max-h-[310px] sm:max-h-[380px] w-auto max-w-[92%] sm:max-w-[85%] object-contain select-none filter drop-shadow-[0_20px_36px_rgba(0,0,0,0.95)] drop-shadow-[0_0_28px_rgba(223,183,108,0.3)] transition-transform duration-300 hover:scale-105"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
+              {/* Bayangan Kontak Permukaan Kayu */}
+              <div className="absolute -bottom-2 w-[62%] sm:w-[66%] h-[8px] bg-[#1a0e04]/90 rounded-full blur-[2px] pointer-events-none" />
+
+              {/* Pembiasan Cahaya Emas Lembut Cairan Parfum ke Serat Kayu */}
+              <div className="absolute -bottom-3 w-[70%] h-[14px] bg-amber-500/25 rounded-full blur-[5px] pointer-events-none mix-blend-screen" />
+            </div>
+
+            {/* B. DUDUKAN POTONGAN BATANG KAYU ALAMI (RAW TREE LOG SLICE) */}
+            <div className="relative z-0 w-64 sm:w-80 max-w-[90%] flex flex-col items-center pointer-events-none select-none">
+              <img
+                src="/assets/sinki_wood_log_pedestal_clean.png"
+                alt="Dudukan Kayu Alami SINKI"
+                className="w-full h-auto object-contain filter drop-shadow-[0_16px_28px_rgba(0,0,0,0.92)] brightness-[1.03] contrast-[1.02]"
+              />
+
+              {/* Bayangan Kontak Kayu Besar ke Dasar Latar Hutan */}
+              <div className="absolute -bottom-2.5 w-[85%] h-5 bg-black/90 rounded-[100%] blur-[7px] pointer-events-none" />
+              <div className="absolute -bottom-5 w-[96%] h-8 bg-black/50 rounded-[100%] blur-[14px] pointer-events-none" />
+            </div>
+
           </div>
         </div>
 

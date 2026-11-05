@@ -18,6 +18,7 @@ import {
   getStoredChibi,
   getStoredTop11,
   getStoredQris,
+  getStoredMasterFlacon,
   getStoredHeroBottles,
   getStoredHeroStageEffect,
   getStoredHeroStageEnabled,
@@ -107,6 +108,7 @@ export default function App() {
   const [customLogo, setCustomLogo] = useState<string | null>(getStoredLogo());
   const [customChibi, setCustomChibi] = useState<string | null>(getStoredChibi());
   const [customQris, setCustomQris] = useState<string | null>(getStoredQris());
+  const [customMasterFlacon, setCustomMasterFlacon] = useState<string | null>(getStoredMasterFlacon());
   const [top11Photos, setTop11Photos] = useState<Record<string, string>>(getStoredTop11());
   const [heroBottles, setHeroBottles] = useState<string[]>(() => getStoredHeroBottles());
   const [heroStageEffect, setHeroStageEffect] = useState<HeroStageEffect>(() => getStoredHeroStageEffect());
@@ -188,6 +190,8 @@ export default function App() {
         if (chibiVal) setCustomChibi((prev) => (prev !== chibiVal ? chibiVal : prev));
         const qrisVal = assets.qrisImage;
         if (qrisVal) setCustomQris((prev) => (prev !== qrisVal ? qrisVal : prev));
+        const flaconVal = assets.masterFlacon;
+        if (flaconVal) setCustomMasterFlacon((prev) => (prev !== flaconVal ? flaconVal : prev));
         if (assets.top11 && Object.keys(assets.top11).length > 0) {
           setTop11Photos((prev) => ({ ...prev, ...assets.top11 }));
         }
@@ -385,6 +389,7 @@ export default function App() {
                 onShowToast={showToast}
                 perfumes={catalogPerfumes}
                 top11Photos={top11Photos}
+                masterFlaconPhoto={customMasterFlacon}
               />
             </div>
           )}
@@ -510,6 +515,7 @@ export default function App() {
             currentLogo={customLogo}
             currentChibi={customChibi}
             currentQris={customQris}
+            masterFlacon={customMasterFlacon}
             top11Photos={top11Photos}
             pricing={pricing}
             tickerConfig={tickerConfig}
@@ -531,6 +537,9 @@ export default function App() {
             }}
             onQrisUpdated={(newQris) => {
               setCustomQris(newQris);
+            }}
+            onMasterFlaconUpdated={(url) => {
+              setCustomMasterFlacon(url);
             }}
             onHeroBottlesUpdated={(updatedBottles) => {
               setHeroBottles(updatedBottles);

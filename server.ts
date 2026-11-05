@@ -419,6 +419,7 @@ interface AssetsData {
   logo: string | null;
   chibi: string | null;
   qrisImage?: string | null;
+  masterFlacon?: string | null;
   top11?: Record<string, string>;
   heroBottles?: string[];
   heroStageEffect?: string;
@@ -436,6 +437,7 @@ interface AssetsData {
 
 const DEFAULT_HERO_VIDEO = 'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/hero_video_seamless_1793800752817.mp4';
 const DEFAULT_HERO_POSTER = 'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/sinki_hero_poster_1793800752817.jpg';
+const DEFAULT_MASTER_FLACON = '/assets/sinki-master-flacon-transparent.png';
 
 async function persistAssets(assets: AssetsData): Promise<void> {
   try {
@@ -469,6 +471,7 @@ const getAssets = (): AssetsData => {
         logo: parsed.logo || null,
         chibi: parsed.chibi || null,
         qrisImage: parsed.qrisImage || null,
+        masterFlacon: parsed.masterFlacon || DEFAULT_MASTER_FLACON,
         top11: parsed.top11 && typeof parsed.top11 === 'object' ? parsed.top11 : {},
         heroBottles: Array.isArray(parsed.heroBottles) ? parsed.heroBottles : [],
         heroStageEffect: parsed.heroStageEffect || 'royal-elevation',
@@ -488,6 +491,7 @@ const getAssets = (): AssetsData => {
         logo: null,
         chibi: null,
         qrisImage: null,
+        masterFlacon: DEFAULT_MASTER_FLACON,
         top11: {},
         heroBottles: [],
         heroStageEffect: 'royal-elevation',
@@ -929,6 +933,7 @@ app.post('/api/owner/update-assets', async (req, res) => {
     logo,
     chibi,
     qrisImage,
+    masterFlacon,
     top11,
     heroBottles,
     heroStageEffect,
@@ -945,6 +950,7 @@ app.post('/api/owner/update-assets', async (req, res) => {
   let newLogo = existing.logo;
   let newChibi = existing.chibi;
   let newQris = existing.qrisImage || null;
+  let newMasterFlacon = existing.masterFlacon || DEFAULT_MASTER_FLACON;
   const newTop11 = { ...(existing.top11 || {}) };
   let newHeroBottles = Array.isArray(existing.heroBottles) ? [...existing.heroBottles] : [];
   let newHeroStageEffect = existing.heroStageEffect || 'royal-elevation';
@@ -996,6 +1002,17 @@ app.post('/api/owner/update-assets', async (req, res) => {
       newQris = up.success && up.url ? up.url : qrisImage;
     } else {
       newQris = null;
+    }
+  }
+
+  if (masterFlacon !== undefined) {
+    if (masterFlacon && masterFlacon.startsWith('data:')) {
+      const up = await uploadToSupabaseWithOverwrite('sinki_master_flacon.png', masterFlacon);
+      newMasterFlacon = up.success && up.url ? up.url : masterFlacon;
+    } else if (masterFlacon) {
+      newMasterFlacon = masterFlacon;
+    } else {
+      newMasterFlacon = DEFAULT_MASTER_FLACON;
     }
   }
 
@@ -1055,6 +1072,7 @@ app.post('/api/owner/update-assets', async (req, res) => {
     logo: newLogo,
     chibi: newChibi,
     qrisImage: newQris,
+    masterFlacon: newMasterFlacon,
     top11: newTop11,
     heroBottles: newHeroBottles,
     heroStageEffect: newHeroStageEffect,
@@ -1839,6 +1857,9 @@ async function hydrateDataFromSupabase() {
 async function startServer() {
   // Sync latest cloud data on startup
   hydrateDataFromSupabase().catch((err) => console.warn('Hydration background notice:', err));
+
+  // Serve static assets from public directory
+  app.use(express.static(path.resolve(__dirname, 'public')));
 
   if (process.env.NODE_ENV === 'production' && fs.existsSync(path.resolve(__dirname, 'dist'))) {
     app.use(express.static(path.resolve(__dirname, 'dist')));

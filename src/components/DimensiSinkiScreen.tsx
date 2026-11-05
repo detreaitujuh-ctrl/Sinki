@@ -79,6 +79,7 @@ import {
   compressImage,
   removeTop11PhotoFromStorage,
   purgeSinkiBrowserCache,
+  getStoredMasterFlacon,
   getOwnerToken,
   setOwnerToken,
   clearOwnerToken,
@@ -154,6 +155,7 @@ interface DimensiSinkiScreenProps {
   currentLogo: string | null;
   currentChibi: string | null;
   currentQris: string | null;
+  masterFlacon?: string | null;
   top11Photos: Record<string, string>;
   heroBottles?: string[];
   heroStageEffect?: HeroStageEffect;
@@ -171,6 +173,7 @@ interface DimensiSinkiScreenProps {
   luxuryTheme?: LuxuryThemeConfig;
   onAssetsUpdated: (newLogo: string | null, newChibi: string | null) => void;
   onQrisUpdated: (newQris: string | null) => void;
+  onMasterFlaconUpdated?: (url: string) => void;
   onTop11PhotoUpdated: (variantId: string, newPhoto: string) => void;
   onHeroBottlesUpdated?: (bottles: string[]) => void;
   onHeroStageEffectUpdated?: (effect: HeroStageEffect) => void;
@@ -208,6 +211,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   currentLogo,
   currentChibi,
   currentQris,
+  masterFlacon: propMasterFlacon,
   top11Photos,
   heroBottles: propHeroBottles,
   heroStageEffect: propHeroStageEffect,
@@ -225,6 +229,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   luxuryTheme: propLuxuryTheme,
   onAssetsUpdated,
   onQrisUpdated,
+  onMasterFlaconUpdated,
   onTop11PhotoUpdated,
   onHeroBottlesUpdated,
   onHeroStageEffectUpdated,
@@ -355,6 +360,42 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   const [isHeroStageEnabled, setIsHeroStageEnabled] = useState<boolean>(() => propHeroStageEnabled !== undefined ? propHeroStageEnabled : getStoredHeroStageEnabled());
   const [selectedHeroBottleIdx, setSelectedHeroBottleIdx] = useState<number | null>(null);
   const heroBottleInputRef = useRef<HTMLInputElement>(null);
+
+  // Master Flacon Transparan State (Khusus Panggung Racikan Aroma)
+  const [currentMasterFlacon, setCurrentMasterFlacon] = useState<string | null>(
+    () => propMasterFlacon || getStoredMasterFlacon()
+  );
+  const masterFlaconInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (propMasterFlacon) {
+      setCurrentMasterFlacon(propMasterFlacon);
+    }
+  }, [propMasterFlacon]);
+
+  const handleMasterFlaconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      onShowToast('Memproses Botol Master Racikan Transparan...');
+      const base64Data = await compressImage(file, 1200, 1200, 0.95);
+      onShowToast('Menyimpan Botol Master ke server & cloud...');
+      const ok = await saveAssetToServer('masterFlacon', base64Data, '1995');
+      if (ok) {
+        setCurrentMasterFlacon(base64Data);
+        onMasterFlaconUpdated?.(base64Data);
+        onShowToast('Botol Master Racikan Transparan berhasil disimpan permanen! ✨');
+      } else {
+        onShowToast('Gagal menyimpan foto botol master.');
+      }
+    } catch (err) {
+      console.error(err);
+      onShowToast('Gagal memproses file foto botol.');
+    } finally {
+      e.target.value = '';
+    }
+  };
 
   useEffect(() => {
     if (propHeroStageEnabled !== undefined) {
@@ -3357,6 +3398,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     className="hidden"
                     onChange={handleHeroBottleUpload}
                   />
+                  <input
+                    type="file"
+                    ref={masterFlaconInputRef}
+                    accept="image/png,image/webp,image/*"
+                    className="hidden"
+                    onChange={handleMasterFlaconUpload}
+                  />
 
               {/* MASTER TOGGLE PANGGUNG 3D */}
               <div className="p-4 sm:p-5 rounded-[10px] sinki-arch-card border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -3516,6 +3564,52 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+
+                {/* 3. Slot Botol Master Racikan Aroma (PNG Transparan) */}
+                <div className="p-5 rounded-[10px] sinki-arch-card border space-y-3.5 lg:col-span-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h3 className="font-heading font-semibold text-base text-[#F3E6C8] tracking-[-0.015em] leading-[1.25] flex items-center gap-1.5">
+                        <Sparkles size={15} className="text-[#E8C782]" />
+                        <span>Botol Master Racikan Aroma (PNG Transparan)</span>
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Foto botol transparan utama yang tampil di panggung 3D hasil racikan menu "Racikan Aroma"
+                      </p>
+                    </div>
+                    <span className="text-xs px-2.5 py-0.5 rounded-[5px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/40 w-fit">
+                      Transparan Aktif
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-[8px] sinki-arch-subbox border flex flex-col sm:flex-row items-center gap-4">
+                    <div className="w-28 h-32 rounded-[8px] bg-gradient-to-b from-[#141419] to-[#0a0a0d] border border-[#D4AF6A]/30 flex items-center justify-center p-2 overflow-hidden shrink-0 relative">
+                      <div className="absolute inset-x-2 bottom-1 h-3 rounded-[100%] bg-amber-400/20 blur-[4px] pointer-events-none" />
+                      <img
+                        src={currentMasterFlacon || '/assets/sinki-master-flacon-transparent.png'}
+                        alt="Botol Master Racikan Aroma"
+                        className="max-h-full max-w-full object-contain filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.85)]"
+                      />
+                    </div>
+
+                    <div className="space-y-2 text-center sm:text-left flex-1">
+                      <div className="text-xs text-slate-300 leading-relaxed">
+                        Botol ini ditampilkan melayang di atas pedestal kristal panggung 3D Paris saat pembeli selesai meracik aroma mereka.
+                        Format terbaik adalah <strong>PNG transparan</strong> (tanpa latar belakang kotak).
+                      </div>
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => masterFlaconInputRef.current?.click()}
+                          className="py-1.5 px-3.5 rounded-[6px] bg-[#D4AF6A]/20 hover:bg-[#D4AF6A] hover:text-slate-950 border border-[#D4AF6A]/40 text-[#E8C782] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Upload size={12} />
+                          <span>Ganti PNG Botol Master</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
