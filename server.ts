@@ -5,9 +5,29 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
+import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Shared GoogleGenAI Client (Server-side only with User-Agent header)
+let geminiAi: GoogleGenAI | null = null;
+const rawGeminiKey = (process.env.GEMINI_API_KEY || '').trim();
+if (rawGeminiKey && rawGeminiKey !== 'undefined' && rawGeminiKey !== 'null' && rawGeminiKey.length > 15) {
+  try {
+    geminiAi = new GoogleGenAI({
+      apiKey: rawGeminiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
+    console.log('[Gemini AI] GoogleGenAI Engine berhasil diinisialisasi untuk MinSKI');
+  } catch (err) {
+    console.warn('[Gemini AI Notice] Inisialisasi GoogleGenAI dilewati:', err);
+  }
+}
 
 const app = express();
 const PORT = 3000;
@@ -521,6 +541,454 @@ const getAssets = (): AssetsData => {
     ticker: currentTicker,
   };
 };
+
+// MinSKI High-Fidelity Human Voice (Google Neural Indonesian TTS Proxy with In-Memory Cache)
+const minskiTtsCache = new Map<string, Buffer>();
+
+app.get('/api/minski/tts', async (req, res) => {
+  try {
+    const rawText = String(req.query.text || '').trim();
+    if (!rawText) return res.status(400).send('Text parameter is required');
+
+    const cacheKey = rawText.toLowerCase().slice(0, 200);
+    if (minskiTtsCache.has(cacheKey)) {
+      const cached = minskiTtsCache.get(cacheKey)!;
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(cached);
+    }
+
+    // Split text into short, natural phrases under 120 chars for optimal audio quality
+    const chunks: string[] = [];
+    const sentences = rawText.match(/[^.!?]+[.!?]*/g) || [rawText];
+    let cur = '';
+    for (const s of sentences) {
+      if ((cur + ' ' + s).trim().length <= 120) {
+        cur = (cur + ' ' + s).trim();
+      } else {
+        if (cur) chunks.push(cur);
+        cur = s.trim();
+      }
+    }
+    if (cur) chunks.push(cur);
+
+    const buffers: Buffer[] = [];
+    for (const chunk of chunks) {
+      const url =
+        'https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=' +
+        encodeURIComponent(chunk);
+      const upstreamRes = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (upstreamRes.ok) {
+        const arr = await upstreamRes.arrayBuffer();
+        buffers.push(Buffer.from(arr));
+      }
+      await new Promise((r) => setTimeout(r, 150));
+    }
+
+    if (buffers.length === 0) {
+      return res.status(502).send('Failed to synthesize speech');
+    }
+
+    const merged = Buffer.concat(buffers);
+    if (minskiTtsCache.size > 200) {
+      const firstKey = minskiTtsCache.keys().next().value;
+      if (firstKey) minskiTtsCache.delete(firstKey);
+    }
+    minskiTtsCache.set(cacheKey, merged);
+
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(merged);
+  } catch (err: any) {
+    console.error('Error in /api/minski/tts:', err);
+    return res.status(500).send('Internal TTS error');
+  }
+});
+
+// ============================================================================
+// MinSKI Hybrid AI Consultation Engine (Multi-Turn Conversational & Guardrail)
+// ============================================================================
+
+const MINSKI_PROFANITY_WORDS = [
+  'anjing', 'babi', 'bangsat', 'goblok', 'kontol', 'memek', 'bajingan',
+  'tai', 'taik', 'penipu', 'asu', 'kampret', 'pantek', 'tolol', 'itil',
+  'jancuk', 'pepek', 'bego', 'idiot', 'perek', 'lonte', 'puki', 'ngentot',
+  'fuck', 'bitch', 'asshole', 'bastard', 'shit',
+];
+
+function checkMinskiProfanityServer(text: string): boolean {
+  const lower = text.toLowerCase();
+  return MINSKI_PROFANITY_WORDS.some((word) => {
+    const regex = new RegExp(`(^|\\s|[.,!?;])${word}($|\\s|[.,!?;])`, 'i');
+    return regex.test(lower);
+  });
+}
+
+const MINSKI_OFF_TOPIC_WORDS = [
+  'presiden', 'gubernur', 'politik', 'partai', 'pemilu', 'menteri',
+  'coding', 'javascript', 'python', 'html', 'program', 'ngoding',
+  'matematika', 'fisika', 'kimia', 'rumus', 'hitung', '5+5',
+  'resep', 'masak', 'nasi goreng', 'bikin kue', 'makanan', 'restoran',
+  'cuaca', 'hujan', 'gempa', 'berita', 'saham', 'crypto',
+  'pacar kamu', 'kamu siapa', 'kamu robot', 'apakah kamu ai',
+];
+
+const PERFUME_CONTEXT_WORDS_SERVER = [
+  'parfum', 'parfumnya', 'wangi', 'aroma', 'bau', 'segar', 'fresh', 'manis', 'sweet',
+  'hangat', 'amber', 'woody', 'kayu', 'oud', 'vanilla', 'vanila', 'citrus', 'jeruk',
+  'kencan', 'kantor', 'kerja', 'ngantor', 'semprot', 'botol', 'tahan lama', 'awet',
+  'pria', 'cowok', 'wanita', 'cewek', 'unisex', 'rekomendasi', 'bestseller',
+];
+
+function checkMinskiOffTopicServer(text: string): boolean {
+  const lower = text.toLowerCase();
+  const hasPerfumeWord = PERFUME_CONTEXT_WORDS_SERVER.some((w) => lower.includes(w));
+  if (hasPerfumeWord) return false;
+  return MINSKI_OFF_TOPIC_WORDS.some((w) => lower.includes(w));
+}
+
+function getPerfumesCatalogServer(): any[] {
+  if (fs.existsSync(PERFUMES_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(PERFUMES_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    } catch {}
+  }
+  return [];
+}
+
+function isOpeningInquiryServer(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+
+  // Explicit scent / note / perfume criteria
+  const scentCues = [
+    'segar', 'fresh', 'dingin', 'laut', 'pantai', 'citrus', 'lemon', 'bergamot', 'jeruk',
+    'manis', 'vanila', 'vanilla', 'sweet', 'kopi', 'coffee', 'cokelat', 'gourmand', 'creamy',
+    'hangat', 'amber', 'woody', 'kayu', 'oud', 'gaharu', 'rempah', 'spicy', 'cedar',
+    'bunga', 'floral', 'rose', 'mawar', 'jasmine', 'melati', 'powdery', 'bedak', 'sabun', 'clean',
+    'kencan', 'pacar', 'malam', 'dinner', 'romantis', 'intim',
+    'kantor', 'kerja', 'ngantor', 'harian', 'kuliah', 'ruangan ac', 'meeting',
+    'olahraga', 'gym', 'panas', 'siang', 'tahan lama', 'awet', 'proyeksi',
+    'pria', 'cowok', 'wanita', 'cewek',
+    'monaco', 'dunhill', 'bvlgari', 'sauvage', 'aventus', 'black opium', 'scandal', 'baccarat',
+    'eros', 'aqua', 'dior', 'chanel', 'creed', 'ysl', 'zara', 'jo malone', 'tom ford', 'gucci',
+    'bubble gum', 'nagita', 'bacarat', 'omnia', 'twilly', 'si armani', 'bombshell'
+  ];
+
+  const hasScentCue = scentCues.some((w) => lower.includes(w));
+  if (hasScentCue) return false;
+
+  const inquiryWords = [
+    'halo', 'hai', 'hei', 'pagi', 'siang', 'sore', 'malam', 'assalam',
+    'nanya', 'tanya', 'bantu', 'bingung', 'pilihan', 'apa ya', 'rekomendasi', 'rekomendasiin',
+    'ada apa', 'cari parfum', 'mau cari', 'mau parfum', 'konsul', 'ngobrol',
+    'kamu siapa', 'bisa apa', 'tes', 'test', 'minski'
+  ];
+
+  const hasInquiry = inquiryWords.some((w) => lower.includes(w));
+  return lower.length <= 25 || hasInquiry;
+}
+
+function resolveServerRecommendation(
+  query: string,
+  catalog: any[],
+  top11Photos: Record<string, string>,
+  customMasterFlacon?: string | null
+) {
+  const text = query.toLowerCase();
+  const pool = catalog.filter((p: any) => p.isActive !== false);
+  const targetList = pool.length > 0 ? pool : catalog;
+
+  // 1. Prioritaskan nama lengkap varian persis terlebih dahulu
+  let matchedPerfume = targetList.find((p: any) => {
+    const nameLower = (p.name || '').toLowerCase();
+    return text.includes(nameLower);
+  });
+
+  // 1b. Jika belum cocok, cari kecocokan kata spesifik unik (panjang >= 5 huruf)
+  if (!matchedPerfume) {
+    matchedPerfume = targetList.find((p: any) => {
+      const nameLower = (p.name || '').toLowerCase();
+      const parts = nameLower.split(' ').filter((part: string) => part.length >= 5 && !['parfum', 'eau', 'pour', 'homme', 'femme'].includes(part));
+      return parts.some((part: string) => text.includes(part));
+    });
+  }
+
+  // 2. Sensory keyword score
+  if (!matchedPerfume) {
+    const keywordWeights: Record<string, string[]> = {
+      citrus_fresh: ['segar', 'fresh', 'dingin', 'citrus', 'lemon', 'bergamot', 'jeruk', 'laut', 'pantai', 'aquatic', 'olahraga', 'gym', 'panas', 'siang'],
+      vanilla_sweet: ['manis', 'vanila', 'vanilla', 'sweet', 'kopi', 'coffee', 'gourmand', 'cokelat', 'creamy', 'enak', 'kue', 'caramel', 'malam', 'kencan'],
+      woody_amber: ['hangat', 'kayu', 'woody', 'amber', 'oud', 'gaharu', 'rempah', 'spicy', 'cedar', 'karisma', 'wibawa', 'mewah', 'bos', 'pemimpin', 'rapi'],
+      floral_powdery: ['bunga', 'floral', 'rose', 'mawar', 'jasmine', 'melati', 'lembut', 'bedak', 'powdery', 'bersih', 'sabun', 'clean', 'anggun', 'feminin'],
+    };
+
+    let maxScore = -9999;
+    targetList.forEach((item: any) => {
+      let score = 50;
+      const haystack = [
+        item.name,
+        item.tagline || '',
+        item.usageRecommendation || '',
+        Array.isArray(item.accords) ? item.accords.join(' ') : '',
+        item.categoryLabel || item.category || '',
+      ].join(' ').toLowerCase();
+
+      Object.entries(keywordWeights).forEach(([, words]) => {
+        if (words.some((w) => text.includes(w))) {
+          const matchedCount = words.filter((w) => haystack.includes(w)).length;
+          score += matchedCount * 15;
+        }
+      });
+
+      if (text.includes('pria') || text.includes('cowok')) {
+        if (item.category === 'men') score += 35;
+        if (item.category === 'women') score -= 30;
+      } else if (text.includes('wanita') || text.includes('cewek')) {
+        if (item.category === 'women') score += 35;
+        if (item.category === 'men') score -= 30;
+      }
+
+      if (score > maxScore) {
+        maxScore = score;
+        matchedPerfume = item;
+      }
+    });
+  }
+
+  const bestPerfume = matchedPerfume || targetList[0] || { name: 'Mykonos Monaco Royale', pricePerMl: 3000 };
+
+  // 3. Seductive 2-Sentence Pitch
+  let seductiveScript = '';
+  if (
+    text.includes('kencan') ||
+    text.includes('pacar') ||
+    text.includes('malam') ||
+    text.includes('manis') ||
+    text.includes('vanila') ||
+    (bestPerfume.name || '').toLowerCase().includes('monaco')
+  ) {
+    seductiveScript = `Begitu semprotan ${bestPerfume.name} menyentuh kulitmu, kehangatan manis mewahnya menciptakan jejak aroma intim yang bikin si dia betah berdekatan. Inilah racikan rahasiamu untuk membuat setiap tatapan tertuju padamu.`;
+  } else if (
+    text.includes('kantor') ||
+    text.includes('kerja') ||
+    text.includes('rapi') ||
+    text.includes('wibawa') ||
+    (bestPerfume.name || '').toLowerCase().includes('dunhill')
+  ) {
+    seductiveScript = `Semprotan berkelas ${bestPerfume.name} seketika memancarkan aura orang sukses yang rapi, percaya diri, dan disegani. Seharian di ruangan ber-AC, aromanya membuat semua orang menaruh hormat pada kehadiranmu.`;
+  } else if (
+    text.includes('segar') ||
+    text.includes('dingin') ||
+    text.includes('laut') ||
+    text.includes('fresh') ||
+    (bestPerfume.name || '').toLowerCase().includes('aqua')
+  ) {
+    seductiveScript = `Sensasi sejuk murni ${bestPerfume.name} membungkus tubuhmu dengan kesegaran mewah yang bikin pikiran tenang dan bergairah seharian. Siapa pun yang berpapasan pasti menoleh mencari sumber wangimu.`;
+  } else {
+    seductiveScript = `Sentuhan elegan ${bestPerfume.name} menyatu sempurna dengan auramu, memancarkan karakter orang berkelas yang sulit dilupakan. Sekali terhirup, aromanya meninggalkan rindu mendalam bagi siapa pun di dekatmu.`;
+  }
+
+  // 4. Resolve Bottle Photo
+  let photo = customMasterFlacon || DEFAULT_MASTER_FLACON;
+  const bestNameLower = (bestPerfume.name || '').toLowerCase();
+  for (const [k, v] of Object.entries(top11Photos || {})) {
+    if (v && (k.toLowerCase().includes(bestNameLower) || bestNameLower.includes(k.toLowerCase()))) {
+      photo = v;
+      break;
+    }
+  }
+
+  // Preset audio key mapping
+  let audioKey: string | null = null;
+  if (bestNameLower.includes('monaco') || text.includes('kencan')) {
+    audioKey = 'preset_kencan';
+  } else if (bestNameLower.includes('dunhill') || text.includes('kerja')) {
+    audioKey = 'preset_kerja';
+  } else if (bestNameLower.includes('aqua') || text.includes('segar')) {
+    audioKey = 'preset_segar';
+  }
+
+  const accordsText = Array.isArray(bestPerfume.accords) && bestPerfume.accords.length > 0
+    ? bestPerfume.accords.join(' · ')
+    : 'Amber · Woods · Fresh Clean';
+
+  return {
+    reply: seductiveScript,
+    audioKey,
+    recommendedPerfume: {
+      perfumeName: bestPerfume.name,
+      categoryLabel: bestPerfume.categoryLabel || 'SINKI Luxury Signature',
+      matchScore: 98,
+      hypnoticScript: seductiveScript,
+      shortVoiceSpeech: seductiveScript,
+      accords: accordsText,
+      longevity: '12+ Jam',
+      sillage: 'Proyeksi 2 Meter',
+      photoUrl: photo,
+      pricePerMl: bestPerfume.pricePerMl || 3000,
+    },
+    isRecommendationReady: true,
+  };
+}
+
+// POST /api/minski/chat - Endpoint Konsultasi Hybrid MinSKI (Generative AI + Deterministic Guardrail)
+app.post('/api/minski/chat', async (req, res) => {
+  try {
+    const rawMessage = String(req.body?.message || '').trim();
+    if (!rawMessage) {
+      return res.status(400).json({ error: 'Pesan wajib diisi' });
+    }
+
+    const history = Array.isArray(req.body?.history) ? req.body.history : [];
+    const catalog = getPerfumesCatalogServer();
+    const assets = getAssets();
+    const top11Photos = assets.top11 || {};
+
+    // 1. Sensor Bahasa Kasar
+    if (checkMinskiProfanityServer(rawMessage)) {
+      return res.json({
+        reply:
+          'Waduh, jangan galak-galak dong Kak... MinSKI kan pengen bantu Kakak biar makin wangi dan disayang semua orang. Yuk, ceritain wangi apa yang lagi Kakak cari hari ini dengan santun ya!',
+        audioKey: 'profanity',
+        recommendedPerfume: null,
+        isRecommendationReady: false,
+      });
+    }
+
+    // 2. Pertanyaan di Luar Konteks Parfum
+    if (checkMinskiOffTopicServer(rawMessage)) {
+      return res.json({
+        reply:
+          'Hehe, aku kan botol parfum Kak, bukan guru les! Tapi kalau soal bikin Kakak wangi seharian dan auranya makin berkarisma, serahin ke MinSKI deh! Kakak lebih suka aroma yang dingin segar atau manis mewah nih?',
+        audioKey: 'offtopic',
+        recommendedPerfume: null,
+        isRecommendationReady: false,
+      });
+    }
+
+    // 3. Deteksi Multi-Turn: Jika Pengguna Baru Bertanya / Belum Memberikan Preferensi Aroma
+    if (isOpeningInquiryServer(rawMessage)) {
+      const lower = rawMessage.toLowerCase();
+      let inquiryReply =
+        'Hai Kak! MinSKI seneng banget bisa ngobrol sama Kakak. Biar racikan aromanya bener-bener pas di hati, Kakak lagi cari wangi yang kesannya seperti apa nih? Misalnya yang segar dingin bikin semangat, manis vanila yang bikin kangen, atau yang hangat mewah berkarisma?';
+
+      if (lower.includes('nanya') || lower.includes('tanya')) {
+        inquiryReply =
+          'Boleh banget dong Kak! MinSKI siap dengerin curhat aroma impian Kakak. Kakak rencananya pakai parfum ini untuk momen apa nih—buat ngantor seharian, santai nongkrong, atau kencan spesial bareng si dia?';
+      } else if (lower.includes('bingung') || lower.includes('rekomendasi')) {
+        inquiryReply =
+          'Tenang Kak, serahkan urusan wangi ke MinSKI! Biar pas sama karakter Kakak, Kakak lebih suka tipe wangi yang bikin orang langsung segar pas berpapasan, atau wangi manis lembut yang bikin orang betah nempel lama-lama?';
+      }
+
+      return res.json({
+        reply: inquiryReply,
+        audioKey: null,
+        recommendedPerfume: null,
+        isRecommendationReady: false,
+      });
+    }
+
+    // 4. Lapisan Generative AI (Gemini 3.8 Flash) jika API Key Tersedia
+    if (geminiAi) {
+      try {
+        const catalogBrief = catalog.map((p) => ({
+          name: p.name,
+          category: p.categoryLabel || p.category,
+          accords: Array.isArray(p.accords) ? p.accords.join(', ') : '',
+          tagline: p.tagline || '',
+        }));
+
+        const systemPrompt = `Kamu adalah MinSKI (Admin SINKI), konsultan aroma wewangian mewah Atelier SINKI Parfums Indonesia yang bertutur kata ramah, lembut, elegan, dan merayu.
+Tugasmu:
+1. Analisa keinginan aroma pengguna dan riwayat obrolan.
+2. Pilih SATU parfum yang PALING COCOK dan HANYA berasal dari katalog SINKI berikut: ${JSON.stringify(catalogBrief)}.
+   DILARANG KERAS mengarang varian yang tidak ada di daftar!
+3. Susun naskah rayuan ('seductiveScript') persis 2 KALIMAT EMAS yang puitis, elegan, merayu, dan meyakinkan bahwa parfum ini akan membuat si pemakai memesona dan tak terlupakan.
+4. Kembalikan HANYA JSON murni tanpa markdown dengan format:
+{
+  "selectedPerfumeName": "nama persis dari katalog",
+  "seductiveScript": "2 kalimat rayuan elegan",
+  "accords": "aroma utama"
+}`;
+
+        const geminiPromise = geminiAi.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: `Pertanyaan Pengguna: "${rawMessage}". Riwayat obrolan sebelumnya: ${JSON.stringify(history)}`,
+          config: {
+            systemInstruction: systemPrompt,
+            responseMimeType: 'application/json',
+          },
+        });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Gemini API timeout')), 4000)
+        );
+        const geminiRes = await Promise.race([geminiPromise, timeoutPromise]);
+
+        const parsed = JSON.parse(geminiRes.text?.trim() || '{}');
+        if (parsed.selectedPerfumeName && parsed.seductiveScript) {
+          const matchedItem = catalog.find(
+            (p) => p.name.toLowerCase() === parsed.selectedPerfumeName.toLowerCase()
+          );
+
+          if (matchedItem) {
+            let photo = assets.masterFlacon || DEFAULT_MASTER_FLACON;
+            const nameLower = matchedItem.name.toLowerCase();
+            for (const [k, v] of Object.entries(top11Photos)) {
+              if (v && (k.toLowerCase().includes(nameLower) || nameLower.includes(k.toLowerCase()))) {
+                photo = v;
+                break;
+              }
+            }
+
+            let audioKey: string | null = null;
+            if (nameLower.includes('monaco') || rawMessage.toLowerCase().includes('kencan')) {
+              audioKey = 'preset_kencan';
+            } else if (nameLower.includes('dunhill') || rawMessage.toLowerCase().includes('kerja')) {
+              audioKey = 'preset_kerja';
+            } else if (nameLower.includes('aqua') || rawMessage.toLowerCase().includes('segar')) {
+              audioKey = 'preset_segar';
+            }
+
+            return res.json({
+              reply: parsed.seductiveScript,
+              audioKey,
+              recommendedPerfume: {
+                perfumeName: matchedItem.name,
+                categoryLabel: matchedItem.categoryLabel || 'SINKI Luxury Signature',
+                matchScore: 99,
+                hypnoticScript: parsed.seductiveScript,
+                shortVoiceSpeech: parsed.seductiveScript,
+                accords: parsed.accords || (matchedItem.accords ? matchedItem.accords.join(' · ') : 'Amber · Woods'),
+                longevity: '12+ Jam',
+                sillage: 'Proyeksi 2 Meter',
+                photoUrl: photo,
+                pricePerMl: matchedItem.pricePerMl || 3000,
+              },
+              isRecommendationReady: true,
+            });
+          }
+        }
+      } catch (geminiErr) {
+        console.warn('[Gemini AI Engine Fallback Notice]:', geminiErr);
+        // Fallback otomatis ke mesin deterministik SINKI
+      }
+    }
+
+    // 5. Lapisan Mesin Deterministik SINKI (Zero-Hallucination & Fail-Safe)
+    const fallbackResult = resolveServerRecommendation(
+      rawMessage,
+      catalog,
+      top11Photos,
+      assets.masterFlacon
+    );
+
+    return res.json(fallbackResult);
+  } catch (err: any) {
+    console.error('Error in /api/minski/chat:', err);
+    return res.status(500).json({ error: 'Gagal memproses konsultasi MinSKI' });
+  }
+});
 
 // Short URL endpoint for concise sharing links
 let cachedShortUrl: string | null = null;

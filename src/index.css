@@ -1745,3 +1745,83 @@ main[data-active-tab] .border-beam-active::after {
     rgba(10, 17, 13, 0.84);
 }
 
+/* Animasi Si MinSKI (Admin SINKI) */
+@keyframes minskiFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(0.6deg);
+  }
+}
+
+.minski-float-anim {
+  animation: minskiFloat 3.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Animasi MinSKI saat berbicara (terlihat hidup, bersemangat mengobrol) */
+@keyframes minskiSpeakingMotion {
+  0%, 100% {
+    transform: translateY(0px) scale(1) rotate(0deg);
+  }
+  20% {
+    transform: translateY(-3px) scale(1.025) rotate(-1deg);
+  }
+  45% {
+    transform: translateY(-1px) scale(0.99) rotate(0.8deg);
+  }
+  70% {
+    transform: translateY(-4px) scale(1.03) rotate(-0.5deg);
+  }
+  85% {
+    transform: translateY(-2px) scale(1.01) rotate(0.5deg);
+  }
+}
+
+.minski-speaking-active {
+  animation: minskiSpeakingMotion 0.95s ease-in-out infinite;
+  will-change: transform;
+  filter: drop-shadow(0 0 16px rgba(223, 183, 108, 0.45));
+}
+
+@keyframes minskiVoiceWave {
+  0% {
+    box-shadow: 0 0 0 0 rgba(223, 183, 108, 0.65), 0 0 0 0 rgba(240, 223, 182, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(223, 183, 108, 0.25), 0 0 0 24px rgba(240, 223, 182, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 20px rgba(223, 183, 108, 0), 0 0 0 32px rgba(240, 223, 182, 0);
+  }
+}
+
+.minski-voice-active {
+  animation: minskiVoiceWave 1.6s ease-out infinite;
+}
+
+/* Sound Equalizer Bars saat MinSKI bersuara */
+@keyframes minskiEqPulse {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+
+.minski-eq-bar-1 { animation: minskiEqPulse 0.45s ease-in-out infinite; }
+.minski-eq-bar-2 { animation: minskiEqPulse 0.65s ease-in-out infinite 0.12s; }
+.minski-eq-bar-3 { animation: minskiEqPulse 0.5s ease-in-out infinite 0.22s; }
+.minski-eq-bar-4 { animation: minskiEqPulse 0.7s ease-in-out infinite 0.08s; }
+
+/* 3D Kotak Podium Marmer Butik Paris Tempat MinSKI Berdiri */
+.minski-podium-box {
+  background: linear-gradient(180deg, #181d24 0%, #0d1015 45%, #07090c 100%);
+  border: 1px solid rgba(223, 183, 108, 0.45);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.85),
+    0 0 18px rgba(223, 183, 108, 0.18),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.7);
+}
+
+
+
