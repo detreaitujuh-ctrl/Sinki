@@ -511,8 +511,8 @@ export function speakMinskiVoice(
 
     const utterance = new SpeechSynthesisUtterance(softenedText);
     utterance.lang = 'id-ID';
-    utterance.pitch = 1.12;
-    utterance.rate = 0.92;
+    utterance.pitch = 1.15; // Ceria, bersahabat, perempuan muda
+    utterance.rate = 0.96; // Artikulasi jelas, elegan, santai
 
     const bestVoice = getBestMinskiVoice();
     if (bestVoice) utterance.voice = bestVoice;

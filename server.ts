@@ -6,7 +6,8 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, Modality, LiveServerMessage, Type } from '@google/genai';
+import { WebSocketServer, WebSocket } from 'ws';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -985,12 +986,12 @@ app.post('/api/minski/chat', async (req, res) => {
     if (aiClient) {
       try {
         const activeCatalog = catalog.filter((p: any) => p.isActive !== false);
-        const catalogBrief = activeCatalog.map((p: any) => ({
-          name: p.name,
-          category: p.categoryLabel || p.category,
-          accords: Array.isArray(p.accords) ? p.accords.join(', ') : '',
-          tagline: p.tagline || '',
-        }));
+        const catalogBrief = activeCatalog
+          .map(
+            (p: any) =>
+              `- ${p.name} (${p.categoryLabel || p.category}): ${(p.accords || []).join(', ')}`
+          )
+          .join('\n');
 
         const systemPrompt = `Kamu adalah MinSKI (Admin SINKI), konsultan aroma wewangian pribadi dari Atelier SINKI Parfums Indonesia.
 Tugasmu adalah menemani pelanggan layaknya konsultan parfum pribadi di butik mewah melalui percakapan alami, hangat, dan cerdas seperti ChatGPT.
@@ -1002,7 +1003,7 @@ Karakter & Gaya Bahasa MinSKI:
 - Pahami bahasa Indonesia informal, singkatan, dan ungkapan santai (nggak, ga suka, pusing, menyengat, enek, ngantor, kencan, dll).
 
 Katalog Parfum Aktif SINKI (PILIH HANYA DARI DAFTAR INI):
-${JSON.stringify(catalogBrief)}
+${catalogBrief}
 
 Prinsip Konsultasi Cerdas:
 1. JANGAN langsung memberikan rekomendasi jika informasi pelanggan masih umum, ambigu, atau baru tahap awal konsultasi!
@@ -1034,9 +1035,10 @@ Jika informasi sudah cukup dan siap merekomendasikan:
   "accords": "Accords utama sesuai katalog"
 }`;
 
-        // Build valid alternating conversation turns for Gemini
+        // Pertahankan maksimal 6 giliran percakapan terkini agar respon cepat dan optimal
+        const recentHistory = history.slice(-6);
         const conversationTurns: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
-        for (const h of history) {
+        for (const h of recentHistory) {
           const role = (h.sender === 'user' || h.role === 'user') ? 'user' : 'model';
           const text = String(h.text || '').trim();
           if (!text) continue;
@@ -1071,7 +1073,7 @@ Jika informasi sudah cukup dan siap merekomendasikan:
           },
         });
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Gemini API timeout')), 12000)
+          setTimeout(() => reject(new Error('Gemini API timeout')), 30000)
         );
         const geminiRes = await Promise.race([geminiPromise, timeoutPromise]);
 
@@ -1144,9 +1146,9 @@ Jika informasi sudah cukup dan siap merekomendasikan:
             });
           }
         }
-      } catch (geminiErr) {
-        console.warn('[Gemini AI Engine Fallback Notice]:', geminiErr);
-        // Fallback otomatis ke mesin deterministik SINKI
+      } catch (geminiErr: any) {
+        // Fallback anggun ke mesin konsultasi deterministik SINKI
+        console.log('[MinSKI AI Engine] Mengalihkan ke racikan konsultasi deterministik SINKI');
       }
     }
 
@@ -1175,6 +1177,23 @@ Jika informasi sudah cukup dan siap merekomendasikan:
     console.error('Error in /api/minski/chat:', err);
     return res.status(500).json({ error: 'Gagal memproses konsultasi MinSKI' });
   }
+});
+
+// GET /api/minski/voice-capabilities - Status kapabilitas suara MinSKI (Gemini Live vs Fallback Cerdas)
+app.get('/api/minski/voice-capabilities', (_req, res) => {
+  const client = getGeminiClient();
+  const hasKey = Boolean((process.env.GEMINI_API_KEY || '').trim().length > 10);
+  res.json({
+    geminiLiveSupported: Boolean(client),
+    hasGeminiKey: hasKey,
+    primaryVoiceEngine: client ? 'gemini-live' : 'web-speech-tts-hybrid',
+    model: client ? 'gemini-3.8-live' : 'hybrid-local-tts',
+    voiceName: client ? 'Kore' : 'Natural Indonesian Female',
+    voicePersona: 'Perempuan Muda Ceria, Ramah, Natural & Elegan (Bahasa Indonesia)',
+    bargeInSupported: true,
+    twoWaySupported: true,
+    catalogCount: getPerfumesCatalogServer().length,
+  });
 });
 
 // Short URL endpoint for concise sharing links
@@ -2584,6 +2603,247 @@ async function startServer() {
 
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server SINKI berjalan di http://localhost:${PORT}`);
+  });
+
+  // ============================================================================
+  // WebSocket Server untuk Gemini Live Voice-to-Voice Real-Time Streaming
+  // ============================================================================
+  const wss = new WebSocketServer({ noServer: true });
+
+  server.on('upgrade', (request, socket, head) => {
+    try {
+      const parsedUrl = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
+      if (parsedUrl.pathname === '/api/minski/live-ws') {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit('connection', ws, request);
+        });
+      }
+    } catch (e) {
+      console.warn('[WebSocket Upgrade Error]:', e);
+    }
+  });
+
+  wss.on('connection', async (clientWs) => {
+    const aiClient = getGeminiClient();
+    if (!aiClient) {
+      if (clientWs.readyState === WebSocket.OPEN) {
+        clientWs.send(
+          JSON.stringify({
+            type: 'unsupported',
+            reason: 'GEMINI_API_KEY_UNAVAILABLE',
+            message: 'GEMINI_API_KEY belum disetel. Menggunakan Fallback Mode Suara Natural SINKI.',
+            fallback: 'web-speech-tts',
+          })
+        );
+      }
+      return;
+    }
+
+    try {
+      const catalog = getPerfumesCatalogServer();
+      const assets = getAssets();
+      const top11Photos = assets.top11 || {};
+      const activeCatalog = catalog.filter((p: any) => p.isActive !== false);
+      const catalogBrief = activeCatalog
+        .map(
+          (p: any) =>
+            `${p.name} (${p.categoryLabel || p.category}): ${Array.isArray(p.accords) ? p.accords.join(', ') : ''} - Rp${p.pricePerMl || 3000}/ml`
+        )
+        .join('\n');
+
+      const systemPrompt = `Kamu adalah MinSKI (Admin SINKI), konsultan aroma wewangian pribadi dari Atelier SINKI Parfums Indonesia.
+Kamu sedang berbicara langsung dua arah melalui suara dengan pelanggan layaknya fitur ChatGPT Voice.
+
+Karakter & Kepribadian MinSKI:
+- Suara dan persona perempuan muda Indonesia: ceria, ramah, hangat, penuh perhatian, dan elegan.
+- Sapa pelanggan selalu dengan sebutan santun "Kakak" secara alami.
+- Berbicara dalam Bahasa Indonesia percakapan yang mengalir natural, santai, dan ekspresif (tidak kaku, tidak robotik, tidak terdengar seperti membaca teks formulir).
+- Jawab dengan ringkas dan padat (1-2 kalimat per giliran bicara) agar percakapan suara terasa dinamis, responsif, dan interaktif seperti mengobrol dengan sahabat konsultan wewangian di butik.
+
+Katalog Parfum SINKI Aktif (SATU-SATUNYA SUMBER REKOMENDASI):
+${catalogBrief}
+
+Aturan Percakapan & Rekomendasi:
+1. Dengarkan curhat aroma pelanggan dengan empati. Jika pelanggan baru membuka percakapan atau preferensinya masih umum, sambut hangat dan tanyakan 1 pertanyaan lanjutan yang cerdas (misal: "Kakak lebih suka wangi yang segar dingin seperti habis mandi atau manis vanila yang lembut?").
+2. Jangan mengulang-ulang pertanyaan yang sudah dijawab.
+3. Begitu informasi sudah cukup atau pelanggan meminta rekomendasi tertentu, sebutkan TEPAT SATU nama varian persis dari katalog aktif SINKI di atas, lalu jelaskan secara memikat mengapa racikan tersebut cocok untuk kepribadian dan momen Kakak. Panggil juga fungsi recommendPerfume agar botolnya tampil di layar Kakak.
+4. DILARANG merekomendasikan merk atau varian di luar katalog Sinki di atas.
+5. Jika pelanggan memotong atau mengganti topik, tanggapi dengan luwes dan alami.`;
+
+      const session = await aiClient.live.connect({
+        model: 'gemini-3.8-live',
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
+          },
+          tools: [{
+            functionDeclarations: [{
+              name: 'recommendPerfume',
+              description: 'Tampilkan kartu botol parfum resmi dari katalog aktif SINKI ke layar pelanggan ketika rekomendasi siap.',
+              parameters: {
+                type: Type.OBJECT,
+                properties: {
+                  perfumeName: {
+                    type: Type.STRING,
+                    description: 'Nama persis parfum dari katalog aktif SINKI',
+                  },
+                  reason: {
+                    type: Type.STRING,
+                    description: 'Alasan personal mengapa parfum ini sangat cocok untuk Kakak',
+                  },
+                },
+                required: ['perfumeName', 'reason'],
+              },
+            }],
+          }],
+          systemInstruction: systemPrompt,
+          inputAudioTranscription: {},
+          outputAudioTranscription: {},
+        },
+        callbacks: {
+          onopen: () => {
+            console.log('[MinSKI Live] Gemini Live session opened successfully!');
+            if (clientWs.readyState === WebSocket.OPEN) {
+              clientWs.send(JSON.stringify({ type: 'ready', model: 'gemini-3.8-live', voice: 'Kore' }));
+            }
+          },
+          onmessage: (message: LiveServerMessage) => {
+            if (clientWs.readyState !== WebSocket.OPEN) return;
+
+            // Audio stream (24kHz PCM) and model turn parts
+            for (const part of message.serverContent?.modelTurn?.parts ?? []) {
+              if (part.inlineData?.data) {
+                clientWs.send(JSON.stringify({ type: 'audio', audio: part.inlineData.data, data: part.inlineData.data }));
+              }
+              if (part.text) {
+                clientWs.send(JSON.stringify({ type: 'output_transcript', text: part.text }));
+              }
+            }
+
+            const content = message.serverContent;
+            if (content?.inputTranscription?.text) {
+              clientWs.send(JSON.stringify({ type: 'input_transcript', text: content.inputTranscription.text }));
+            }
+            if (content?.outputTranscription?.text) {
+              clientWs.send(JSON.stringify({ type: 'output_transcript', text: content.outputTranscription.text }));
+            }
+            if (content?.interrupted) {
+              clientWs.send(JSON.stringify({ type: 'interrupted' }));
+            }
+            if (content?.turnComplete) {
+              clientWs.send(JSON.stringify({ type: 'turn_complete' }));
+            }
+
+            // Function calling tool handling
+            for (const call of message.toolCall?.functionCalls ?? []) {
+              if (call.name === 'recommendPerfume') {
+                const args = call.args as any;
+                const nameStr = String(args?.perfumeName || '').toLowerCase();
+                const matchedItem = activeCatalog.find(
+                  (p: any) =>
+                    p.name.toLowerCase() === nameStr ||
+                    nameStr.includes(p.name.toLowerCase()) ||
+                    p.name.toLowerCase().includes(nameStr)
+                );
+                if (matchedItem) {
+                  let photo = assets.masterFlacon || DEFAULT_MASTER_FLACON;
+                  const nameLower = matchedItem.name.toLowerCase();
+                  for (const [k, v] of Object.entries(top11Photos)) {
+                    if (v && (k.toLowerCase().includes(nameLower) || nameLower.includes(k.toLowerCase()))) {
+                      photo = v;
+                      break;
+                    }
+                  }
+                  clientWs.send(
+                    JSON.stringify({
+                      type: 'recommendation',
+                      perfume: {
+                        perfumeName: matchedItem.name,
+                        categoryLabel: matchedItem.categoryLabel || 'SINKI Luxury Signature',
+                        matchScore: 98,
+                        matchScoreLabel: 'Estimasi Kecocokan Aroma',
+                        hypnoticScript: args?.reason || matchedItem.tagline,
+                        shortVoiceSpeech: args?.reason || matchedItem.tagline,
+                        accords: matchedItem.accords ? matchedItem.accords.join(' · ') : 'Amber · Woods',
+                        longevity: matchedItem.longevity || 'Informasi belum tersedia',
+                        sillage: matchedItem.sillage || 'Informasi belum tersedia',
+                        photoUrl: photo,
+                        pricePerMl: matchedItem.pricePerMl || 3000,
+                      },
+                    })
+                  );
+                }
+                session.sendToolResponse({
+                  functionResponses: [
+                    {
+                      id: call.id,
+                      name: call.name,
+                      response: { success: true },
+                    },
+                  ],
+                });
+              }
+            }
+          },
+          onclose: (ev) => {
+            if (clientWs.readyState === WebSocket.OPEN) {
+              clientWs.send(JSON.stringify({ type: 'session_closed', reason: ev?.reason }));
+            }
+          },
+          onerror: (err) => {
+            if (clientWs.readyState === WebSocket.OPEN) {
+              clientWs.send(JSON.stringify({ type: 'error', message: err?.message || 'Live session error' }));
+            }
+          },
+        },
+      });
+
+      clientWs.on('message', (raw) => {
+        try {
+          const data = JSON.parse(raw.toString());
+          if (data.type === 'audio' && data.audio) {
+            session.sendRealtimeInput({
+              audio: { data: data.audio, mimeType: 'audio/pcm;rate=16000' },
+            });
+          } else if (data.type === 'text' && data.text) {
+            try {
+              session.sendRealtimeInput({
+                text: String(data.text),
+              });
+            } catch {
+              session.sendClientContent({
+                turns: [{ role: 'user', parts: [{ text: String(data.text) }] }],
+                turnComplete: true,
+              });
+            }
+          } else if (data.type === 'interrupt') {
+            try {
+              session.sendRealtimeInput({ activityStart: {} });
+            } catch {}
+          }
+        } catch (e) {
+          console.warn('[MinSKI Live] Failed to parse client message:', e);
+        }
+      });
+
+      clientWs.on('close', () => {
+        try {
+          session.close();
+        } catch {}
+      });
+    } catch (liveErr: any) {
+      console.warn('[MinSKI Live Connect Exception]:', liveErr?.message || liveErr);
+      if (clientWs.readyState === WebSocket.OPEN) {
+        clientWs.send(
+          JSON.stringify({
+            type: 'unsupported',
+            reason: liveErr?.message || 'GEMINI_LIVE_CONNECTION_FAILED',
+            fallback: 'web-speech-tts',
+          })
+        );
+      }
+    }
   });
 
   const shutdown = () => {

@@ -377,6 +377,7 @@ export default function App() {
           {mountedTabs.has('match') && (
             <div className={`w-full h-full ${activeTab === 'match' ? 'block' : 'hidden'}`}>
               <AromaMatchScreen
+                isActiveTab={activeTab === 'match'}
                 onBackToHome={() => setActiveTab('home')}
                 onNavigateToOrder={(perfume) => {
                   setSelectedPerfumeForOrder({

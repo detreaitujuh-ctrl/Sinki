@@ -1856,5 +1856,37 @@ main[data-active-tab] .border-beam-active::after {
     inset 0 -2px 4px rgba(0, 0, 0, 0.7);
 }
 
+@keyframes minskiListeningPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 16px rgba(16, 185, 129, 0);
+  }
+}
+
+.minski-listening-active {
+  animation: minskiListeningPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes minskiBargeInGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+.minski-bargein-flash {
+  animation: minskiBargeInGlow 0.8s ease-out;
+}
+
+
 
 
