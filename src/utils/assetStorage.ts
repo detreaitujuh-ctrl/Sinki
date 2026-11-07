@@ -132,10 +132,6 @@ export const verifyOwnerPinOnServer = async (
     }
     return { success: false, error: data.error || 'PIN Pemilik tidak valid!' };
   } catch (err) {
-    // Offline / dev fallback: verify locally if offline
-    if (pin.trim() === '1995') {
-      return { success: true, token: 'local-offline-session' };
-    }
     return { success: false, error: 'Koneksi ke server gagal' };
   }
 };

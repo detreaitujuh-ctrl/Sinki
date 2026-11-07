@@ -197,25 +197,18 @@ export const DimensiKasirScreen: React.FC<DimensiKasirScreenProps> = ({
 
     try {
       const res = await verifyOwnerPinOnServer(pinVal);
-      if (res.success || pinVal === '1995' || pinVal === '241026') {
-        if (!getOwnerToken()) setOwnerToken(res.token || 'owner-session-1995');
+      if (res.success && res.token) {
+        setOwnerToken(res.token);
         setIsAuthenticated(true);
         setPinError('');
         onShowToast('Akses Dimensi Kasir Terbuka ✨');
       } else {
-        setPinError('PIN Rahasia salah!');
+        setPinError(res.error || 'PIN Rahasia salah!');
         setEnteredPin('');
       }
     } catch {
-      if (pinVal === '1995' || pinVal === '241026') {
-        setOwnerToken('owner-session-1995');
-        setIsAuthenticated(true);
-        setPinError('');
-        onShowToast('Akses Dimensi Kasir Terbuka ✨');
-      } else {
-        setPinError('PIN Rahasia salah!');
-        setEnteredPin('');
-      }
+      setPinError('Gagal memverifikasi PIN. Periksa koneksi server!');
+      setEnteredPin('');
     }
   };
 

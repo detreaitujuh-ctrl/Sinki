@@ -67,6 +67,8 @@ export interface PerfumeItem {
   collectionCategories?: CollectionCategoryKey[];
   pricePerMl?: PricePerMlRate;
   usageRecommendation?: string;
+  longevity?: string;
+  sillage?: string;
 }
 
 export const PERFUMES_DATA: PerfumeItem[] = [

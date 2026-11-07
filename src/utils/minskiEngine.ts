@@ -63,32 +63,111 @@ export const MINSKI_INQUIRY_RESPONSES = [
   'Tenang Kak, serahkan urusan wangi ke MinSKI! Biar pas sama karakter Kakak, Kakak lebih suka tipe wangi yang bikin orang langsung segar pas berpapasan, atau wangi manis lembut yang bikin orang betah nempel lama-lama?'
 ];
 
-export function isMinskiOpeningInquiry(text: string): boolean {
+export function evaluateMinskiConsultation(
+  text: string,
+  history: Array<{ sender: string; text: string }> = []
+): { isConsultation: boolean; response?: string } {
+  // Jika pengguna sudah pernah berinteraksi sebelumnya (menjawab pertanyaan MinSKI), lanjutkan ke rekomendasi
+  const userTurns = history.filter((h) => h.sender === 'user').length;
+  if (userTurns >= 2) {
+    return { isConsultation: false };
+  }
+
   const lower = text.toLowerCase().trim();
-  const scentCues = [
-    'segar', 'fresh', 'dingin', 'laut', 'pantai', 'citrus', 'lemon', 'bergamot', 'jeruk',
-    'manis', 'vanila', 'vanilla', 'sweet', 'kopi', 'coffee', 'cokelat', 'gourmand', 'creamy',
-    'hangat', 'amber', 'woody', 'kayu', 'oud', 'gaharu', 'rempah', 'spicy', 'cedar',
-    'bunga', 'floral', 'rose', 'mawar', 'jasmine', 'melati', 'powdery', 'bedak', 'sabun', 'clean',
-    'kencan', 'pacar', 'malam', 'dinner', 'romantis', 'intim',
-    'kantor', 'kerja', 'ngantor', 'harian', 'kuliah', 'ruangan ac', 'meeting',
-    'olahraga', 'gym', 'panas', 'siang', 'tahan lama', 'awet', 'proyeksi',
-    'pria', 'cowok', 'wanita', 'cewek',
-    'monaco', 'dunhill', 'bvlgari', 'sauvage', 'aventus', 'black opium', 'scandal', 'baccarat',
+
+  // Jika menyebutkan nama varian spesifik secara langsung, jangan tunda rekomendasi
+  const specificVariants = [
+    'monaco', 'dunhill', 'bvlgari', 'black opium', 'sauvage', 'aventus', 'scandal', 'baccarat',
     'eros', 'aqua', 'dior', 'chanel', 'creed', 'ysl', 'zara', 'jo malone', 'tom ford', 'gucci',
-    'bubble gum', 'nagita', 'bacarat', 'omnia', 'twilly', 'si armani', 'bombshell'
+    'bubble gum', 'nagita', 'omnia', 'twilly', 'si armani', 'bombshell', 'vanilla clouds'
   ];
+  if (specificVariants.some((v) => lower.includes(v))) {
+    return { isConsultation: false };
+  }
 
-  if (scentCues.some((w) => lower.includes(w))) return false;
+  // 1. Belum tahu suka aroma apa / butuh panduan awal
+  if (
+    lower.includes('belum tahu') ||
+    lower.includes('bingung') ||
+    lower.includes('bantu aku memilih') ||
+    lower.includes('bantu memilih') ||
+    lower.includes('bantu aku') ||
+    lower.includes('pilihkan') ||
+    lower.includes('pemula')
+  ) {
+    return {
+      isConsultation: true,
+      response:
+        'Tenang aja Kak, MinSKI siap nemenin cari wangi impian Kakak sampai ketemu! Biar pas di hati, Kakak biasanya lebih nyaman sama wangi seperti apa nih—yang segar dingin bikin melek, manis lembut vanila, atau aroma bunga yang anggun?',
+    };
+  }
 
+  // 2. Buat kerja tapi tidak menyengat
+  if (
+    lower.includes('kerja') &&
+    (lower.includes('nggak suka') || lower.includes('tidak suka') || lower.includes('menyengat') || lower.includes('pusing') || lower.includes('tajam') || lower.includes('strong'))
+  ) {
+    return {
+      isConsultation: true,
+      response:
+        'Pilihan bijak banget Kak! Buat ngantor seharian di ruangan ber-AC, aroma yang ramah dan nggak bikin pusing memang paling bikin nyaman dan fokus. Biar makin pas, Kakak lebih condong ke wangi segar bersih seperti habis mandi, atau wangi elegan yang powdery menenangkan?',
+    };
+  }
+
+  // 3. Suka aroma manis tapi jangan berlebihan
+  if (
+    lower.includes('manis') &&
+    (lower.includes('jangan') || lower.includes('nggak') || lower.includes('tidak') || lower.includes('berlebihan') || lower.includes('terlalu') || lower.includes('enek') || lower.includes('eneg'))
+  ) {
+    return {
+      isConsultation: true,
+      response:
+        'Setuju banget Kak! Aroma manis yang seimbang itu bikin nagih tanpa bikin enek. Biar pas momennya, Kakak lebih suka manis lembut vanila yang hangat, atau manis buah segar yang ceria?',
+    };
+  }
+
+  // 4. Buat kencan malam
+  if (
+    (lower.includes('kencan') || lower.includes('date') || lower.includes('pacar')) &&
+    !lower.includes('vanila') && !lower.includes('segar') && !lower.includes('amber')
+  ) {
+    return {
+      isConsultation: true,
+      response:
+        'Wah, seru banget nih buat kencan malam! Biar si dia makin betah berdekatan, Kakak lebih suka aroma manis hangat yang intim menggoda seperti vanila, atau wangi segar maskulin/anggun yang memikat?',
+    };
+  }
+
+  // 5. Buat dipakai setiap hari / harian
+  if (
+    (lower.includes('setiap hari') || lower.includes('sehari-hari') || lower.includes('harian') || lower.includes('daily')) &&
+    !lower.includes('citrus') && !lower.includes('aquatic') && !lower.includes('sabun')
+  ) {
+    return {
+      isConsultation: true,
+      response:
+        'Ada banget dong Kak! Untuk pemakaian sehari-hari, kuncinya wangi yang fleksibel dan bikin segar terus. Kakak lebih condong ke wangi citrus/aquatic yang dingin berenergi, atau wangi bersih seperti sabun dan bedak mewah?',
+    };
+  }
+
+  // Sapaan / pertanyaan umum pembuka
   const inquiryWords = [
     'halo', 'hai', 'hei', 'pagi', 'siang', 'sore', 'malam', 'assalam',
     'nanya', 'tanya', 'bantu', 'bingung', 'pilihan', 'apa ya', 'rekomendasi', 'rekomendasiin',
-    'ada apa', 'cari parfum', 'mau cari', 'mau parfum', 'konsul', 'ngobrol',
-    'kamu siapa', 'bisa apa', 'tes', 'test', 'minski'
+    'ada apa', 'cari parfum', 'mau cari', 'mau parfum', 'konsul', 'ngobrol'
   ];
+  if (lower.length <= 25 || inquiryWords.some((w) => lower.includes(w))) {
+    return {
+      isConsultation: true,
+      response: MINSKI_INQUIRY_RESPONSES[Math.floor(Math.random() * MINSKI_INQUIRY_RESPONSES.length)],
+    };
+  }
 
-  return lower.length <= 25 || inquiryWords.some((w) => lower.includes(w));
+  return { isConsultation: false };
+}
+
+export function isMinskiOpeningInquiry(text: string): boolean {
+  return evaluateMinskiConsultation(text).isConsultation;
 }
 
 // NASKAH PERKENALAN DIRI RESMI MINSKI (LEMBUT, RAMAH & TIDAK PANJANG)
@@ -121,6 +200,7 @@ export interface MinskiRecommendationResult {
   perfumeName: string;
   categoryLabel: string;
   matchScore: number;
+  matchScoreLabel: string;
   hypnoticScript: string;
   shortVoiceSpeech: string;
   accords: string;
@@ -134,16 +214,21 @@ export function resolveMinskiRecommendation(
   userInput: string,
   catalog: PerfumeItem[],
   photos: Record<string, string>,
-  customMasterFlacon?: string | null
+  customMasterFlacon?: string | null,
+  history: Array<{ sender?: string; role?: string; text?: string }> = []
 ): MinskiRecommendationResult {
-  const text = userInput.toLowerCase();
+  const historyUserTexts = history
+    .filter((h) => h.sender === 'user' || h.role === 'user')
+    .map((h) => h.text || '')
+    .join(' ');
+  const fullContext = `${historyUserTexts} ${userInput}`.toLowerCase();
   const activeCatalog = catalog.filter((p) => p.isActive !== false);
   const pool = activeCatalog.length > 0 ? activeCatalog : catalog;
 
   // 1. Prioritaskan nama lengkap varian persis terlebih dahulu
   let directMatch = pool.find((p) => {
     const nameLower = p.name.toLowerCase();
-    return text.includes(nameLower);
+    return fullContext.includes(nameLower);
   });
 
   // 1b. Jika belum cocok, cari kecocokan kata spesifik unik (panjang >= 5 huruf)
@@ -151,13 +236,13 @@ export function resolveMinskiRecommendation(
     directMatch = pool.find((p) => {
       const nameLower = p.name.toLowerCase();
       const parts = nameLower.split(' ').filter((part) => part.length >= 5 && !['parfum', 'eau', 'pour', 'homme', 'femme'].includes(part));
-      return parts.some((part) => text.includes(part));
+      return parts.some((part) => fullContext.includes(part));
     });
   }
 
   // 2. Kamus Sensorik Pencocokan Suara
   const keywordWeights: Record<string, string[]> = {
-    citrus_fresh: ['segar', 'fresh', 'dingin', 'citrus', 'lemon', 'bergamot', 'jeruk', 'laut', 'pantai', 'aquatic', 'olahraga', 'gym', 'panas', 'siang'],
+    citrus_fresh: ['segar', 'fresh', 'dingin', 'citrus', 'lemon', 'bergamot', 'jeruk', 'laut', 'pantai', 'aquatic', 'olahraga', 'gym', 'panas', 'siang', 'mandi'],
     vanilla_sweet: ['manis', 'vanila', 'vanilla', 'sweet', 'kopi', 'coffee', 'gourmand', 'cokelat', 'creamy', 'enak', 'kue', 'caramel', 'malam', 'kencan'],
     woody_amber: ['hangat', 'kayu', 'woody', 'amber', 'oud', 'gaharu', 'rempah', 'spicy', 'cedar', 'karisma', 'wibawa', 'mewah', 'bos', 'pemimpin', 'rapi'],
     floral_powdery: ['bunga', 'floral', 'rose', 'mawar', 'jasmine', 'melati', 'lembut', 'bedak', 'powdery', 'bersih', 'sabun', 'clean', 'anggun', 'feminin'],
@@ -183,19 +268,29 @@ export function resolveMinskiRecommendation(
       ].join(' ').toLowerCase();
 
       // Skor kesesuaian kata kunci
-      Object.entries(keywordWeights).forEach(([group, words]) => {
-        const userMatched = words.some((w) => text.includes(w));
-        if (userMatched) {
-          const itemMatched = words.filter((w) => haystack.includes(w)).length;
-          score += itemMatched * 15;
+      Object.entries(keywordWeights).forEach(([, words]) => {
+        if (words.some((w) => fullContext.includes(w))) {
+          const matchedCount = words.filter((w) => haystack.includes(w)).length;
+          score += matchedCount * 15;
         }
       });
 
+      // Filter preferensi negatif: jika tidak suka menyengat / pusing / tajam
+      if (fullContext.includes('menyengat') || fullContext.includes('pusing') || fullContext.includes('tajam')) {
+        if (haystack.includes('spicy') || haystack.includes('oud') || haystack.includes('heavy')) score -= 35;
+        if (haystack.includes('aquatic') || haystack.includes('fresh') || haystack.includes('clean')) score += 30;
+      }
+      // Jika suka manis tapi tidak berlebihan / tidak enek
+      if (fullContext.includes('manis') && (fullContext.includes('berlebihan') || fullContext.includes('enek') || fullContext.includes('eneg'))) {
+        if (haystack.includes('caramel') || haystack.includes('creamy')) score -= 15;
+        if (haystack.includes('vanilla') || haystack.includes('vanila')) score += 25;
+      }
+
       // Preferensi Gender
-      if (text.includes('pria') || text.includes('cowok') || text.includes('cowo')) {
+      if (fullContext.includes('pria') || fullContext.includes('cowok') || fullContext.includes('cowo')) {
         if (item.category === 'men') score += 35;
         if (item.category === 'women') score -= 30;
-      } else if (text.includes('wanita') || text.includes('cewek') || text.includes('cewe')) {
+      } else if (fullContext.includes('wanita') || fullContext.includes('cewek') || fullContext.includes('cewe')) {
         if (item.category === 'women') score += 35;
         if (item.category === 'men') score -= 30;
       }
@@ -241,47 +336,53 @@ export function resolveMinskiRecommendation(
       ? bestPerfume.accords.join(' · ')
       : 'Amber · Woods · Fresh Clean';
 
-  // 5. PENYUSUNAN TAGLINE HIPNOTIS MERAYU (2 KALIMAT EMAS, PADAT, MERAYU & SINKRON 100%)
+  // 5. PENYUSUNAN TAGLINE HIPNOTIS MERAYU & PENJELASAN PERSONAL
   let seductiveScript = '';
 
   if (
-    text.includes('kencan') ||
-    text.includes('pacar') ||
-    text.includes('malam') ||
-    text.includes('manis') ||
-    text.includes('vanila') ||
-    text.includes('monaco')
+    fullContext.includes('kerja') ||
+    fullContext.includes('kantor') ||
+    fullContext.includes('rapi') ||
+    (bestPerfume.name || '').toLowerCase().includes('dunhill')
   ) {
-    seductiveScript = `Begitu semprotan ${bestPerfume.name} menyentuh kulitmu, kehangatan manis mewahnya menciptakan jejak aroma intim yang bikin si dia betah berdekatan. Inilah racikan rahasiamu untuk membuat setiap tatapan tertuju padamu.`;
+    seductiveScript = `Berdasarkan obrolan kita, MinSKI pilihkan ${bestPerfume.name} yang pas banget buat Kakak. Wanginya segar berkelas dan ramah di hidung tanpa menusuk, membuat Kakak memancarkan aura orang sukses yang rapi, percaya diri, dan disegani di kantor.`;
   } else if (
-    text.includes('kantor') ||
-    text.includes('kerja') ||
-    text.includes('rapi') ||
-    text.includes('wibawa') ||
-    text.includes('dunhill')
+    fullContext.includes('kencan') ||
+    fullContext.includes('pacar') ||
+    fullContext.includes('malam') ||
+    (bestPerfume.name || '').toLowerCase().includes('monaco')
   ) {
-    seductiveScript = `Semprotan berkelas ${bestPerfume.name} seketika memancarkan aura orang sukses yang rapi, percaya diri, dan disegani. Seharian di ruangan ber-AC, aromanya membuat semua orang menaruh hormat pada kehadiranmu.`;
+    seductiveScript = `Begitu semprotan ${bestPerfume.name} menyentuh kulit Kakak, kehangatan manis mewahnya menciptakan jejak aroma intim yang bikin si dia betah berdekatan. Inilah racikan rahasia Kakak untuk membuat setiap tatapan tertuju pada Kakak.`;
   } else if (
-    text.includes('segar') ||
-    text.includes('dingin') ||
-    text.includes('laut') ||
-    text.includes('bvlgari') ||
-    text.includes('fresh')
+    fullContext.includes('manis')
   ) {
-    seductiveScript = `Sensasi sejuk murni ${bestPerfume.name} membungkus tubuhmu dengan kesegaran mewah yang bikin pikiran tenang dan bergairah seharian. Siapa pun yang berpapasan pasti menoleh mencari sumber wangimu.`;
+    seductiveScript = `Racikan tepat buat Kakak: ${bestPerfume.name} memadukan manis yang lembut, elegan, dan seimbang tanpa bikin enek. Sekali terhirup, aromanya meninggalkan rindu mendalam bagi siapa pun di dekat Kakak.`;
+  } else if (
+    fullContext.includes('segar') ||
+    fullContext.includes('dingin') ||
+    fullContext.includes('laut') ||
+    (bestPerfume.name || '').toLowerCase().includes('aqua')
+  ) {
+    seductiveScript = `Sensasi sejuk murni ${bestPerfume.name} membungkus tubuh Kakak dengan kesegaran mewah yang bikin pikiran tenang dan bergairah seharian. Siapa pun yang berpapasan pasti menoleh mencari sumber wangi Kakak.`;
   } else {
-    seductiveScript = `Sentuhan elegan ${bestPerfume.name} menyatu sempurna dengan auramu, memancarkan karakter orang berkelas yang sulit dilupakan. Sekali terhirup, aromanya meninggalkan rindu mendalam bagi siapa pun di dekatmu.`;
+    seductiveScript = `Sentuhan elegan ${bestPerfume.name} menyatu sempurna dengan aura Kakak, memancarkan karakter orang berkelas yang berkarisma. Aromanya sangat nyaman dinikmati dan membuat kehadiran Kakak selalu dinantikan.`;
   }
+
+  const resolvedLongevity =
+    bestPerfume.longevity || top11Match?.longevity || 'Informasi belum tersedia';
+  const resolvedSillage =
+    bestPerfume.sillage || top11Match?.sillage || 'Informasi belum tersedia';
 
   return {
     perfumeName: bestPerfume.name,
     categoryLabel,
     matchScore: 98,
+    matchScoreLabel: 'Estimasi Kecocokan Aroma',
     hypnoticScript: seductiveScript, // Ditampilkan di kartu hasil
     shortVoiceSpeech: seductiveScript, // Dibaca PERSIS 100% sama oleh MinSKI!
     accords: accordsText,
-    longevity: '12+ Jam',
-    sillage: 'Proyeksi 2 Meter',
+    longevity: resolvedLongevity,
+    sillage: resolvedSillage,
     photoUrl: photo,
     pricePerMl: bestPerfume.pricePerMl || 3000,
   };

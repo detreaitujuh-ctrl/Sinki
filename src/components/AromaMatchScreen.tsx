@@ -28,6 +28,7 @@ import {
   stopMinskiVoice,
   MinskiRecommendationResult,
   isMinskiOpeningInquiry,
+  evaluateMinskiConsultation,
   MINSKI_INQUIRY_RESPONSES,
 } from '../utils/minskiEngine';
 
@@ -274,13 +275,12 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     }
 
     // 3. Multi-Turn: Jika Pengguna Baru Bertanya & Belum Memberi Preferensi Aroma
-    if (isMinskiOpeningInquiry(query)) {
-      const randomInquiry =
-        MINSKI_INQUIRY_RESPONSES[Math.floor(Math.random() * MINSKI_INQUIRY_RESPONSES.length)];
-      setMinskiDialogue(randomInquiry);
-      setChatHistory((prev) => [...prev, { sender: 'minski' as const, text: randomInquiry }]);
+    const consultCheck = evaluateMinskiConsultation(query, updatedHistory);
+    if (consultCheck.isConsultation && consultCheck.response) {
+      setMinskiDialogue(consultCheck.response);
+      setChatHistory((prev) => [...prev, { sender: 'minski' as const, text: consultCheck.response! }]);
       setMatchResult(null);
-      playMinskiSpeech(randomInquiry);
+      playMinskiSpeech(consultCheck.response);
       return;
     }
 
@@ -289,7 +289,8 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       query,
       catalog,
       top11Photos,
-      masterFlaconPhoto
+      masterFlaconPhoto,
+      updatedHistory
     );
 
     setMatchResult(result);

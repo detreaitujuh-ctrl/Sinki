@@ -1077,8 +1077,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
     try {
       const res = await verifyOwnerPinOnServer(pinVal);
-      if (res.success || pinVal === '1995' || pinVal === '241026') {
-        if (!getOwnerToken()) setOwnerToken(res.token || 'owner-session-1995');
+      if (res.success && res.token) {
+        setOwnerToken(res.token);
         setIsAuthenticated(true);
         setPinError('');
         onShowToast('Selamat datang di Dimensi-Sinki, Owner 👑');
@@ -1093,20 +1093,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         onExitToPublic();
       }
     } catch {
-      if (pinVal === '1995' || pinVal === '241026') {
-        setOwnerToken('owner-session-1995');
-        setIsAuthenticated(true);
-        setPinError('');
-        onShowToast('Selamat datang di Dimensi-Sinki, Owner 👑');
-      } else {
-        const nextAttempt = attemptCount + 1;
-        setAttemptCount(nextAttempt);
-        setPinError('PIN Rahasia salah!');
-        setEnteredPin('');
-        if (nextAttempt >= 5) {
-          onShowToast('Akses ditolak! Mengalihkan ke halaman publik...');
-          onExitToPublic();
-        }
+      const nextAttempt = attemptCount + 1;
+      setAttemptCount(nextAttempt);
+      setPinError('PIN Rahasia salah atau koneksi bermasalah!');
+      setEnteredPin('');
+      if (nextAttempt >= 5) {
+        onShowToast('Akses ditolak! Mengalihkan ke halaman publik...');
+        onExitToPublic();
       }
     }
   };
