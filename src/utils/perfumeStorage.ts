@@ -14,10 +14,6 @@ export { COLLECTION_CATEGORIES };
 const PERFUMES_LOCAL_KEY = 'sinki_perfumes_catalog_v5';
 const PERFUMES_FILE_NAME = 'perfumes_catalog.json';
 const PERFUMES_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${PERFUMES_FILE_NAME}`;
-const SUPABASE_STORAGE_UPLOAD_URL =
-  'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/perfumes_catalog.json';
-const SUPABASE_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
 
 const DEFAULT_BY_ID = new Map<string, PerfumeItem>(PERFUMES_DATA.map((p) => [p.id, p]));
 const DEFAULT_BY_NAME = new Map<string, PerfumeItem>(
@@ -34,24 +30,24 @@ const VALID_COLLECTION_KEYS = new Set<string>([
 ]);
 
 /**
- * Menyinkronkan seluruh daftar parfum langsung ke Supabase Cloud Storage (sinki-media bucket).
- * Menjamin perubahan / penghapusan varian langsung tersimpan ke cloud pada static hosting & Cloudflare.
+ * Menyinkronkan seluruh daftar parfum melalui backend API yang aman.
+ * Menjamin perubahan / penghapusan varian tersimpan ke cloud tanpa mengekspos kredensial di frontend.
  */
 export const syncPerfumesDirectlyToCloud = async (list: PerfumeItem[]): Promise<boolean> => {
+  const token = getOwnerToken();
+  if (!token) return false;
   try {
-    const res = await fetch(SUPABASE_STORAGE_UPLOAD_URL, {
+    const res = await fetch('/api/owner/update-perfumes', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
-        'x-upsert': 'true',
-        'cache-control': 'no-cache, no-store, max-age=0',
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(list, null, 2),
+      body: JSON.stringify({ perfumes: list, token }),
     });
     return res.ok;
   } catch (err) {
-    console.warn('[Direct Cloud Sync Notice] Perfumes Catalog:', err);
+    console.warn('[Cloud Sync Notice] Perfumes Catalog:', err);
     return false;
   }
 };

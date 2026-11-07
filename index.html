@@ -1,6 +1,19 @@
 <!doctype html>
-<html lang="id" class="dark">
+<html lang="id" class="dark" data-sinki-theme="dew-jade">
   <head>
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('sinki_luxury_theme_v1');
+          if (t) {
+            var p = JSON.parse(t);
+            if (p && p.id) {
+              document.documentElement.setAttribute('data-sinki-theme', p.id);
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>SINKI Parfums</title>

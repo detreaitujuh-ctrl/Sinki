@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
@@ -12,22 +13,27 @@ const __dirname = path.dirname(__filename);
 
 // Shared GoogleGenAI Client (Server-side only with User-Agent header)
 let geminiAi: GoogleGenAI | null = null;
-const rawGeminiKey = (process.env.GEMINI_API_KEY || '').trim();
-if (rawGeminiKey && rawGeminiKey !== 'undefined' && rawGeminiKey !== 'null' && rawGeminiKey.length > 15) {
-  try {
-    geminiAi = new GoogleGenAI({
-      apiKey: rawGeminiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
+function getGeminiClient(): GoogleGenAI | null {
+  if (geminiAi) return geminiAi;
+  const rawGeminiKey = (process.env.GEMINI_API_KEY || '').trim();
+  if (rawGeminiKey && rawGeminiKey !== 'undefined' && rawGeminiKey !== 'null' && rawGeminiKey.length > 10) {
+    try {
+      geminiAi = new GoogleGenAI({
+        apiKey: rawGeminiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
         },
-      },
-    });
-    console.log('[Gemini AI] GoogleGenAI Engine berhasil diinisialisasi untuk MinSKI');
-  } catch (err) {
-    console.warn('[Gemini AI Notice] Inisialisasi GoogleGenAI dilewati:', err);
+      });
+      console.log('[Gemini AI] GoogleGenAI Engine berhasil diinisialisasi untuk MinSKI');
+    } catch (err) {
+      console.warn('[Gemini AI Notice] Inisialisasi GoogleGenAI dilewati:', err);
+    }
   }
+  return geminiAi;
 }
+getGeminiClient();
 
 const app = express();
 const PORT = 3000;
@@ -890,7 +896,8 @@ app.post('/api/minski/chat', async (req, res) => {
     }
 
     // 4. Lapisan Generative AI (Gemini 3.8 Flash) jika API Key Tersedia
-    if (geminiAi) {
+    const aiClient = getGeminiClient();
+    if (aiClient) {
       try {
         const catalogBrief = catalog.map((p) => ({
           name: p.name,
@@ -912,7 +919,7 @@ Tugasmu:
   "accords": "aroma utama"
 }`;
 
-        const geminiPromise = geminiAi.models.generateContent({
+        const geminiPromise = aiClient.models.generateContent({
           model: 'gemini-3.8-flash',
           contents: `Pertanyaan Pengguna: "${rawMessage}". Riwayat obrolan sebelumnya: ${JSON.stringify(history)}`,
           config: {
@@ -1562,6 +1569,55 @@ app.post('/api/owner/update-assets', async (req, res) => {
     data: updatedData,
   });
 });
+
+// POST upload hero video to Supabase storage by Owner
+app.post(
+  '/api/owner/upload-video',
+  express.raw({ type: ['video/*', 'application/octet-stream'], limit: '100mb' }),
+  async (req, res) => {
+    if (!isAuthorized(req)) {
+      return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+    }
+
+    const filename = (req.query.filename as string) || `hero_video_${Date.now()}.mp4`;
+    const cleanFilename = filename.split('/').pop()?.split('?')[0] || `hero_video_${Date.now()}.mp4`;
+    const contentType = (req.headers['content-type'] as string) || 'video/mp4';
+
+    try {
+      let buffer: Buffer;
+      if (Buffer.isBuffer(req.body)) {
+        buffer = req.body;
+      } else {
+        const chunks: Buffer[] = [];
+        for await (const chunk of req) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+        buffer = Buffer.concat(chunks);
+      }
+
+      if (buffer.length === 0) {
+        return res.status(400).json({ error: 'Data video kosong' });
+      }
+
+      const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).upload(cleanFilename, buffer, {
+        contentType,
+        upsert: true,
+      });
+
+      if (error) {
+        console.error('[Supabase Video Upload Error]:', error);
+        return res.status(500).json({ error: error.message });
+      }
+
+      const publicUrl = `https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/${cleanFilename}`;
+      console.log(`[Supabase Storage] Berhasil upload video baru: ${cleanFilename} (${buffer.length} bytes)`);
+      return res.json({ success: true, url: publicUrl, filename: cleanFilename });
+    } catch (err: any) {
+      console.error('[Server Video Upload Exception]:', err);
+      return res.status(500).json({ error: err?.message || 'Gagal memproses upload video' });
+    }
+  }
+);
 
 // POST delete asset / video file from Supabase storage
 app.post('/api/owner/delete-storage-file', async (req, res) => {

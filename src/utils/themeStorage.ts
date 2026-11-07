@@ -83,17 +83,12 @@ export const LUXURY_THEMES: LuxuryThemeOption[] = [
 ];
 
 export const DEFAULT_THEME: LuxuryThemeConfig = {
-  id: 'moonlight-silver',
+  id: 'dew-jade',
 };
 
 const THEME_LOCAL_KEY = 'sinki_luxury_theme_v1';
 const THEME_FILE_NAME = 'theme_config.json';
 const THEME_PUBLIC_URL = `${SUPABASE_STORAGE_BASE}${THEME_FILE_NAME}`;
-
-const SUPABASE_THEME_UPLOAD_URL =
-  'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/theme_config.json';
-const SUPABASE_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
 
 const LEGACY_THEME_MAP: Record<string, LuxuryThemeId> = {
   'forest-waterfall': 'warm-gold',
@@ -198,20 +193,20 @@ export const fetchThemeFromServer = async (): Promise<LuxuryThemeConfig> => {
 export const syncThemeDirectlyToCloud = async (
   config: LuxuryThemeConfig
 ): Promise<boolean> => {
+  const token = getOwnerToken();
+  if (!token) return false;
   try {
-    const res = await fetch(SUPABASE_THEME_UPLOAD_URL, {
+    const res = await fetch('/api/owner/update-theme', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
-        'x-upsert': 'true',
-        'cache-control': 'no-cache, no-store, max-age=0',
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(config, null, 2),
+      body: JSON.stringify({ theme: config, token }),
     });
     return res.ok;
   } catch (err) {
-    console.warn('[Direct Cloud Sync Notice] Theme:', err);
+    console.warn('[Cloud Sync Notice] Theme:', err);
     return false;
   }
 };
@@ -260,5 +255,5 @@ export const saveThemeToServer = async (
 };
 
 export const resetThemeToDefault = async (): Promise<LuxuryThemeConfig> => {
-  return await saveThemeToServer('moonlight-silver');
+  return await saveThemeToServer('dew-jade');
 };

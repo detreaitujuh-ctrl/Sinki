@@ -360,43 +360,30 @@ export const saveAssetToServer = async (
   }
 };
 
-const SUPABASE_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
-
 /**
- * Unggah aset gambar langsung ke Supabase Storage Cloud (sinki-media bucket).
- * Berfungsi di static hosting, Cloudflare Pages, maupun server Node.js.
+ * Unggah aset gambar melalui backend API yang aman (sinki-media bucket).
+ * Kredensial tidak pernah dikirim ke browser publik.
  */
 export const uploadAssetDirectlyToSupabase = async (
   storagePath: string,
   base64Data: string
 ): Promise<string | null> => {
+  const token = getOwnerToken();
+  if (!token) return null;
   try {
-    const parts = base64Data.split(';base64,');
-    const contentType = parts[0]?.replace('data:', '') || 'image/png';
-    const raw = window.atob(parts[1] || parts[0]);
-    const uInt8Array = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; ++i) {
-      uInt8Array[i] = raw.charCodeAt(i);
-    }
-    const blob = new Blob([uInt8Array], { type: contentType });
-
-    const uploadUrl = `https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/${storagePath}`;
-    const res = await fetch(uploadUrl, {
+    const res = await fetch('/api/owner/update-assets', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': contentType,
-        'x-upsert': 'true',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-      body: blob,
+      body: JSON.stringify({ assetPath: storagePath, data: base64Data, token }),
     });
-
     if (res.ok) {
       return `${SUPABASE_STORAGE_BASE}${storagePath}?v=${Date.now()}`;
     }
   } catch (err) {
-    console.warn('[Direct Supabase Asset Upload Notice]:', err);
+    console.warn('[Backend Asset Upload Notice]:', err);
   }
   return null;
 };
@@ -816,9 +803,9 @@ export const deleteFileFromSupabase = async (fileUrlOrPath: string): Promise<boo
 
     const token = getOwnerToken();
 
-    // 1. Coba hapus melalui server endpoint
+    // Hapus melalui server endpoint aman (tidak mengekspos service key di client)
     try {
-      await fetch('/api/owner/delete-storage-file', {
+      const res = await fetch('/api/owner/delete-storage-file', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -826,18 +813,7 @@ export const deleteFileFromSupabase = async (fileUrlOrPath: string): Promise<boo
         },
         body: JSON.stringify({ path: clean, token }),
       });
-    } catch {}
-
-    // 2. Direct Supabase Storage REST API DELETE (Bekerja langsung di frontend)
-    try {
-      await fetch(`https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prefixes: [clean, filename] }),
-      });
+      return res.ok;
     } catch {}
 
     return true;
@@ -979,7 +955,8 @@ export const extractVideoFrame = (
 };
 
 /**
- * Unggah video langsung ke Supabase Storage (sinki-media/hero_video.mp4).
+ * Unggah video melalui backend API yang aman (sinki-media bucket).
+ * Kredensial tidak pernah dikirim ke browser publik.
  * Otomatis menghapus video lama dari Supabase sebelum mengunggah video baru (Zero Waste Storage).
  */
 export const uploadVideoDirectlyToSupabase = async (
@@ -988,31 +965,31 @@ export const uploadVideoDirectlyToSupabase = async (
   contentType = 'video/mp4',
   oldVideoUrlOrPath?: string | null
 ): Promise<string | null> => {
+  const token = getOwnerToken();
+  if (!token) return null;
   try {
     const ext = contentType.includes('webm') ? 'webm' : contentType.includes('mov') ? 'mov' : 'mp4';
-    // Gunakan unique filename agar tidak pernah menimpa atau terhapus bersamaan dengan video lama
     const uniquePath = `hero_video_${Date.now()}.${ext}`;
 
-    const uploadUrl = `https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/${uniquePath}`;
-    const res = await fetch(uploadUrl, {
+    const res = await fetch(`/api/owner/upload-video?filename=${encodeURIComponent(uniquePath)}`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': contentType,
-        'x-upsert': 'true',
       },
       body: fileOrBlob,
     });
 
     if (res.ok) {
-      // Hapus video lama HANYA setelah video baru berhasil tersimpan di Supabase
+      const data = await res.json().catch(() => null);
+      const url = data?.url || `${SUPABASE_STORAGE_BASE}${uniquePath}`;
       if (oldVideoUrlOrPath) {
         deleteFileFromSupabase(oldVideoUrlOrPath).catch(() => {});
       }
-      return `${SUPABASE_STORAGE_BASE}${uniquePath}`;
+      return url;
     }
   } catch (err) {
-    console.warn('[Direct Supabase Video Upload Notice]:', err);
+    console.warn('[Backend Video Upload Notice]:', err);
   }
   return null;
 };

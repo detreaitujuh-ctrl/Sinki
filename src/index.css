@@ -16,7 +16,7 @@
   --leading-heading: 1.22;
   --leading-body: 1.48;
 
-  /* Luxury Forest Waterfall Surface & High-Luminance Crystal Tokens (Default #1: Moonlight Silver) */
+  /* Luxury Forest Waterfall Surface & High-Luminance Crystal Tokens (Default: Luminous Dew Jade) */
   --arch-canvas: #070d0a;
   --arch-canvas-top: #0b1510;
   --arch-canvas-mid: #08100c;
@@ -38,6 +38,39 @@
   --arch-modal-top: rgba(11, 18, 14, 0.92);
   --arch-modal-bot: rgba(6, 11, 8, 0.96);
 
+  --arch-gold: #7CEAC0;
+  --arch-gold-bright: #AEF7DA;
+  --arch-gold-soft: #E8FFF5;
+  --arch-gold-deep: #3DA880;
+  --arch-text-accent: #7CEAC0;
+  --arch-text-accent-bright: #AEF7DA;
+  --arch-text-accent-soft: #DCFFF0;
+  --arch-btn-gradient: linear-gradient(135deg, #D2FEEE 0%, #82EEC4 52%, #42B087 100%);
+  --arch-title-gradient: linear-gradient(115deg, #ECFFF7 0%, #96F2CE 52%, #46B48B 100%);
+
+  --arch-border-default: rgba(138, 242, 202, 0.84);
+  --arch-border-subtle: rgba(138, 242, 202, 0.56);
+  --arch-border-faint: rgba(138, 242, 202, 0.34);
+  --arch-border-hover: rgba(198, 253, 232, 0.98);
+  --arch-border-modal: rgba(138, 242, 202, 0.86);
+
+  --arch-glow-tl: rgba(134, 244, 200, 0.35);
+  --arch-glow-tl-mid: rgba(124, 234, 192, 0.11);
+  --arch-glow-br: rgba(96, 218, 172, 0.27);
+  --arch-glow-hover-tl: rgba(174, 250, 220, 0.44);
+  --arch-glow-hover-br: rgba(112, 228, 184, 0.35);
+  --arch-glow-sel-tl: rgba(190, 253, 228, 0.48);
+  --arch-glow-sel-br: rgba(122, 234, 190, 0.38);
+  --arch-specular-top: rgba(226, 255, 243, 0.56);
+  --arch-rim-glint: #F2FFFA;
+  --arch-smoke-canvas-opacity: 0.20;
+  --arch-smoke-card-opacity: 0.14;
+  --arch-badge-bg: rgba(134, 240, 200, 0.22);
+  --arch-badge-bg-soft: rgba(134, 240, 200, 0.14);
+}
+
+/* 1. MOONLIGHT SILVER (Perak Kristal Es - Signature Moonlight) */
+html[data-sinki-theme="moonlight-silver"] {
   --arch-gold: #D6E4F2;
   --arch-gold-bright: #EFF6FC;
   --arch-gold-soft: #FFFFFF;

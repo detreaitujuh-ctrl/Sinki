@@ -135,26 +135,25 @@ export const fetchTickerFromServer = async (): Promise<TickerConfig> => {
   return getStoredTicker();
 };
 
-const SUPABASE_STORAGE_UPLOAD_URL =
-  'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/ticker_config.json';
-const SUPABASE_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
-
+/**
+ * Menyinkronkan teks berjalan (ticker) melalui backend API yang aman.
+ * Menjamin perubahan ticker tersimpan ke cloud tanpa mengekspos kredensial di frontend.
+ */
 export const syncTickerDirectlyToCloud = async (config: TickerConfig): Promise<boolean> => {
+  const token = getOwnerToken();
+  if (!token) return false;
   try {
-    const res = await fetch(SUPABASE_STORAGE_UPLOAD_URL, {
+    const res = await fetch('/api/owner/update-ticker', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
-        'x-upsert': 'true',
-        'cache-control': 'no-cache, no-store, max-age=0',
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(config, null, 2),
+      body: JSON.stringify({ ticker: config, token }),
     });
     return res.ok;
   } catch (err) {
-    console.warn('[Direct Cloud Sync Notice] Ticker:', err);
+    console.warn('[Cloud Sync Notice] Ticker:', err);
     return false;
   }
 };

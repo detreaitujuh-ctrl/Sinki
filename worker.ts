@@ -7,6 +7,7 @@ export interface Env {
   SUPABASE_BUCKET?: string;
   OWNER_PIN?: string;
   SESSION_SECRET?: string;
+  GEMINI_API_KEY?: string;
 }
 
 const DEFAULT_SUPABASE_URL = 'https://tsxclttisxnmvdkwziqx.supabase.co';
@@ -29,6 +30,212 @@ function containsInappropriateContent(text: string): boolean {
     const regex = new RegExp(`(^|\\s|[.,!?;])${word}($|\\s|[.,!?;])`, 'i');
     return regex.test(lower);
   });
+}
+
+const DEFAULT_MASTER_FLACON = '/assets/sinki-master-flacon-transparent.png';
+
+const MINSKI_PROFANITY_WORDS_WORKER = [
+  'anjing', 'babi', 'bangsat', 'goblok', 'kontol', 'memek', 'bajingan',
+  'tai', 'taik', 'penipu', 'asu', 'kampret', 'pantek', 'tolol', 'itil',
+  'jancuk', 'pepek', 'bego', 'idiot', 'perek', 'lonte', 'puki', 'ngentot',
+  'fuck', 'bitch', 'asshole', 'bastard', 'shit',
+];
+
+function checkMinskiProfanityWorker(text: string): boolean {
+  const lower = text.toLowerCase();
+  return MINSKI_PROFANITY_WORDS_WORKER.some((word) => {
+    const regex = new RegExp(`(^|\\s|[.,!?;])${word}($|\\s|[.,!?;])`, 'i');
+    return regex.test(lower);
+  });
+}
+
+const MINSKI_OFF_TOPIC_WORDS_WORKER = [
+  'presiden', 'gubernur', 'politik', 'partai', 'pemilu', 'menteri',
+  'coding', 'javascript', 'python', 'html', 'program', 'ngoding',
+  'matematika', 'fisika', 'kimia', 'rumus', 'hitung', '5+5',
+  'resep', 'masak', 'nasi goreng', 'bikin kue', 'makanan', 'restoran',
+  'cuaca', 'hujan', 'gempa', 'berita', 'saham', 'crypto',
+  'pacar kamu', 'kamu siapa', 'kamu robot', 'apakah kamu ai',
+];
+
+const PERFUME_CONTEXT_WORDS_WORKER = [
+  'parfum', 'parfumnya', 'wangi', 'aroma', 'bau', 'segar', 'fresh', 'manis', 'sweet',
+  'hangat', 'amber', 'woody', 'kayu', 'oud', 'vanilla', 'vanila', 'citrus', 'jeruk',
+  'kencan', 'kantor', 'kerja', 'ngantor', 'semprot', 'botol', 'tahan lama', 'awet',
+  'pria', 'cowok', 'wanita', 'cewek', 'unisex', 'rekomendasi', 'bestseller',
+];
+
+function checkMinskiOffTopicWorker(text: string): boolean {
+  const lower = text.toLowerCase();
+  const hasPerfumeWord = PERFUME_CONTEXT_WORDS_WORKER.some((w) => lower.includes(w));
+  if (hasPerfumeWord) return false;
+  return MINSKI_OFF_TOPIC_WORDS_WORKER.some((w) => lower.includes(w));
+}
+
+function isOpeningInquiryWorker(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+
+  const scentCues = [
+    'segar', 'fresh', 'dingin', 'laut', 'pantai', 'citrus', 'lemon', 'bergamot', 'jeruk',
+    'manis', 'vanila', 'vanilla', 'sweet', 'kopi', 'coffee', 'cokelat', 'gourmand', 'creamy',
+    'hangat', 'amber', 'woody', 'kayu', 'oud', 'gaharu', 'rempah', 'spicy', 'cedar',
+    'bunga', 'floral', 'rose', 'mawar', 'jasmine', 'melati', 'powdery', 'bedak', 'sabun', 'clean',
+    'kencan', 'pacar', 'malam', 'dinner', 'romantis', 'intim',
+    'kantor', 'kerja', 'ngantor', 'harian', 'kuliah', 'ruangan ac', 'meeting',
+    'olahraga', 'gym', 'panas', 'siang', 'tahan lama', 'awet', 'proyeksi',
+    'pria', 'cowok', 'wanita', 'cewek',
+    'monaco', 'dunhill', 'bvlgari', 'sauvage', 'aventus', 'black opium', 'scandal', 'baccarat',
+    'eros', 'aqua', 'dior', 'chanel', 'creed', 'ysl', 'zara', 'jo malone', 'tom ford', 'gucci',
+    'bubble gum', 'nagita', 'bacarat', 'omnia', 'twilly', 'si armani', 'bombshell'
+  ];
+
+  if (scentCues.some((w) => lower.includes(w))) return false;
+
+  const inquiryWords = [
+    'halo', 'hai', 'hei', 'pagi', 'siang', 'sore', 'malam', 'assalam',
+    'nanya', 'tanya', 'bantu', 'bingung', 'pilihan', 'apa ya', 'rekomendasi', 'rekomendasiin',
+    'ada apa', 'cari parfum', 'mau cari', 'mau parfum', 'konsul', 'ngobrol',
+    'kamu siapa', 'bisa apa', 'tes', 'test', 'minski'
+  ];
+
+  return lower.length <= 25 || inquiryWords.some((w) => lower.includes(w));
+}
+
+function resolveWorkerRecommendation(
+  query: string,
+  catalog: any[],
+  top11Photos: Record<string, string>,
+  customMasterFlacon?: string | null
+) {
+  const text = query.toLowerCase();
+  const pool = catalog.filter((p: any) => p.isActive !== false);
+  const targetList = pool.length > 0 ? pool : catalog;
+
+  let matchedPerfume = targetList.find((p: any) => {
+    const nameLower = (p.name || '').toLowerCase();
+    return text.includes(nameLower);
+  });
+
+  if (!matchedPerfume) {
+    matchedPerfume = targetList.find((p: any) => {
+      const nameLower = (p.name || '').toLowerCase();
+      const parts = nameLower.split(' ').filter((part: string) => part.length >= 5 && !['parfum', 'eau', 'pour', 'homme', 'femme'].includes(part));
+      return parts.some((part: string) => text.includes(part));
+    });
+  }
+
+  if (!matchedPerfume) {
+    const keywordWeights: Record<string, string[]> = {
+      citrus_fresh: ['segar', 'fresh', 'dingin', 'citrus', 'lemon', 'bergamot', 'jeruk', 'laut', 'pantai', 'aquatic', 'olahraga', 'gym', 'panas', 'siang'],
+      vanilla_sweet: ['manis', 'vanila', 'vanilla', 'sweet', 'kopi', 'coffee', 'gourmand', 'cokelat', 'creamy', 'enak', 'kue', 'caramel', 'malam', 'kencan'],
+      woody_amber: ['hangat', 'kayu', 'woody', 'amber', 'oud', 'gaharu', 'rempah', 'spicy', 'cedar', 'karisma', 'wibawa', 'mewah', 'bos', 'pemimpin', 'rapi'],
+      floral_powdery: ['bunga', 'floral', 'rose', 'mawar', 'jasmine', 'melati', 'lembut', 'bedak', 'powdery', 'bersih', 'sabun', 'clean', 'anggun', 'feminin'],
+    };
+
+    let maxScore = -9999;
+    targetList.forEach((item: any) => {
+      let score = 50;
+      const haystack = [
+        item.name,
+        item.tagline || '',
+        item.usageRecommendation || '',
+        Array.isArray(item.accords) ? item.accords.join(' ') : '',
+        item.categoryLabel || item.category || '',
+      ].join(' ').toLowerCase();
+
+      Object.entries(keywordWeights).forEach(([, words]) => {
+        if (words.some((w) => text.includes(w))) {
+          const matchedCount = words.filter((w) => haystack.includes(w)).length;
+          score += matchedCount * 15;
+        }
+      });
+
+      if (text.includes('pria') || text.includes('cowok')) {
+        if (item.category === 'men') score += 35;
+        if (item.category === 'women') score -= 30;
+      } else if (text.includes('wanita') || text.includes('cewek')) {
+        if (item.category === 'women') score += 35;
+        if (item.category === 'men') score -= 30;
+      }
+
+      if (score > maxScore) {
+        maxScore = score;
+        matchedPerfume = item;
+      }
+    });
+  }
+
+  const bestPerfume = matchedPerfume || targetList[0] || { name: 'Mykonos Monaco Royale', pricePerMl: 3000 };
+
+  let seductiveScript = '';
+  if (
+    text.includes('kencan') ||
+    text.includes('pacar') ||
+    text.includes('malam') ||
+    text.includes('manis') ||
+    text.includes('vanila') ||
+    (bestPerfume.name || '').toLowerCase().includes('monaco')
+  ) {
+    seductiveScript = `Begitu semprotan ${bestPerfume.name} menyentuh kulitmu, kehangatan manis mewahnya menciptakan jejak aroma intim yang bikin si dia betah berdekatan. Inilah racikan rahasiamu untuk membuat setiap tatapan tertuju padamu.`;
+  } else if (
+    text.includes('kantor') ||
+    text.includes('kerja') ||
+    text.includes('rapi') ||
+    text.includes('wibawa') ||
+    (bestPerfume.name || '').toLowerCase().includes('dunhill')
+  ) {
+    seductiveScript = `Semprotan berkelas ${bestPerfume.name} seketika memancarkan aura orang sukses yang rapi, percaya diri, dan disegani. Seharian di ruangan ber-AC, aromanya membuat semua orang menaruh hormat pada kehadiranmu.`;
+  } else if (
+    text.includes('segar') ||
+    text.includes('dingin') ||
+    text.includes('laut') ||
+    text.includes('fresh') ||
+    (bestPerfume.name || '').toLowerCase().includes('aqua')
+  ) {
+    seductiveScript = `Sensasi sejuk murni ${bestPerfume.name} membungkus tubuhmu dengan kesegaran mewah yang bikin pikiran tenang dan bergairah seharian. Siapa pun yang berpapasan pasti menoleh mencari sumber wangimu.`;
+  } else {
+    seductiveScript = `Sentuhan elegan ${bestPerfume.name} menyatu sempurna dengan auramu, memancarkan karakter orang berkelas yang sulit dilupakan. Sekali terhirup, aromanya meninggalkan rindu mendalam bagi siapa pun di dekatmu.`;
+  }
+
+  let photo = customMasterFlacon || DEFAULT_MASTER_FLACON;
+  const bestNameLower = (bestPerfume.name || '').toLowerCase();
+  for (const [k, v] of Object.entries(top11Photos || {})) {
+    if (v && typeof v === 'string' && (k.toLowerCase().includes(bestNameLower) || bestNameLower.includes(k.toLowerCase()))) {
+      photo = v;
+      break;
+    }
+  }
+
+  let audioKey: string | null = null;
+  if (bestNameLower.includes('monaco') || text.includes('kencan')) {
+    audioKey = 'preset_kencan';
+  } else if (bestNameLower.includes('dunhill') || text.includes('kerja')) {
+    audioKey = 'preset_kerja';
+  } else if (bestNameLower.includes('aqua') || text.includes('segar')) {
+    audioKey = 'preset_segar';
+  }
+
+  const accordsText = Array.isArray(bestPerfume.accords) && bestPerfume.accords.length > 0
+    ? bestPerfume.accords.join(' · ')
+    : 'Amber · Woods · Fresh Clean';
+
+  return {
+    reply: seductiveScript,
+    audioKey,
+    recommendedPerfume: {
+      perfumeName: bestPerfume.name,
+      categoryLabel: bestPerfume.categoryLabel || 'SINKI Luxury Signature',
+      matchScore: 98,
+      hypnoticScript: seductiveScript,
+      shortVoiceSpeech: seductiveScript,
+      accords: accordsText,
+      longevity: '12+ Jam',
+      sillage: 'Proyeksi 2 Meter',
+      photoUrl: photo,
+      pricePerMl: bestPerfume.pricePerMl || 3000,
+    },
+    isRecommendationReady: true,
+  };
 }
 
 // Per-isolate rate limiting for brute-force & spam protection
@@ -429,16 +636,225 @@ export default {
         'unknown';
 
       let body: any = {};
+      let rawVideoBuffer: ArrayBuffer | null = null;
       if (request.method === 'POST') {
-        try {
-          const rawText = await request.text();
-          if (rawText.length > MAX_PAYLOAD_BYTES) {
-            return jsonResponse({ error: 'Ukuran payload melebihi batas maksimum 10MB.' }, 413);
+        if (pathname === '/api/owner/upload-video') {
+          rawVideoBuffer = await request.arrayBuffer();
+        } else {
+          try {
+            const rawText = await request.text();
+            if (rawText.length > MAX_PAYLOAD_BYTES) {
+              return jsonResponse({ error: 'Ukuran payload melebihi batas maksimum 10MB.' }, 413);
+            }
+            body = rawText ? JSON.parse(rawText) : {};
+          } catch {
+            body = {};
           }
-          body = rawText ? JSON.parse(rawText) : {};
-        } catch {
-          body = {};
         }
+      }
+
+      // MinSKI Voice (Google Neural Indonesian TTS Proxy)
+      if (pathname === '/api/minski/tts' && request.method === 'GET') {
+        const rawText = String(url.searchParams.get('text') || '').trim();
+        if (!rawText) return new Response('Text parameter is required', { status: 400 });
+
+        const targetUrl =
+          'https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=' +
+          encodeURIComponent(rawText.slice(0, 200));
+
+        try {
+          const upstreamRes = await fetch(targetUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+          });
+          if (upstreamRes.ok) {
+            const audioBuffer = await upstreamRes.arrayBuffer();
+            return new Response(audioBuffer, {
+              headers: {
+                'Content-Type': 'audio/mpeg',
+                'Cache-Control': 'public, max-age=86400',
+                ...getSecurityAndCorsHeaders(),
+              },
+            });
+          }
+        } catch (err) {
+          console.warn('Worker TTS fetch error:', err);
+        }
+        return new Response('Failed to synthesize speech', { status: 502 });
+      }
+
+      // MinSKI Hybrid AI Fragrance Consultant (Gemini 3.8 Flash + Guardrail)
+      if (pathname === '/api/minski/chat' && request.method === 'POST') {
+        const rawMessage = String(body?.message || '').trim();
+        if (!rawMessage) {
+          return jsonResponse({ error: 'Pesan wajib diisi' }, 400);
+        }
+
+        const history = Array.isArray(body?.history) ? body.history : [];
+        const [catalog, assets] = await Promise.all([
+          readStorageJson<any[]>(env, 'perfumes_catalog.json', []),
+          readStorageJson<any>(env, 'assets.json', {}),
+        ]);
+        const top11Photos = assets?.top11 || {};
+
+        // 1. Sensor Bahasa Kasar
+        if (checkMinskiProfanityWorker(rawMessage)) {
+          return jsonResponse({
+            reply:
+              'Waduh, jangan galak-galak dong Kak... MinSKI kan pengen bantu Kakak biar makin wangi dan disayang semua orang. Yuk, ceritain wangi apa yang lagi Kakak cari hari ini dengan santun ya!',
+            audioKey: 'profanity',
+            recommendedPerfume: null,
+            isRecommendationReady: false,
+          });
+        }
+
+        // 2. Pertanyaan di Luar Konteks Parfum
+        if (checkMinskiOffTopicWorker(rawMessage)) {
+          return jsonResponse({
+            reply:
+              'Hehe, aku kan botol parfum Kak, bukan guru les! Tapi kalau soal bikin Kakak wangi seharian dan auranya makin berkarisma, serahin ke MinSKI deh! Kakak lebih suka aroma yang dingin segar atau manis mewah nih?',
+            audioKey: 'offtopic',
+            recommendedPerfume: null,
+            isRecommendationReady: false,
+          });
+        }
+
+        // 3. Deteksi Multi-Turn: Jika Pengguna Baru Bertanya / Belum Memberikan Preferensi Aroma
+        if (isOpeningInquiryWorker(rawMessage)) {
+          const lower = rawMessage.toLowerCase();
+          let inquiryReply =
+            'Hai Kak! MinSKI seneng banget bisa ngobrol sama Kakak. Biar racikan aromanya bener-bener pas di hati, Kakak lagi cari wangi yang kesannya seperti apa nih? Misalnya yang segar dingin bikin semangat, manis vanila yang bikin kangen, atau yang hangat mewah berkarisma?';
+
+          if (lower.includes('nanya') || lower.includes('tanya')) {
+            inquiryReply =
+              'Boleh banget dong Kak! MinSKI siap dengerin curhat aroma impian Kakak. Kakak rencananya pakai parfum ini untuk momen apa nih—buat ngantor seharian, santai nongkrong, atau kencan spesial bareng si dia?';
+          } else if (lower.includes('bingung') || lower.includes('rekomendasi')) {
+            inquiryReply =
+              'Tenang Kak, serahkan urusan wangi ke MinSKI! Biar pas sama karakter Kakak, Kakak lebih suka tipe wangi yang bikin orang langsung segar pas berpapasan, atau wangi manis lembut yang bikin orang betah nempel lama-lama?';
+          }
+
+          return jsonResponse({
+            reply: inquiryReply,
+            audioKey: null,
+            recommendedPerfume: null,
+            isRecommendationReady: false,
+          });
+        }
+
+        // 4. Lapisan Generative AI (Gemini 3.8 Flash via REST) jika API Key Tersedia
+        const geminiKey = (env.GEMINI_API_KEY || '').trim();
+        if (geminiKey && geminiKey.length > 10) {
+          try {
+            const catalogBrief = (catalog || []).map((p: any) => ({
+              name: p.name,
+              category: p.categoryLabel || p.category,
+              accords: Array.isArray(p.accords) ? p.accords.join(', ') : '',
+              tagline: p.tagline || '',
+            }));
+
+            const systemPrompt = `Kamu adalah MinSKI (Admin SINKI), konsultan aroma wewangian mewah Atelier SINKI Parfums Indonesia yang bertutur kata ramah, lembut, elegan, dan merayu.
+Tugasmu:
+1. Analisa keinginan aroma pengguna dan riwayat obrolan.
+2. Pilih SATU parfum yang PALING COCOK dan HANYA berasal dari katalog SINKI berikut: ${JSON.stringify(catalogBrief)}.
+   DILARANG KERAS mengarang varian yang tidak ada di daftar!
+3. Susun naskah rayuan ('seductiveScript') persis 2 KALIMAT EMAS yang puitis, elegan, merayu, dan meyakinkan bahwa parfum ini akan membuat si pemakai memesona dan tak terlupakan.
+4. Kembalikan HANYA JSON murni tanpa markdown dengan format:
+{
+  "selectedPerfumeName": "nama persis dari katalog",
+  "seductiveScript": "2 kalimat rayuan elegan",
+  "accords": "aroma utama"
+}`;
+
+            const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`;
+            const geminiRes = await fetch(geminiApiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'aistudio-build',
+              },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [
+                      {
+                        text: `Pertanyaan Pengguna: "${rawMessage}". Riwayat obrolan sebelumnya: ${JSON.stringify(history)}`,
+                      },
+                    ],
+                  },
+                ],
+                systemInstruction: {
+                  parts: [{ text: systemPrompt }],
+                },
+                generationConfig: {
+                  responseMimeType: 'application/json',
+                },
+              }),
+              signal: AbortSignal.timeout(4500),
+            });
+
+            if (geminiRes.ok) {
+              const geminiJson: any = await geminiRes.json();
+              const textResponse = geminiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+              const parsed = JSON.parse(textResponse?.trim() || '{}');
+
+              if (parsed.selectedPerfumeName && parsed.seductiveScript) {
+                const matchedItem = (catalog || []).find(
+                  (p: any) => (p.name || '').toLowerCase() === parsed.selectedPerfumeName.toLowerCase()
+                );
+
+                if (matchedItem) {
+                  let photo = assets?.masterFlacon || DEFAULT_MASTER_FLACON;
+                  const nameLower = (matchedItem.name || '').toLowerCase();
+                  for (const [k, v] of Object.entries(top11Photos)) {
+                    if (v && typeof v === 'string' && (k.toLowerCase().includes(nameLower) || nameLower.includes(k.toLowerCase()))) {
+                      photo = v;
+                      break;
+                    }
+                  }
+
+                  let audioKey: string | null = null;
+                  if (nameLower.includes('monaco') || rawMessage.toLowerCase().includes('kencan')) {
+                    audioKey = 'preset_kencan';
+                  } else if (nameLower.includes('dunhill') || rawMessage.toLowerCase().includes('kerja')) {
+                    audioKey = 'preset_kerja';
+                  } else if (nameLower.includes('aqua') || rawMessage.toLowerCase().includes('segar')) {
+                    audioKey = 'preset_segar';
+                  }
+
+                  return jsonResponse({
+                    reply: parsed.seductiveScript,
+                    audioKey,
+                    recommendedPerfume: {
+                      perfumeName: matchedItem.name,
+                      categoryLabel: matchedItem.categoryLabel || 'SINKI Luxury Signature',
+                      matchScore: 99,
+                      hypnoticScript: parsed.seductiveScript,
+                      shortVoiceSpeech: parsed.seductiveScript,
+                      accords: parsed.accords || (matchedItem.accords ? matchedItem.accords.join(' · ') : 'Amber · Woods'),
+                      longevity: '12+ Jam',
+                      sillage: 'Proyeksi 2 Meter',
+                      photoUrl: photo,
+                      pricePerMl: matchedItem.pricePerMl || 3000,
+                    },
+                    isRecommendationReady: true,
+                  });
+                }
+              }
+            }
+          } catch (geminiErr) {
+            console.warn('[Worker Gemini AI Fallback Notice]:', geminiErr);
+          }
+        }
+
+        // 5. Lapisan Mesin Deterministik SINKI (Zero-Hallucination & Fail-Safe)
+        const fallbackResult = resolveWorkerRecommendation(
+          rawMessage,
+          catalog || [],
+          top11Photos,
+          assets?.masterFlacon
+        );
+
+        return jsonResponse(fallbackResult);
       }
 
       // 1. Short URL
@@ -781,6 +1197,47 @@ export default {
         return jsonResponse({ success: true, message: 'Foto SINKI & Pengaturan Video Hero berhasil disimpan!', data: updatedData });
       }
 
+      if (pathname === '/api/owner/upload-video' && request.method === 'POST') {
+        const authHeader = request.headers.get('Authorization') || '';
+        const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+        const pin = request.headers.get('x-owner-pin') || '';
+        const currentPin = await getStoredOwnerPin(env);
+        const authorized = (token && token.length >= 8) || (pin && pin === currentPin);
+        if (!authorized) {
+          return jsonResponse({ error: 'Akses ditolak: Sesi Pemilik tidak valid!' }, 403);
+        }
+
+        const filename = url.searchParams.get('filename') || `hero_video_${Date.now()}.mp4`;
+        const cleanFilename = filename.split('/').pop()?.split('?')[0] || `hero_video_${Date.now()}.mp4`;
+        const contentType = request.headers.get('Content-Type') || 'video/mp4';
+
+        if (!rawVideoBuffer || rawVideoBuffer.byteLength === 0) {
+          return jsonResponse({ error: 'Data video kosong' }, 400);
+        }
+
+        const storageUrl = `${env.SUPABASE_URL || 'https://tsxclttisxnmvdkwziqx.supabase.co'}/storage/v1/object/sinki-media/${cleanFilename}`;
+        const uploadRes = await fetch(storageUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${env.SUPABASE_KEY}`,
+            'Content-Type': contentType,
+            'x-upsert': 'true',
+          },
+          body: rawVideoBuffer,
+        });
+
+        if (!uploadRes.ok) {
+          const errText = await uploadRes.text();
+          return jsonResponse({ error: `Gagal mengunggah video ke cloud: ${errText}` }, uploadRes.status);
+        }
+
+        return jsonResponse({
+          success: true,
+          url: `https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/${cleanFilename}`,
+          filename: cleanFilename,
+        });
+      }
+
       if (pathname === '/api/owner/delete-storage-file' && request.method === 'POST') {
         if (!(await isAuthorizedRequest(request, body, env))) {
           return jsonResponse({ error: 'Akses ditolak: Sesi Pemilik tidak valid!' }, 403);
@@ -1118,6 +1575,73 @@ export default {
         const saved = await writeStorageJson(env, 'analytics.json', zeroData);
         if (!saved.ok) return jsonResponse({ error: saved.error }, 500);
         return jsonResponse({ success: true, message: 'Data analitik berhasil di-reset ke 0', analytics: zeroData });
+      }
+
+      // 12. Theme Configuration
+      if (pathname === '/api/theme' && request.method === 'GET') {
+        const theme = await readStorageJson<any>(env, 'theme_config.json', { id: 'dew-jade' });
+        return jsonResponse(theme?.id ? theme : { id: 'dew-jade' });
+      }
+
+      if (pathname === '/api/owner/update-theme' && request.method === 'POST') {
+        if (!(await isAuthorizedRequest(request, body, env))) {
+          return jsonResponse({ error: 'Akses ditolak: Sesi Pemilik tidak valid!' }, 403);
+        }
+        const rawTheme = body?.theme || body;
+        const themeId = typeof rawTheme?.id === 'string' ? rawTheme.id : 'dew-jade';
+        const toSave = { id: themeId, updatedAt: new Date().toISOString() };
+        const saved = await writeStorageJson(env, 'theme_config.json', toSave);
+        if (!saved.ok) return jsonResponse({ error: saved.error }, 500);
+        return jsonResponse({ success: true, theme: toSave });
+      }
+
+      // 13. Sales Records (Dimensi Kasir)
+      if (pathname === '/api/sales' && request.method === 'GET') {
+        const sales = await readStorageJson<any[]>(env, 'sales_records.json', []);
+        return jsonResponse(Array.isArray(sales) ? sales : []);
+      }
+
+      if (pathname === '/api/owner/record-sale' && request.method === 'POST') {
+        if (!(await isAuthorizedRequest(request, body, env))) {
+          return jsonResponse({ error: 'Akses ditolak: Sesi Pemilik tidak valid!' }, 403);
+        }
+        const sale = body?.sale;
+        if (!sale || typeof sale !== 'object' || !sale.perfumeName) {
+          return jsonResponse({ error: 'Data transaksi penjualan tidak valid!' }, 400);
+        }
+        const currentSales = await readStorageJson<any[]>(env, 'sales_records.json', []);
+        const newSale = {
+          ...sale,
+          id: sale.id || `sale-${Date.now()}`,
+          date: sale.date || new Date().toISOString(),
+        };
+        const updated = [newSale, ...(Array.isArray(currentSales) ? currentSales : [])];
+        const saved = await writeStorageJson(env, 'sales_records.json', updated);
+        if (!saved.ok) return jsonResponse({ error: saved.error }, 500);
+        return jsonResponse({
+          success: true,
+          message: `Penjualan ${newSale.perfumeName} (${newSale.volumeMl}ml) berhasil dicatat!`,
+          sales: updated,
+        });
+      }
+
+      if (pathname === '/api/owner/delete-sale' && request.method === 'POST') {
+        if (!(await isAuthorizedRequest(request, body, env))) {
+          return jsonResponse({ error: 'Akses ditolak: Sesi Pemilik tidak valid!' }, 403);
+        }
+        const saleId = body?.id;
+        if (!saleId) {
+          return jsonResponse({ error: 'ID transaksi wajib disertakan!' }, 400);
+        }
+        const currentSales = await readStorageJson<any[]>(env, 'sales_records.json', []);
+        const updated = (Array.isArray(currentSales) ? currentSales : []).filter((s: any) => s.id !== saleId);
+        const saved = await writeStorageJson(env, 'sales_records.json', updated);
+        if (!saved.ok) return jsonResponse({ error: saved.error }, 500);
+        return jsonResponse({
+          success: true,
+          message: 'Catatan transaksi penjualan berhasil dihapus!',
+          sales: updated,
+        });
       }
 
       return jsonResponse({ error: 'Endpoint API tidak ditemukan.' }, 404);

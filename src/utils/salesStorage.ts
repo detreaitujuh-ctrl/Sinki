@@ -57,8 +57,6 @@ export interface SaleRecord {
 
 const SALES_STORAGE_KEY = 'sinki_sales_records_v1';
 const SUPABASE_STORAGE_BASE = 'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/public/sinki-media/';
-const SUPABASE_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
 
 /**
  * Mendeteksi kelompok harga dari suatu varian parfum
@@ -213,21 +211,6 @@ export async function recordSaleToServer(
     console.warn('Notice syncing sale to server:', err);
   }
 
-  // Direct Supabase Storage Cloud Backup
-  try {
-    await fetch(`https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/sales_records.json`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json',
-        'x-upsert': 'true',
-      },
-      body: JSON.stringify(updated, null, 2),
-    });
-  } catch (syncErr) {
-    console.warn('Notice syncing sales to Supabase cloud:', syncErr);
-  }
-
   return { success: true, sales: updated };
 }
 
@@ -264,19 +247,6 @@ export async function deleteSaleFromServer(
   } catch (err) {
     console.warn('Notice deleting sale on server:', err);
   }
-
-  // Sync update ke Supabase Storage
-  try {
-    await fetch(`https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/sales_records.json`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json',
-        'x-upsert': 'true',
-      },
-      body: JSON.stringify(updated, null, 2),
-    });
-  } catch {}
 
   return { success: true, sales: updated };
 }

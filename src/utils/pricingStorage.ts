@@ -1,3 +1,5 @@
+import { getOwnerToken } from './assetStorage';
+
 // Utility to manage, persist, and calculate perfume pricing configuration
 
 export interface PricingConfig {
@@ -41,26 +43,25 @@ export const getStoredPricing = (): PricingConfig => {
   return DEFAULT_PRICING;
 };
 
-const SUPABASE_STORAGE_UPLOAD_URL =
-  'https://tsxclttisxnmvdkwziqx.supabase.co/storage/v1/object/sinki-media/pricing_config.json';
-const SUPABASE_SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzeGNsdHRpc3hubXZka3d6aXF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTUyNTQxMiwiZXhwIjoyMTA3MTAxNDEyfQ.f-nMns4K9XMWMeeTO9PTFADoM77IXVtsAlEfvQg-Zfo';
-
+/**
+ * Menyinkronkan konfigurasi harga melalui backend API yang aman.
+ * Menjamin perubahan harga tersimpan ke cloud tanpa mengekspos kredensial di frontend.
+ */
 export const syncPricingDirectlyToCloud = async (pricing: PricingConfig): Promise<boolean> => {
+  const token = getOwnerToken();
+  if (!token) return false;
   try {
-    const res = await fetch(SUPABASE_STORAGE_UPLOAD_URL, {
+    const res = await fetch('/api/owner/update-pricing', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
-        'x-upsert': 'true',
-        'cache-control': 'no-cache, no-store, max-age=0',
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(pricing, null, 2),
+      body: JSON.stringify({ pricing, token }),
     });
     return res.ok;
   } catch (err) {
-    console.warn('[Direct Cloud Sync Notice] Pricing:', err);
+    console.warn('[Cloud Sync Notice] Pricing:', err);
     return false;
   }
 };
