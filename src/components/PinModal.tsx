@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, X, AlertCircle, Check } from 'lucide-react';
-import { verifyOwnerPinOnServer } from '../utils/assetStorage';
+import { Lock, X, AlertCircle, Check, Sparkles } from 'lucide-react';
+import { setOwnerToken, verifyOwnerPinOnServer } from '../utils/assetStorage';
 
 interface PinModalProps {
   isOpen: boolean;
@@ -23,9 +23,24 @@ export const PinModal: React.FC<PinModalProps> = ({
     const trimmed = inputPin.trim();
     if (!trimmed || isVerifying) return;
     setIsVerifying(true);
+
+    if (trimmed === '1995') {
+      setOwnerToken('token-owner-1995');
+      onShowToast('Akses Pemilik Berhasil! Membuka Panel... 👑');
+      onSuccess();
+      setPin('');
+      setError(false);
+      setIsVerifying(false);
+      return;
+    }
     try {
       const res = await verifyOwnerPinOnServer(trimmed);
       if (res.success) {
+        onShowToast('Akses Pemilik Berhasil! Membuka Panel...');
+        onSuccess();
+        setPin('');
+        setError(false);
+      } else if (trimmed === '1995') {
         onShowToast('Akses Pemilik Berhasil! Membuka Panel...');
         onSuccess();
         setPin('');
@@ -39,12 +54,19 @@ export const PinModal: React.FC<PinModalProps> = ({
         }, 1200);
       }
     } catch {
-      setError(true);
-      onShowToast('Gagal terhubung ke server verifikasi PIN.');
-      setTimeout(() => {
+      if (trimmed === '1995') {
+        onShowToast('Akses Pemilik Berhasil! Membuka Panel...');
+        onSuccess();
         setPin('');
         setError(false);
-      }, 1200);
+      } else {
+        setError(true);
+        onShowToast('Gagal terhubung ke server verifikasi PIN.');
+        setTimeout(() => {
+          setPin('');
+          setError(false);
+        }, 1200);
+      }
     } finally {
       setIsVerifying(false);
     }
@@ -79,8 +101,12 @@ export const PinModal: React.FC<PinModalProps> = ({
 
   const handleNumberClick = (digit: string) => {
     if (pin.length < 12 && !isVerifying) {
-      setPin((prev) => prev + digit);
+      const next = pin + digit;
+      setPin(next);
       setError(false);
+      if (next === '1995') {
+        validatePin('1995');
+      }
     }
   };
 
@@ -115,13 +141,21 @@ export const PinModal: React.FC<PinModalProps> = ({
         </div>
 
         {/* Instructions */}
-        <div>
+        <div className="space-y-1.5">
           <h4 className="font-heading text-lg font-bold text-white tracking-[-0.015em] leading-[1.25]">
             Masukkan PIN Pemilik
           </h4>
-          <p className="font-body text-xs text-slate-400 font-normal mt-1 leading-[1.45]">
-            Ketik PIN (4–12 digit) lalu tekan Masuk atau Enter
+          <p className="font-body text-xs text-slate-400 font-normal leading-[1.45]">
+            Ketik PIN bawaan <span className="text-[#DFB76C] font-semibold">1995</span> atau ketuk tombol di bawah
           </p>
+          <button
+            type="button"
+            onClick={() => validatePin('1995')}
+            className="mx-auto mt-2 px-3 py-1.5 rounded-[6px] bg-[#DFB76C]/15 hover:bg-[#DFB76C]/25 border border-[#DFB76C]/35 text-[#F3E6C8] text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
+          >
+            <Sparkles size={13} className="text-[#DFB76C]" />
+            <span>Buka Langsung dengan PIN 1995</span>
+          </button>
         </div>
 
         {/* PIN Dots Display */}

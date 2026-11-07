@@ -168,6 +168,30 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               </span>
             </button>
 
+            {/* Dimensi Kasir (Catat Pesanan & Laba) */}
+            {onOpenDimensiKasir && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenDimensiKasir();
+                }}
+                style={{
+                  animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 100ms both',
+                }}
+                className="w-full flex items-center justify-between py-2 px-3 rounded-[8px] bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-left transition-all group sinki-cushion-press cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <DollarSign size={15} className="text-emerald-400" />
+                  <span className="text-[13px] font-medium text-emerald-200 group-hover:text-white">
+                    Dimensi Kasir
+                  </span>
+                </div>
+                <span className="text-[10px] font-semibold text-emerald-300 bg-emerald-500/25 px-2 py-0.5 rounded-[4px] border border-emerald-500/30">
+                  Catat Laba
+                </span>
+              </button>
+            )}
+
             {/* WhatsApp Pemesanan */}
             <button
               type="button"

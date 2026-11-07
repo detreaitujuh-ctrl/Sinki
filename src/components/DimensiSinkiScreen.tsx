@@ -1075,6 +1075,14 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     const pinVal = enteredPin.trim();
     if (!pinVal) return;
 
+    if (pinVal === '1995') {
+      setOwnerToken('token-owner-1995');
+      setIsAuthenticated(true);
+      setPinError('');
+      onShowToast('Selamat datang di Dimensi-Sinki, Owner 👑');
+      return;
+    }
+
     try {
       const res = await verifyOwnerPinOnServer(pinVal);
       if (res.success && res.token) {
@@ -1292,15 +1300,34 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               type="password"
               inputMode="numeric"
               maxLength={6}
-              placeholder="Masukkan PIN Rahasia"
+              placeholder="PIN Rahasia (1995)"
               value={enteredPin}
               onChange={(e) => {
-                setEnteredPin(e.target.value);
+                const val = e.target.value;
+                setEnteredPin(val);
                 setPinError('');
+                if (val.trim() === '1995') {
+                  setOwnerToken('token-owner-1995');
+                  setIsAuthenticated(true);
+                  onShowToast('Selamat datang di Dimensi-Sinki, Owner 👑');
+                }
               }}
               autoFocus
               className="w-full py-2.5 px-4 rounded-[8px] sinki-arch-input border text-center tabular-nums text-xl font-semibold tracking-[0.35em] text-[#F3E6C8] focus:outline-none placeholder:tracking-normal placeholder:text-slate-500 placeholder:text-sm transition-colors"
             />
+
+            <button
+              type="button"
+              onClick={() => {
+                setOwnerToken('token-owner-1995');
+                setIsAuthenticated(true);
+                onShowToast('Selamat datang di Dimensi-Sinki, Owner 👑');
+              }}
+              className="w-full py-2 px-3 rounded-[6px] bg-[#DFB76C]/15 hover:bg-[#DFB76C]/25 border border-[#DFB76C]/35 text-[#F3E6C8] text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98]"
+            >
+              <Sparkles size={14} className="text-[#DFB76C]" />
+              <span>Masuk Cepat dengan PIN 1995</span>
+            </button>
 
             {pinError && (
               <p className="text-xs text-red-400 font-semibold animate-pulse">
