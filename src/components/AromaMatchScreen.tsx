@@ -218,6 +218,22 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const craftingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const lastActivityTimeRef = useRef<number>(Date.now());
   const hasDeliveredRecommendationRef = useRef<boolean>(false);
+  const speakingStartTimeRef = useRef<number>(0);
+  const consecutiveSpeechFramesRef = useRef<number>(0);
+  const speakingEndDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onShowToastRef = useRef(onShowToast);
+  useEffect(() => {
+    onShowToastRef.current = onShowToast;
+  }, [onShowToast]);
+
+  const isMountedRef = useRef<boolean>(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   isSpeakingRef.current = isSpeaking;
   isVoiceModeRef.current = isVoiceMode;
@@ -227,6 +243,10 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
   // Stop all running audio buffers immediately (Instant Barge-in)
   const stopAllPlaybackSources = useCallback(() => {
+    if (speakingEndDebounceRef.current) {
+      clearTimeout(speakingEndDebounceRef.current);
+      speakingEndDebounceRef.current = null;
+    }
     activeSourcesRef.current.forEach((src) => {
       try {
         src.stop();
@@ -307,8 +327,10 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       wsRef.current = null;
     }
 
-    setIsListening(false);
-    setIsSpeaking(false);
+    if (isMountedRef.current) {
+      setIsListening(false);
+      setIsSpeaking(false);
+    }
     isSpeakingRef.current = false;
   }, [stopAllPlaybackSources, stopFallbackSpeech]);
 
@@ -337,8 +359,12 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     source.connect(ctx.destination);
 
     const currentTime = ctx.currentTime;
+    // Jitter buffer lead-time (85ms):
+    // Menghilangkan jeda di awal & patah-patah suku kata pertama saat suara mulai diputar
+    const JITTER_BUFFER_LEAD = 0.085;
     if (nextPlaybackTimeRef.current < currentTime) {
-      nextPlaybackTimeRef.current = currentTime;
+      nextPlaybackTimeRef.current = currentTime + JITTER_BUFFER_LEAD;
+      speakingStartTimeRef.current = Date.now();
     }
 
     source.start(nextPlaybackTimeRef.current);
@@ -351,9 +377,14 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     source.onended = () => {
       const idx = activeSourcesRef.current.indexOf(source);
       if (idx !== -1) activeSourcesRef.current.splice(idx, 1);
-      if (activeSourcesRef.current.length === 0 && ctx.currentTime >= nextPlaybackTimeRef.current - 0.05) {
-        setIsSpeaking(false);
-        isSpeakingRef.current = false;
+      if (activeSourcesRef.current.length === 0 && ctx.currentTime >= nextPlaybackTimeRef.current - 0.04) {
+        if (speakingEndDebounceRef.current) clearTimeout(speakingEndDebounceRef.current);
+        speakingEndDebounceRef.current = setTimeout(() => {
+          if (activeSourcesRef.current.length === 0 && ctx.currentTime >= nextPlaybackTimeRef.current - 0.04) {
+            setIsSpeaking(false);
+            isSpeakingRef.current = false;
+          }
+        }, 120);
       }
     };
   }, []);
@@ -479,7 +510,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         if (!isVoiceModeRef.current) return;
         const channelData = e.inputBuffer.getChannelData(0);
 
-        // 1. Voice Activity Detection (VAD) for Instant Barge-In and Activity Heartbeat
+        // 1. Voice Activity Detection (VAD) Energy Calculation
         let sum = 0;
         for (let i = 0; i < channelData.length; i++) {
           sum += channelData[i] * channelData[i];
@@ -491,17 +522,36 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           lastActivityTimeRef.current = Date.now();
         }
 
-        // Jika MinSKI sedang bersuara dan pengguna mulai bicara (VAD threshold ~0.03)
-        if (isSpeakingRef.current && rms > 0.03) {
-          handleBargeIn();
+        // 2. Perlindungan Cerdas Interupsi (Anti-Patah & Anti-Feedback):
+        // Jangan potong suara MinSKI karena bunyi AC, ketukan meja, desahan nafas, atau gema speaker HP!
+        if (isSpeakingRef.current) {
+          const speakingDuration = Date.now() - speakingStartTimeRef.current;
+          // Inhibit interupsi pada 800ms pertama kalimat agar audio speaker stabil
+          if (speakingDuration > 800 && rms > 0.085) {
+            consecutiveSpeechFramesRef.current++;
+            // Wajib konsisten minimal 6 frame berturut-turut (~250ms suara bicara jelas)
+            if (consecutiveSpeechFramesRef.current >= 6) {
+              consecutiveSpeechFramesRef.current = 0;
+              handleBargeIn();
+            }
+          } else {
+            consecutiveSpeechFramesRef.current = 0;
+          }
+
+          // Supresi kebocoran suara speaker: jangan kirim audio volume rendah kembali ke Gemini Live
+          if (rms < 0.065) {
+            return;
+          }
+        } else {
+          consecutiveSpeechFramesRef.current = 0;
         }
 
-        // 2. Resample to 16kHz and convert to 16-bit PCM little-endian
+        // 3. Resample to 16kHz and convert to 16-bit PCM little-endian
         const resampled = resampleTo16k(channelData, inputCtx.sampleRate);
         const pcm16 = float32ToInt16PCM(resampled);
         const base64Audio = int16ToBase64(pcm16);
 
-        // 3. Stream to Gemini Live WebSocket
+        // 4. Stream to Gemini Live WebSocket
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.send(
             JSON.stringify({
@@ -517,13 +567,17 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       setIsListening(true);
     } catch (err: any) {
       console.warn('Gagal mengakses mikrofon:', err);
-      setMicDenied(true);
-      setIsListening(false);
-      setIsVoiceMode(false);
+      if (isMountedRef.current) {
+        setMicDenied(true);
+        setIsListening(false);
+        setIsVoiceMode(false);
+      }
       isVoiceModeRef.current = false;
-      onShowToast('Izin mikrofon tidak aktif. Kakak tetap bisa berkonsultasi via teks atau opsi cepat di bawah!');
+      setTimeout(() => {
+        onShowToastRef.current?.('Izin mikrofon tidak aktif. Kakak tetap bisa berkonsultasi via teks atau opsi cepat di bawah!');
+      }, 0);
     }
-  }, [handleBargeIn, onShowToast]);
+  }, [handleBargeIn]);
 
   // Start Voice Mode (ChatGPT Voice Style Hands-Free)
   const toggleVoiceMode = useCallback(() => {
@@ -533,7 +587,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       isVoiceModeRef.current = false;
       cleanupAudio();
       setSessionSeconds(0);
-      onShowToast('Sesi suara MinSKI selesai (Standby)');
+      onShowToastRef.current?.('Sesi suara MinSKI selesai (Standby)');
     } else {
       // Aktifkan sesi suara dua arah real-time
       lastActivityTimeRef.current = Date.now();
@@ -543,9 +597,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       isVoiceModeRef.current = true;
       connectGeminiLive();
       startNativeMicStream();
-      onShowToast('🎙️ Percakapan Suara Real-Time Aktif (Bicara langsung)');
+      onShowToastRef.current?.('🎙️ Percakapan Suara Real-Time Aktif (Bicara langsung)');
     }
-  }, [cleanupAudio, connectGeminiLive, isVoiceMode, onShowToast, startNativeMicStream]);
+  }, [cleanupAudio, connectGeminiLive, isVoiceMode, startNativeMicStream]);
 
   // Handler Kirim Pesan Teks (Jika mic ditolak / ingin mengetik)
   const handleSendTextMessage = useCallback(
@@ -668,7 +722,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
   const handleOrderResult = () => {
     if (!matchResult) return;
-    onShowToast(`Membuka form pemesanan untuk ${matchResult.perfumeName}... ✨`);
+    onShowToastRef.current?.(`Membuka form pemesanan untuk ${matchResult.perfumeName}... ✨`);
     onNavigateToOrder({
       name: matchResult.perfumeName,
       category: matchResult.categoryLabel,
@@ -690,9 +744,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       isVoiceModeRef.current = false;
       cleanupAudio();
       setSessionSeconds(0);
-      onShowToast('Sesi suara MinSKI dijeda otomatis saat berpindah menu (Hemat Kuota)');
+      setTimeout(() => {
+        onShowToastRef.current?.('Sesi suara MinSKI dijeda otomatis saat berpindah menu (Hemat Kuota)');
+      }, 0);
     }
-  }, [isActiveTab, cleanupAudio, onShowToast]);
+  }, [isActiveTab, cleanupAudio]);
 
   // 2. Auto-pause saat layar HP terkunci atau browser diminimalkan (Page Visibility)
   useEffect(() => {
@@ -702,12 +758,14 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         isVoiceModeRef.current = false;
         cleanupAudio();
         setSessionSeconds(0);
-        onShowToast('Sesi suara MinSKI dijeda otomatis di latar belakang (Hemat Baterai & Kuota)');
+        setTimeout(() => {
+          onShowToastRef.current?.('Sesi suara MinSKI dijeda otomatis di latar belakang (Hemat Baterai & Kuota)');
+        }, 0);
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [cleanupAudio, onShowToast]);
+  }, [cleanupAudio]);
 
   // 3. Auto-standby timer saat hening / inaktif atau batas durasi konsultasi
   useEffect(() => {
@@ -724,7 +782,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           setIsVoiceMode(false);
           isVoiceModeRef.current = false;
           cleanupAudio();
-          onShowToast('Rekomendasi siap! Sesi suara dialihkan otomatis ke mode siap pesan ✨');
+          setTimeout(() => {
+            onShowToastRef.current?.('Rekomendasi siap! Sesi suara dialihkan otomatis ke mode siap pesan ✨');
+          }, 0);
           return next;
         }
 
@@ -736,7 +796,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           setMinskiDialogue(
             'Sesi suara dijeda otomatis untuk menghemat kuota Kakak. Ketuk mikrofon kapan pun untuk mengobrol lagi ya!'
           );
-          onShowToast('Sesi suara MinSKI dijeda otomatis (Mode Hemat Kuota Aktif) ✨');
+          setTimeout(() => {
+            onShowToastRef.current?.('Sesi suara MinSKI dijeda otomatis (Mode Hemat Kuota Aktif) ✨');
+          }, 0);
           return next;
         }
 
@@ -748,7 +810,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           setMinskiDialogue(
             'Sesi konsultasi 5 menit selesai Kak! MinSKI sudah menyimpan wangi pilihan Kakak. Ketuk mikrofon jika ingin konsultasi baru ya.'
           );
-          onShowToast('Sesi konsultasi 5 menit selesai (Mode Standby Aktif)');
+          setTimeout(() => {
+            onShowToastRef.current?.('Sesi konsultasi 5 menit selesai (Mode Standby Aktif)');
+          }, 0);
           return 300;
         }
 
@@ -757,7 +821,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [cleanupAudio, isVoiceMode, onShowToast]);
+  }, [cleanupAudio, isVoiceMode]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -801,7 +865,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             onClick={() => {
               if (isSpeaking) handleBargeIn();
               setIsMuted((prev) => !prev);
-              onShowToast(!isMuted ? 'Suara dinonaktifkan' : 'Suara aktif 🔊');
+              onShowToastRef.current?.(!isMuted ? 'Suara dinonaktifkan' : 'Suara aktif 🔊');
             }}
             className="p-1.5 rounded-[6px] sinki-arch-bar border border-[#DFB76C]/30 text-amber-200 hover:text-white transition-all cursor-pointer"
           >
@@ -1026,7 +1090,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             onClick={() => {
               if (isSpeaking) handleBargeIn();
               setIsMuted((prev) => !prev);
-              onShowToast(!isMuted ? 'Suara dinonaktifkan' : 'Suara aktif 🔊');
+              onShowToastRef.current?.(!isMuted ? 'Suara dinonaktifkan' : 'Suara aktif 🔊');
             }}
             className="p-1.5 rounded-[6px] sinki-arch-bar border border-[#DFB76C]/30 text-amber-200 hover:text-white transition-all cursor-pointer"
             title={isMuted ? 'Nyalakan Suara' : 'Matikan Suara'}
@@ -1038,19 +1102,59 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
       {/* Main Content: Avatar, Transkripsi, Kontrol Voice */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-2 pb-24 flex flex-col items-center justify-between max-w-md mx-auto w-full">
-        {/* A. MinSKI Avatar (Lebih Besar, Tanpa Efek Distorsi, Bersih & Elegan) */}
-        <div className="relative flex flex-col items-center justify-center pt-2 select-none shrink-0 w-full">
-          <div className="relative flex flex-col items-center">
+        {/* A. MinSKI Avatar (Bergerak Hidup, Ekspresif, Elegan dengan Efek Aura Suara) */}
+        <div className="relative flex flex-col items-center justify-center pt-1 select-none shrink-0 w-full">
+          {/* Animated Voice Halo di Belakang MinSKI saat bersuara */}
+          {isSpeaking && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none w-56 sm:w-64 h-56 sm:h-64 rounded-full minski-voice-halo" />
+          )}
+
+          {/* Partikel Aroma Emas & Giok saat aktif konsultasi */}
+          {(isSpeaking || isThinking) && (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <span className="absolute top-6 left-[22%] w-1.5 h-1.5 rounded-full bg-amber-300 minski-particle minski-particle-1" />
+              <span className="absolute top-12 right-[24%] w-2 h-2 rounded-full bg-emerald-300 minski-particle minski-particle-2" />
+              <span className="absolute top-20 left-[26%] w-1.5 h-1.5 rounded-full bg-amber-200 minski-particle minski-particle-3" />
+              <span className="absolute top-14 right-[28%] w-1.5 h-1.5 rounded-full bg-amber-400 minski-particle minski-particle-4" />
+            </div>
+          )}
+
+          {/* Karakter MinSKI Bergerak Alami & Responsif */}
+          <div
+            className={`relative flex flex-col items-center transition-all duration-300 ${
+              isSpeaking
+                ? 'minski-speaking-active'
+                : isThinking
+                ? 'minski-thinking-active'
+                : isListening
+                ? 'minski-listening-active'
+                : 'minski-float-anim'
+            }`}
+          >
             <img
               src="/assets/sinki_minski.png"
               alt="MinSKI"
               loading="eager"
-              className="h-[210px] sm:h-[235px] w-auto object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)]"
+              className={`h-[210px] sm:h-[235px] w-auto object-contain transition-all duration-300 ${
+                isSpeaking
+                  ? 'brightness-105'
+                  : isThinking
+                  ? 'brightness-100'
+                  : 'brightness-95'
+              }`}
             />
           </div>
 
-          {/* Podium Elegan */}
-          <div className="relative -mt-1 w-48 sm:w-52 py-1.5 px-3 rounded-[6px] minski-podium-box flex flex-col items-center justify-center text-center shadow-lg border border-[#DFB76C]/40">
+          {/* Podium Elegan dengan Efek Interaktif */}
+          <div
+            className={`relative -mt-1 w-48 sm:w-52 py-1.5 px-3 rounded-[6px] minski-podium-box flex flex-col items-center justify-center text-center shadow-lg transition-all duration-300 ${
+              isSpeaking
+                ? 'border-[#DFB76C] shadow-[0_0_20px_rgba(223,183,108,0.35)]'
+                : isListening
+                ? 'border-emerald-400/60 shadow-[0_0_16px_rgba(16,185,129,0.25)]'
+                : 'border-[#DFB76C]/40'
+            }`}
+          >
             <div className="absolute -top-[1px] inset-x-3 h-[1px] bg-gradient-to-r from-transparent via-[#DFB76C] to-transparent opacity-80" />
             <div className="flex items-center gap-1.5">
               <span className="font-heading text-[12px] sm:text-[13px] font-extrabold tracking-[0.16em] text-[#DFB76C] uppercase drop-shadow-sm">
@@ -1062,13 +1166,30 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                   <span className="w-[2px] bg-amber-300 rounded-full minski-eq-bar-2" />
                   <span className="w-[2px] bg-amber-400 rounded-full minski-eq-bar-3" />
                   <span className="w-[2px] bg-amber-200 rounded-full minski-eq-bar-4" />
+                  <span className="w-[2px] bg-amber-300 rounded-full minski-eq-bar-5" />
                 </div>
               )}
             </div>
             <span className="font-body text-[9px] text-amber-200/80 tracking-wider uppercase font-medium">
-              Konsultan Aroma Pribadi
+              {isSpeaking
+                ? 'Sedang Menjelaskan Aroma'
+                : isThinking
+                ? 'Meracik Rekomendasi'
+                : isListening
+                ? 'Mendengarkan Ceritamu'
+                : 'Konsultan Aroma Pribadi'}
             </span>
           </div>
+
+          {/* Bubble Dialog / Transkripsi Penjelasan MinSKI (Tampil Elegan & Jelas) */}
+          {minskiDialogue && (
+            <div className="relative mt-2.5 w-full max-w-sm px-3.5 py-2 rounded-[10px] sinki-arch-bar border border-[#DFB76C]/35 backdrop-blur-md shadow-md text-center animate-fadeIn">
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-[#141920] border-t border-l border-[#DFB76C]/40" />
+              <p className="font-body text-[11px] sm:text-xs leading-relaxed text-slate-200/95 italic">
+                "{minskiDialogue}"
+              </p>
+            </div>
+          )}
 
           {/* Notifikasi Barge-In */}
           {interruptedNotice && (
@@ -1079,7 +1200,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           )}
 
           {/* Indikator Status Suara Mengambang (Floating Live Audio Status) */}
-          <div className="mt-3 flex flex-col items-center gap-1.5 min-h-[32px]">
+          <div className="mt-2.5 flex flex-col items-center gap-1.5 min-h-[30px]">
             {isSpeaking ? (
               <div className="inline-flex items-center gap-2 py-1 px-3.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-semibold shadow-sm">
                 <div className="flex items-end gap-[2px] h-3">

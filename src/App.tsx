@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { DimensiSinkiScreen } from './components/DimensiSinkiScreen';
 import { BottomNavBar, TabType } from './components/BottomNavBar';
 import { HomeScreen } from './components/HomeScreen';
@@ -291,7 +291,7 @@ export default function App() {
 
 
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const showToast = (message: string) => {
+  const showToast = useCallback((message: string) => {
     if (toastTimerRef.current) {
       clearTimeout(toastTimerRef.current);
     }
@@ -299,7 +299,20 @@ export default function App() {
     toastTimerRef.current = setTimeout(() => {
       setToastMessage(null);
     }, 3000);
-  };
+  }, []);
+
+  const handleBackToHome = useCallback(() => {
+    setActiveTab('home');
+  }, []);
+
+  const handleNavigateToOrder = useCallback((perfume: { name: string; category?: string; pricePerMl?: number }) => {
+    setSelectedPerfumeForOrder({
+      name: perfume.name,
+      category: perfume.category,
+      pricePerMl: perfume.pricePerMl,
+    });
+    setActiveTab('order');
+  }, []);
 
   const activeVariantsCount = catalogPerfumes.filter((p) => p.isActive !== false).length || 68;
 
@@ -363,15 +376,8 @@ export default function App() {
             <div className={`w-full h-full ${activeTab === 'match' ? 'block' : 'hidden'}`}>
               <AromaMatchScreen
                 isActiveTab={activeTab === 'match'}
-                onBackToHome={() => setActiveTab('home')}
-                onNavigateToOrder={(perfume) => {
-                  setSelectedPerfumeForOrder({
-                    name: perfume.name,
-                    category: perfume.category,
-                    pricePerMl: perfume.pricePerMl,
-                  });
-                  setActiveTab('order');
-                }}
+                onBackToHome={handleBackToHome}
+                onNavigateToOrder={handleNavigateToOrder}
                 onShowToast={showToast}
                 perfumes={catalogPerfumes}
                 top11Photos={top11Photos}
