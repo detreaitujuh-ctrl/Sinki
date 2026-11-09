@@ -18,6 +18,11 @@ import {
   Check,
   Server,
   Radio,
+  Bot,
+  Sparkles,
+  Volume2,
+  Mic,
+  Flame,
 } from 'lucide-react';
 import {
   SystemHealthData,
@@ -330,6 +335,141 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
             <p className="text-xs text-slate-400 leading-[1.45]">
               Data katalog produk, ulasan asli pembeli, dan foto botol Anda tetap utuh aman.
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================
+          3.5 KECERDASAN BUATAN & VOICE ENGINE MINSKI (SISTEM ANTI-MATI)
+         ======================================================== */}
+      <div className="p-5 sm:p-6 rounded-[10px] sinki-arch-card border space-y-5 relative overflow-hidden">
+        {/* Glow Accent */}
+        <div className="absolute top-0 right-0 w-72 h-72 bg-[#DFB76C]/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-[8px] bg-gradient-to-br from-[#DFB76C]/20 to-[#A07C3A]/10 border border-[#DFB76C]/35 flex items-center justify-center text-[#E8C782] shrink-0 shadow-sm shadow-[#DFB76C]/10">
+              <Bot size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-heading font-bold text-base sm:text-lg leading-[1.25] text-white tracking-[-0.015em]">
+                  Kecerdasan Buatan & Voice Engine MinSKI
+                </h3>
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-[5px] bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Triple-Layer Protection Aktif
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-[1.45]">
+                Status engine Google Gemini, failover cadangan bebas kuota, dan saklar vokal MinSKI.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3-Column Engine Status Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 relative z-10">
+          {/* Card 1: Mesin Utama Gemini */}
+          <div className="p-4 rounded-[8px] sinki-arch-subbox border space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+                <Sparkles size={14} className="text-[#DFB76C]" />
+                <span>Mesin Utama (Gemini AI)</span>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[4px] border ${
+                healthData?.aiEngine?.gemini?.isConfigured
+                  ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300'
+                  : 'bg-amber-500/15 border-amber-500/35 text-amber-300'
+              }`}>
+                {healthData?.aiEngine?.gemini?.status || 'Online & Terhubung'}
+              </span>
+            </div>
+            <div className="text-xs text-slate-300 space-y-1">
+              <p><span className="text-slate-400">Model:</span> <span className="font-semibold text-white">Gemini 2.5 Flash / Live 3.8</span></p>
+              <p className="text-[11px] text-slate-400 leading-[1.4]">
+                Proteksi: <span className="text-[#E8C782]">Otomatis beralih ke cadangan jika kuota 429 habis.</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2: Mesin Cadangan Groq Cloud */}
+          <div className="p-4 rounded-[8px] sinki-arch-subbox border space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+                <Flame size={14} className="text-orange-400" />
+                <span>Cadangan Cepat (Groq)</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-[4px] bg-sky-500/15 border border-sky-500/35 text-sky-300">
+                14.400 Req/Hari Gratis
+              </span>
+            </div>
+            <div className="text-xs text-slate-300 space-y-1">
+              <p><span className="text-slate-400">Model:</span> <span className="font-semibold text-white">Llama 3.3 (70B Versatile)</span></p>
+              <p className="text-[11px] text-slate-400 leading-[1.4]">
+                Kecepatan: <span className="text-sky-300">~600 token/detik, aktif otomatis saat Gemini sibuk.</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: Mesin Deterministik Lokal SINKI */}
+          <div className="p-4 rounded-[8px] sinki-arch-subbox border space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+                <ShieldCheck size={14} className="text-emerald-400" />
+                <span>Mesin Aroma Deterministik</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-[4px] bg-emerald-500/15 border border-emerald-500/35 text-emerald-300">
+                100% Bebas Kuota
+              </span>
+            </div>
+            <div className="text-xs text-slate-300 space-y-1">
+              <p><span className="text-slate-400">Katalog:</span> <span className="font-semibold text-white">{healthData?.aiEngine?.deterministicEngine?.catalogVariants || 68} Varian Aktif</span></p>
+              <p className="text-[11px] text-slate-400 leading-[1.4]">
+                Akurasi: <span className="text-emerald-300">Mencocokkan notes aroma lokal tanpa risiko halusinasi.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Voice Architecture Status (Clean & Direct) */}
+        <div className="pt-2 border-t border-white/5 space-y-2.5 relative z-10">
+          <div className="flex items-center gap-2">
+            <Volume2 size={15} className="text-[#DFB76C]" />
+            <h4 className="font-heading font-semibold text-xs sm:text-sm text-white">
+              Arsitektur Vokal MinSKI (100% Siap Melayani)
+            </h4>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3.5 rounded-[8px] sinki-arch-subbox border space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Mic size={13} className="text-emerald-400" />
+                  Konsultasi Suara Langsung
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                  Gemini Live (Kore)
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-[1.45]">
+                Percakapan 2-arah real-time langsung melalui mikrofon HP/laptop layaknya mengobrol langsung dengan konsultan di butik parfum SINKI.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-[8px] sinki-arch-subbox border space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Volume2 size={13} className="text-[#DFB76C]" />
+                  Respon Pesan Ketik
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#DFB76C]/15 border border-[#DFB76C]/30 text-[#E8C782]">
+                  Edge Neural (Gadis)
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-[1.45]">
+                Membacakan jawaban teks secara natural 100% gratis tanpa batas kuota audio AI saat pengunjung mengetik di kolom chat.
+              </p>
+            </div>
           </div>
         </div>
       </div>

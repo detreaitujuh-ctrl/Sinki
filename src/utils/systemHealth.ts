@@ -30,6 +30,30 @@ export interface SystemHealthData {
     localStorage: string;
     lastHealthCheck: string;
   };
+  aiEngine?: {
+    gemini: {
+      status: string;
+      model: string;
+      isConfigured: boolean;
+      quotaProtection: string;
+    };
+    groqFailover: {
+      status: string;
+      model: string;
+      isConfigured: boolean;
+    };
+    deterministicEngine: {
+      status: string;
+      catalogVariants: number;
+      accuracy: string;
+    };
+    voiceEngine: {
+      activeVoice: string;
+      voicePreference: 'edge-neural' | 'gemini-live';
+      edgeNeural: string;
+      geminiLive: string;
+    };
+  };
 }
 
 export interface StoreLinkCheck {
@@ -313,3 +337,28 @@ export const checkStoreLinksHealth = async (): Promise<StoreLinkCheck[]> => {
     },
   ];
 };
+
+// Update MinSKI Voice Preference on Server
+export const updateMinskiVoicePreference = async (
+  voicePreference: 'edge-neural' | 'gemini-live'
+): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const token = getOwnerToken();
+    const res = await fetch('/api/admin/minski-config', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ voicePreference }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return { success: true, message: data.message || 'Preferensi suara berhasil disimpan' };
+    }
+    return { success: false, message: 'Gagal menyimpan preferensi suara' };
+  } catch (err) {
+    return { success: false, message: 'Terjadi kesalahan koneksi ke server' };
+  }
+};
+

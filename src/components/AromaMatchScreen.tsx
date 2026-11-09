@@ -586,10 +586,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       setIsVoiceMode(false);
       isVoiceModeRef.current = false;
       cleanupAudio();
+      stopFallbackSpeech();
       setSessionSeconds(0);
       onShowToastRef.current?.('Sesi suara MinSKI selesai (Standby)');
     } else {
-      // Aktifkan sesi suara dua arah real-time
+      // Aktifkan sesi suara dua arah real-time via Gemini Live
       lastActivityTimeRef.current = Date.now();
       hasDeliveredRecommendationRef.current = false;
       setSessionSeconds(0);
@@ -599,7 +600,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       startNativeMicStream();
       onShowToastRef.current?.('🎙️ Percakapan Suara Real-Time Aktif (Bicara langsung)');
     }
-  }, [cleanupAudio, connectGeminiLive, isVoiceMode, startNativeMicStream]);
+  }, [cleanupAudio, connectGeminiLive, isVoiceMode, startNativeMicStream, stopFallbackSpeech]);
 
   // Handler Kirim Pesan Teks (Jika mic ditolak / ingin mengetik)
   const handleSendTextMessage = useCallback(

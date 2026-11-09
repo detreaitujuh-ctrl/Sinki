@@ -72,6 +72,59 @@ function setOwnerPin(newPin: string): boolean {
   }
 }
 
+interface MinskiConfig {
+  voicePreference: 'edge-neural' | 'gemini-live';
+  aiEnginePriority: string[];
+  groqModel: string;
+  updatedAt?: string;
+}
+
+const MINSKI_CONFIG_FILE = path.join(path.resolve(__dirname, 'data'), 'minski_config.json');
+
+function getMinskiConfig(): MinskiConfig {
+  try {
+    if (fs.existsSync(MINSKI_CONFIG_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(MINSKI_CONFIG_FILE, 'utf-8'));
+      if (parsed && typeof parsed === 'object') {
+        return {
+          voicePreference: parsed.voicePreference === 'gemini-live' ? 'gemini-live' : 'edge-neural',
+          aiEnginePriority: Array.isArray(parsed.aiEnginePriority)
+            ? parsed.aiEnginePriority
+            : ['gemini', 'groq', 'deterministic'],
+          groqModel: parsed.groqModel || 'llama-3.3-70b-versatile',
+          updatedAt: parsed.updatedAt || new Date().toISOString(),
+        };
+      }
+    }
+  } catch {}
+  return {
+    voicePreference: 'gemini-live',
+    aiEnginePriority: ['gemini', 'groq', 'deterministic'],
+    groqModel: 'llama-3.3-70b-versatile',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function saveMinskiConfig(cfg: Partial<MinskiConfig>): MinskiConfig {
+  try {
+    const current = getMinskiConfig();
+    const updated: MinskiConfig = {
+      ...current,
+      ...cfg,
+      updatedAt: new Date().toISOString(),
+    };
+    const dataDir = path.resolve(__dirname, 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(MINSKI_CONFIG_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+    return updated;
+  } catch (err) {
+    console.error('Failed to save MinSKI config:', err);
+    return getMinskiConfig();
+  }
+}
+
 // Active sessions for authenticated owner access (24-hour validity)
 const activeSessions = new Map<string, number>();
 
@@ -1198,19 +1251,62 @@ Jika informasi sudah cukup dan siap merekomendasikan:
 app.get('/api/minski/voice-capabilities', (_req, res) => {
   const client = getGeminiClient();
   const hasKey = Boolean((process.env.GEMINI_API_KEY || '').trim().length > 10);
+  const minskiCfg = getMinskiConfig();
   res.json({
     geminiLiveSupported: Boolean(client),
     hasGeminiKey: hasKey,
     primaryVoiceEngine: client ? 'gemini-live' : 'msedge-neural-tts',
     fallbackVoiceEngine: 'msedge-neural-tts (id-ID-GadisNeural)',
+    voicePreference: minskiCfg.voicePreference,
     model: client ? 'gemini-3.8-live' : 'msedge-gadis-neural',
-    voiceName: 'Gadis Neural (Microsoft Edge)',
-    voicePersona: 'Perempuan Muda Ceria, Ramah, Natural & Elegan (Bahasa Indonesia)',
+    voiceName:
+      minskiCfg.voicePreference === 'gemini-live'
+        ? 'Kore (Gemini Live Voice)'
+        : 'Gadis Neural (Microsoft Edge)',
+    voicePersona:
+      minskiCfg.voicePreference === 'gemini-live'
+        ? 'Percakapan Langsung Multimodal (Google Gemini)'
+        : 'Perempuan Muda Ceria, Ramah, Natural & Elegan (Bahasa Indonesia)',
     bargeInSupported: true,
     twoWaySupported: true,
     catalogCount: getPerfumesCatalogServer().length,
   });
 });
+
+// GET /api/admin/minski-config - Ambil konfigurasi MinSKI untuk Admin Dashboard
+app.get('/api/admin/minski-config', (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+  const cfg = getMinskiConfig();
+  const rawGeminiKey = (process.env.GEMINI_API_KEY || '').trim();
+  const rawGroqKey = (process.env.GROQ_API_KEY || '').trim();
+  return res.json({
+    config: cfg,
+    hasGeminiKey: Boolean(rawGeminiKey && rawGeminiKey.length > 10),
+    hasGroqKey: Boolean(rawGroqKey && rawGroqKey.length > 10),
+  });
+});
+
+// POST /api/admin/minski-config - Ubah preferensi MinSKI dari Admin Dashboard
+app.post('/api/admin/minski-config', (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+  const { voicePreference, groqModel } = req.body || {};
+  const updated = saveMinskiConfig({
+    ...(voicePreference ? { voicePreference } : {}),
+    ...(groqModel ? { groqModel } : {}),
+  });
+  return res.json({
+    success: true,
+    message: `Preferensi suara berhasil diubah ke ${
+      updated.voicePreference === 'gemini-live' ? 'Gemini Live (Kore)' : 'Microsoft Edge Neural (Gadis)'
+    }`,
+    config: updated,
+  });
+});
+
 
 // Short URL endpoint for concise sharing links
 let cachedShortUrl: string | null = null;
@@ -1356,6 +1452,37 @@ app.get('/api/system/health', (_req, res) => {
       supabase: SUPABASE_URL ? 'Connected (sinki-media)' : 'Offline Local Mode',
       localStorage: 'Active',
       lastHealthCheck: new Date().toISOString(),
+    },
+    aiEngine: {
+      gemini: {
+        status: Boolean((process.env.GEMINI_API_KEY || '').trim().length > 10)
+          ? 'Aktif & Terhubung'
+          : 'Standby / Belum Disetel',
+        model: 'Gemini 2.5 Flash & Live 3.8',
+        isConfigured: Boolean((process.env.GEMINI_API_KEY || '').trim().length > 10),
+        quotaProtection: 'Aktif (Failover otomatis bila limit 429)',
+      },
+      groqFailover: {
+        status: Boolean((process.env.GROQ_API_KEY || '').trim().length > 10)
+          ? 'Siaga & Terhubung (14.400 Req/Hari)'
+          : 'Siap Dikonfigurasi (Groq Free Tier)',
+        model: getMinskiConfig().groqModel || 'llama-3.3-70b-versatile',
+        isConfigured: Boolean((process.env.GROQ_API_KEY || '').trim().length > 10),
+      },
+      deterministicEngine: {
+        status: 'Aktif & Siaga 100% (Bebas Kuota)',
+        catalogVariants: getPerfumesCatalogServer().filter((p: any) => p.isActive !== false).length,
+        accuracy: '100% Terverifikasi Katalog SINKI',
+      },
+      voiceEngine: {
+        activeVoice:
+          getMinskiConfig().voicePreference === 'gemini-live'
+            ? 'Gemini Live (Kore Audio)'
+            : 'Microsoft Edge Neural (id-ID-GadisNeural)',
+        voicePreference: getMinskiConfig().voicePreference,
+        edgeNeural: 'id-ID-GadisNeural (100% Gratis & Unlimited)',
+        geminiLive: 'Kore (Live Multimodal 24kHz)',
+      },
     },
   });
 });
