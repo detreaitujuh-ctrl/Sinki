@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI, ThinkingLevel, Modality, LiveServerMessage, Type } from '@google/genai';
 import { WebSocketServer, WebSocket } from 'ws';
+import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -141,33 +142,6 @@ const SOCIAL_FILE = path.join(DATA_DIR, 'social_links.json');
 const TOP_PERFUMES_FILE = path.join(DATA_DIR, 'top_perfumes.json');
 const ARTICLES_FILE = path.join(DATA_DIR, 'articles.json');
 const THEME_FILE = path.join(DATA_DIR, 'theme_config.json');
-const SALES_FILE = path.join(DATA_DIR, 'sales_records.json');
-
-function getSalesRecords(): any[] {
-  if (fs.existsSync(SALES_FILE)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(SALES_FILE, 'utf-8'));
-      if (Array.isArray(data)) return data;
-    } catch {}
-  }
-  return [];
-}
-
-async function persistSalesRecords(sales: any[]) {
-  try {
-    fs.writeFileSync(SALES_FILE, JSON.stringify(sales, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('Error writing local sales file:', e);
-  }
-  try {
-    await supabase.storage.from(SUPABASE_BUCKET).upload('sales_records.json', JSON.stringify(sales, null, 2), {
-      contentType: 'application/json',
-      upsert: true,
-    });
-  } catch (err) {
-    console.warn('[Supabase Sync Notice] sales_records.json:', err);
-  }
-}
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -550,8 +524,35 @@ const getAssets = (): AssetsData => {
   };
 };
 
-// MinSKI High-Fidelity Human Voice (Google Neural Indonesian TTS Proxy with In-Memory Cache)
+// MinSKI High-Fidelity Human Voice (Microsoft Edge Neural TTS: id-ID-GadisNeural with In-Memory Cache)
 const minskiTtsCache = new Map<string, Buffer>();
+
+async function synthesizeWithEdgeTTS(text: string): Promise<Buffer | null> {
+  try {
+    const tts = new MsEdgeTTS();
+    await tts.setMetadata('id-ID-GadisNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+    const { audioStream } = tts.toStream(text);
+    return await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const timeout = setTimeout(() => {
+        reject(new Error('Microsoft Edge TTS timeout'));
+      }, 12000);
+
+      audioStream.on('data', (chunk: Buffer) => chunks.push(chunk));
+      audioStream.on('end', () => {
+        clearTimeout(timeout);
+        resolve(Buffer.concat(chunks));
+      });
+      audioStream.on('error', (err: any) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+    });
+  } catch (err: any) {
+    console.warn('[Microsoft Edge TTS Notice]:', err?.message || err);
+    return null;
+  }
+}
 
 app.get('/api/minski/tts', async (req, res) => {
   try {
@@ -566,7 +567,20 @@ app.get('/api/minski/tts', async (req, res) => {
       return res.send(cached);
     }
 
-    // Split text into short, natural phrases under 120 chars for optimal audio quality
+    // 1. Prioritas Utama: Microsoft Edge Neural TTS (id-ID-GadisNeural - 100% Gratis & Natural)
+    const edgeAudio = await synthesizeWithEdgeTTS(rawText);
+    if (edgeAudio && edgeAudio.length > 500) {
+      if (minskiTtsCache.size > 200) {
+        const firstKey = minskiTtsCache.keys().next().value;
+        if (firstKey) minskiTtsCache.delete(firstKey);
+      }
+      minskiTtsCache.set(cacheKey, edgeAudio);
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(edgeAudio);
+    }
+
+    // 2. Fallback: Google Neural TTS Chunks (Fail-Safe)
     const chunks: string[] = [];
     const sentences = rawText.match(/[^.!?]+[.!?]*/g) || [rawText];
     let cur = '';
@@ -590,7 +604,7 @@ app.get('/api/minski/tts', async (req, res) => {
         const arr = await upstreamRes.arrayBuffer();
         buffers.push(Buffer.from(arr));
       }
-      await new Promise((r) => setTimeout(r, 150));
+      await new Promise((r) => setTimeout(r, 120));
     }
 
     if (buffers.length === 0) {
@@ -1180,16 +1194,17 @@ Jika informasi sudah cukup dan siap merekomendasikan:
   }
 });
 
-// GET /api/minski/voice-capabilities - Status kapabilitas suara MinSKI (Gemini Live vs Fallback Cerdas)
+// GET /api/minski/voice-capabilities - Status kapabilitas suara MinSKI (Gemini Live vs Microsoft Edge Neural)
 app.get('/api/minski/voice-capabilities', (_req, res) => {
   const client = getGeminiClient();
   const hasKey = Boolean((process.env.GEMINI_API_KEY || '').trim().length > 10);
   res.json({
     geminiLiveSupported: Boolean(client),
     hasGeminiKey: hasKey,
-    primaryVoiceEngine: client ? 'gemini-live' : 'web-speech-tts-hybrid',
-    model: client ? 'gemini-3.8-live' : 'hybrid-local-tts',
-    voiceName: client ? 'Kore' : 'Natural Indonesian Female',
+    primaryVoiceEngine: client ? 'gemini-live' : 'msedge-neural-tts',
+    fallbackVoiceEngine: 'msedge-neural-tts (id-ID-GadisNeural)',
+    model: client ? 'gemini-3.8-live' : 'msedge-gadis-neural',
+    voiceName: 'Gadis Neural (Microsoft Edge)',
     voicePersona: 'Perempuan Muda Ceria, Ramah, Natural & Elegan (Bahasa Indonesia)',
     bargeInSupported: true,
     twoWaySupported: true,
@@ -1487,55 +1502,6 @@ app.post('/api/owner/update-articles', async (req, res) => {
   });
 });
 
-// GET & POST Sales Records (Dimensi Kasir)
-app.get('/api/sales', (_req, res) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  return res.json(getSalesRecords());
-});
-
-app.post('/api/owner/record-sale', async (req, res) => {
-  if (!isAuthorized(req)) {
-    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
-  }
-  const { sale } = req.body;
-  if (!sale || typeof sale !== 'object' || !sale.perfumeName) {
-    return res.status(400).json({ error: 'Data transaksi penjualan tidak valid!' });
-  }
-
-  const current = getSalesRecords();
-  const newSale = {
-    ...sale,
-    id: sale.id || `sale-${Date.now()}`,
-    date: sale.date || new Date().toISOString(),
-  };
-
-  const updated = [newSale, ...current];
-  await persistSalesRecords(updated);
-  return res.json({
-    success: true,
-    message: `Penjualan ${newSale.perfumeName} (${newSale.volumeMl}ml) berhasil dicatat!`,
-    sales: updated,
-  });
-});
-
-app.post('/api/owner/delete-sale', async (req, res) => {
-  if (!isAuthorized(req)) {
-    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
-  }
-  const { id } = req.body;
-  if (!id) {
-    return res.status(400).json({ error: 'ID transaksi wajib disertakan!' });
-  }
-
-  const current = getSalesRecords();
-  const updated = current.filter((s) => s.id !== id);
-  await persistSalesRecords(updated);
-  return res.json({
-    success: true,
-    message: 'Catatan transaksi penjualan berhasil dihapus!',
-    sales: updated,
-  });
-});
 
 // POST Check Store & Hotline Links
 app.post('/api/system/check-links', (_req, res) => {
@@ -2554,27 +2520,6 @@ async function hydrateDataFromSupabase() {
     }
   } catch (err) {
     console.warn('[Supabase Hydration Notice] assets:', err);
-  }
-
-  try {
-    const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download('sales_records.json');
-    if (!error && data) {
-      const text = await data.text();
-      const parsed = JSON.parse(text);
-      if (Array.isArray(parsed)) {
-        fs.writeFileSync(SALES_FILE, text, 'utf-8');
-        console.log(`[Supabase Hydration] Sales records (${parsed.length} transaksi) berhasil dimuat dari cloud`);
-      }
-    } else if (fs.existsSync(SALES_FILE)) {
-      const local = fs.readFileSync(SALES_FILE, 'utf-8');
-      await supabase.storage.from(SUPABASE_BUCKET).upload('sales_records.json', local, {
-        contentType: 'application/json',
-        upsert: true,
-      });
-      console.log('[Supabase Hydration] Sales records lokal diupload ke cloud!');
-    }
-  } catch (err) {
-    console.warn('[Supabase Hydration Notice] sales records:', err);
   }
 }
 

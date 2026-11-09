@@ -1,4 +1,4 @@
-import { BookOpen, ChevronRight, Shield, DollarSign, Volume2, VolumeX } from 'lucide-react';
+import { BookOpen, ChevronRight, Shield, Volume2, VolumeX } from 'lucide-react';
 import { getStoredArticles, fetchArticlesFromServer, ArticleItem } from '../utils/articleStorage';
 import React from 'react';
 import { X, LayoutGrid, MessageCircle, ShoppingBag, ExternalLink } from 'lucide-react';
@@ -22,7 +22,6 @@ interface DrawerMenuProps {
   onClose: () => void;
   onNavigateToCollection: () => void;
   onOpenDimensiSinki?: () => void;
-  onOpenDimensiKasir?: () => void;
   socialLinks?: SocialLinks;
 }
 
@@ -31,7 +30,6 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
   onClose,
   onNavigateToCollection,
   onOpenDimensiSinki,
-  onOpenDimensiKasir,
   socialLinks: propSocialLinks,
 }) => {
   const currentSocial = propSocialLinks || getStoredSocialLinks();
@@ -168,29 +166,6 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
               </span>
             </button>
 
-            {/* Dimensi Kasir (Catat Pesanan & Laba) */}
-            {onOpenDimensiKasir && (
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenDimensiKasir();
-                }}
-                style={{
-                  animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 100ms both',
-                }}
-                className="w-full flex items-center justify-between py-2 px-3 rounded-[8px] bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-left transition-all group sinki-cushion-press cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <DollarSign size={15} className="text-emerald-400" />
-                  <span className="text-[13px] font-medium text-emerald-200 group-hover:text-white">
-                    Dimensi Kasir
-                  </span>
-                </div>
-                <span className="text-[10px] font-semibold text-emerald-300 bg-emerald-500/25 px-2 py-0.5 rounded-[4px] border border-emerald-500/30">
-                  Catat Laba
-                </span>
-              </button>
-            )}
 
             {/* WhatsApp Pemesanan */}
             <button
@@ -350,24 +325,6 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({
 
         {/* Bottom Section */}
         <div className="pt-4 border-t border-[#D4AF6A]/20 mt-5 space-y-2">
-          {onOpenDimensiKasir && (
-            <button
-              onClick={() => {
-                onClose();
-                onOpenDimensiKasir();
-              }}
-              style={{
-                animation: 'sinkiCardCascade 380ms cubic-bezier(0.22, 1, 0.36, 1) 260ms both',
-              }}
-              className="w-full flex items-center justify-between py-2 px-3 rounded-[8px] bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[13px] font-semibold transition-all group sinki-cushion-press cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <DollarSign size={14} className="text-emerald-400" />
-                <span className="text-white group-hover:text-emerald-200">Dimensi Kasir (Catat Pesanan)</span>
-              </div>
-              <ChevronRight size={14} className="text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          )}
 
           {onOpenDimensiSinki && (
             <button

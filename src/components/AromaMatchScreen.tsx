@@ -11,7 +11,6 @@ import {
   Sparkles,
   History,
   X,
-  Radio,
   Zap,
   User,
   RotateCcw,
@@ -23,8 +22,6 @@ import {
   checkMinskiOffTopic,
   MINSKI_PROFANITY_RESPONSES,
   MINSKI_OFF_TOPIC_RESPONSES,
-  MINSKI_INTRO_SPEECH,
-  MINSKI_PRESET_QUERIES,
   resolveMinskiRecommendation,
   speakMinskiVoice,
   stopMinskiVoice,
@@ -591,18 +588,20 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           }
 
           stopFallbackSpeech();
-          fallbackSpeechRef.current = speakMinskiVoice(
-            data.reply,
-            () => {
-              setIsSpeaking(true);
-              isSpeakingRef.current = true;
-            },
-            () => {
-              setIsSpeaking(false);
-              isSpeakingRef.current = false;
-            },
-            data.audioKey
-          );
+          if (!isMutedRef.current) {
+            fallbackSpeechRef.current = speakMinskiVoice(
+              data.reply,
+              () => {
+                setIsSpeaking(true);
+                isSpeakingRef.current = true;
+              },
+              () => {
+                setIsSpeaking(false);
+                isSpeakingRef.current = false;
+              },
+              data.audioKey
+            );
+          }
           return;
         }
       } catch (err) {
@@ -614,28 +613,6 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     [chatHistory, stopFallbackSpeech]
   );
 
-  // Sapaan suara awal MinSKI
-  const handlePlayIntro = useCallback(() => {
-    if (isSpeaking) {
-      handleBargeIn();
-      return;
-    }
-    setMinskiDialogue(MINSKI_INTRO_SPEECH);
-    stopFallbackSpeech();
-    fallbackSpeechRef.current = speakMinskiVoice(
-      MINSKI_INTRO_SPEECH,
-      () => {
-        setIsSpeaking(true);
-        isSpeakingRef.current = true;
-      },
-      () => {
-        setIsSpeaking(false);
-        isSpeakingRef.current = false;
-      },
-      'intro'
-    );
-    onShowToast('MinSKI sedang menyapa Kakak... ✨');
-  }, [handleBargeIn, isSpeaking, onShowToast, stopFallbackSpeech]);
 
   // Reset sesi
   const handleReset = useCallback(() => {
@@ -681,7 +658,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       setMatchResult(result);
       setScreenMode('result');
       stopFallbackSpeech();
-      fallbackSpeechRef.current = speakMinskiVoice(result.shortVoiceSpeech);
+      if (!isMutedRef.current) {
+        fallbackSpeechRef.current = speakMinskiVoice(result.shortVoiceSpeech);
+      }
     }, 2800);
 
     craftingTimersRef.current = [t1];
@@ -1021,14 +1000,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-80 h-80 bg-[#C5A059]/10 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Header Bar */}
-      <header className="relative z-20 w-full max-w-md mx-auto px-4 pt-2 pb-1 shrink-0 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className={`w-2 h-2 rounded-full ${isVoiceMode ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-          <span className="font-heading text-[11px] sm:text-xs font-bold tracking-[0.06em] text-[#DFB76C] uppercase">
-            MinSKI · Live Voice
-          </span>
-          <span className="text-[9px] py-0.5 px-1.5 rounded-full bg-white/10 text-slate-300 font-mono">
-            {activeEngine === 'gemini-live' ? 'Native Live' : 'AI Hybrid'}
+      <header className="relative z-20 w-full max-w-md mx-auto px-4 pt-3 pb-1 shrink-0 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${isVoiceMode ? 'bg-emerald-400 animate-pulse' : 'bg-[#DFB76C]'}`} />
+          <span className="font-heading text-xs font-bold tracking-[0.08em] text-[#DFB76C] uppercase">
+            Racik Aroma · MinSKI
           </span>
         </div>
 
@@ -1061,38 +1037,27 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       </header>
 
       {/* Main Content: Avatar, Transkripsi, Kontrol Voice */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-1 pb-24 flex flex-col items-center justify-between max-w-md mx-auto w-full">
-        {/* A. MinSKI Avatar */}
-        <div className="relative flex flex-col items-center justify-center pt-0.5 select-none shrink-0">
-          <div
-            className={`relative flex flex-col items-center cursor-pointer transition-transform duration-300 ${
-              isSpeaking
-                ? 'minski-speaking-active'
-                : isListening
-                ? 'minski-listening-active'
-                : 'minski-float-anim'
-            }`}
-            onClick={handlePlayIntro}
-            title={isSpeaking ? 'Ketuk untuk berhenti bicara' : 'Ketuk MinSKI untuk dengar sapaannya!'}
-          >
+      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-2 pb-24 flex flex-col items-center justify-between max-w-md mx-auto w-full">
+        {/* A. MinSKI Avatar (Lebih Besar, Tanpa Efek Distorsi, Bersih & Elegan) */}
+        <div className="relative flex flex-col items-center justify-center pt-2 select-none shrink-0 w-full">
+          <div className="relative flex flex-col items-center">
             <img
               src="/assets/sinki_minski.png"
-              alt="MinSKI - Admin SINKI"
+              alt="MinSKI"
               loading="eager"
-              className="max-h-[125px] sm:max-h-[138px] w-auto object-contain filter drop-shadow-[0_10px_22px_rgba(0,0,0,0.85)] drop-shadow-[0_0_16px_rgba(223,183,108,0.22)]"
+              className="h-[210px] sm:h-[235px] w-auto object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)]"
             />
-            <div className="w-24 sm:w-28 h-2.5 bg-black/95 rounded-[100%] blur-[2px] -mt-1 pointer-events-none" />
           </div>
 
-          {/* 3D Kotak Podium */}
-          <div className="relative -mt-1 w-44 sm:w-48 py-1.5 px-3 rounded-[6px] minski-podium-box flex flex-col items-center justify-center text-center shadow-lg border border-[#DFB76C]/40">
+          {/* Podium Elegan */}
+          <div className="relative -mt-1 w-48 sm:w-52 py-1.5 px-3 rounded-[6px] minski-podium-box flex flex-col items-center justify-center text-center shadow-lg border border-[#DFB76C]/40">
             <div className="absolute -top-[1px] inset-x-3 h-[1px] bg-gradient-to-r from-transparent via-[#DFB76C] to-transparent opacity-80" />
             <div className="flex items-center gap-1.5">
-              <span className="font-heading text-[10.5px] sm:text-[11px] font-extrabold tracking-[0.14em] text-[#DFB76C] uppercase drop-shadow-sm">
-                ADMIN SINKI
+              <span className="font-heading text-[12px] sm:text-[13px] font-extrabold tracking-[0.16em] text-[#DFB76C] uppercase drop-shadow-sm">
+                MINSKI
               </span>
               {isSpeaking && (
-                <div className="flex items-end gap-[2px] h-3">
+                <div className="flex items-end gap-[2px] h-3 ml-0.5">
                   <span className="w-[2px] bg-amber-400 rounded-full minski-eq-bar-1" />
                   <span className="w-[2px] bg-amber-300 rounded-full minski-eq-bar-2" />
                   <span className="w-[2px] bg-amber-400 rounded-full minski-eq-bar-3" />
@@ -1100,127 +1065,64 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                 </div>
               )}
             </div>
-            <span className="font-body text-[8.5px] text-amber-200/70 tracking-wider uppercase">
-              Konsultan Suara Dua Arah
+            <span className="font-body text-[9px] text-amber-200/80 tracking-wider uppercase font-medium">
+              Konsultan Aroma Pribadi
             </span>
           </div>
 
           {/* Notifikasi Barge-In */}
           {interruptedNotice && (
-            <div className="mt-1.5 py-0.5 px-2.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-[10px] font-semibold text-amber-200 flex items-center gap-1.5 animate-pulse minski-bargein-flash">
+            <div className="mt-2 py-0.5 px-2.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-[10px] font-semibold text-amber-200 flex items-center gap-1.5 animate-pulse minski-bargein-flash">
               <Zap size={11} className="text-amber-300" />
               <span>MinSKI dipotong · Mendengarkan ucapan Kakak...</span>
             </div>
           )}
-        </div>
 
-        {/* B. Balon Dialog & Transkripsi Langsung */}
-        <div className="w-full my-auto py-2 shrink-0 space-y-2">
-          {/* Status Mode Suara */}
-          <div className="flex items-center justify-between px-1 gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {isVoiceMode ? (
-                <>
-                  <span className="inline-flex items-center gap-1 py-0.5 px-2.5 rounded-full bg-emerald-500/15 border border-emerald-400/35 text-[9.5px] font-bold text-emerald-300 shadow-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    <span>Sesi Suara · {formatSessionTime(sessionSeconds)}</span>
-                  </span>
-                  <span className="py-0.5 px-2 rounded-full bg-amber-400/10 border border-amber-400/20 text-[9px] font-medium text-amber-200/90 hidden sm:inline-block">
-                    Auto-Standby Hemat Kuota
-                  </span>
-                </>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-white/5 border border-white/10 text-[9.5px] text-slate-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                  <span>Mode Siaga (Ketuk Mulai)</span>
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              {/* Tombol Interupsi Manual saat MinSKI bicara */}
-              {isSpeaking && (
+          {/* Indikator Status Suara Mengambang (Floating Live Audio Status) */}
+          <div className="mt-3 flex flex-col items-center gap-1.5 min-h-[32px]">
+            {isSpeaking ? (
+              <div className="inline-flex items-center gap-2 py-1 px-3.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-semibold shadow-sm">
+                <div className="flex items-end gap-[2px] h-3">
+                  <span className="w-[2px] bg-emerald-400 rounded-full minski-eq-bar-1" />
+                  <span className="w-[2px] bg-emerald-300 rounded-full minski-eq-bar-2" />
+                  <span className="w-[2px] bg-emerald-400 rounded-full minski-eq-bar-3" />
+                  <span className="w-[2px] bg-emerald-200 rounded-full minski-eq-bar-4" />
+                </div>
+                <span>MinSKI sedang berbicara</span>
                 <button
                   type="button"
                   onClick={handleBargeIn}
-                  className="py-0.5 px-2.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-[9.5px] font-bold text-amber-200 flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-sm animate-pulse"
-                  title="Potong jawaban MinSKI dan bicara langsung"
+                  className="ml-1 text-[10px] text-amber-300 hover:text-white underline font-bold cursor-pointer"
                 >
-                  <Zap size={10} className="text-amber-300" />
-                  <span>Potong MinSKI</span>
+                  Potong
                 </button>
-              )}
-
-              {/* Tombol Tutup Sesi Cepat jika mode suara sedang aktif */}
-              {isVoiceMode && (
-                <button
-                  type="button"
-                  onClick={toggleVoiceMode}
-                  className="py-0.5 px-2 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/40 text-[9.5px] font-bold text-rose-200 flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-sm"
-                  title="Tutup sesi suara MinSKI dan beralih ke mode hemat daya"
-                >
-                  <MicOff size={10} className="text-rose-300" />
-                  <span>Selesai Bicara</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="relative p-3.5 sm:p-4 rounded-[10px] sinki-arch-card border border-[#DFB76C]/35 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.65)] space-y-2">
-            {/* Header Dialog */}
-            <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
-              <div className="flex items-center gap-1.5">
-                <span className="font-heading text-xs font-bold text-[#DFB76C]">MinSKI</span>
-                <span className="py-0.5 px-1.5 rounded-[3px] bg-[#DFB76C]/20 text-[9px] font-semibold text-amber-200">
-                  Voice Kore · Ramah & Elegan
-                </span>
               </div>
-
-              {isSpeaking ? (
-                <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium">
-                  <div className="flex items-end gap-[2px] h-3">
-                    <span className="w-[2px] bg-emerald-400 rounded-full minski-eq-bar-1" />
-                    <span className="w-[2px] bg-emerald-300 rounded-full minski-eq-bar-2" />
-                    <span className="w-[2px] bg-emerald-400 rounded-full minski-eq-bar-3" />
-                    <span className="w-[2px] bg-emerald-200 rounded-full minski-eq-bar-4" />
-                  </div>
-                  <span>Sedang bicara...</span>
-                </div>
-              ) : isListening ? (
-                <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <span>Mendengarkan...</span>
-                </div>
-              ) : isThinking ? (
-                <div className="flex items-center gap-1 text-[10px] text-amber-300 font-medium">
-                  <Sparkles size={11} className="animate-spin text-amber-300" />
-                  <span>Meracik aroma...</span>
-                </div>
-              ) : null}
-            </div>
-
-            {/* Isi Dialog MinSKI */}
-            <p className="font-body text-xs sm:text-[13px] text-slate-100 font-normal leading-[1.5] italic">
-              “{minskiDialogue}”
-            </p>
-
-            {/* Transkripsi Suara Pengguna secara Langsung */}
-            {liveUserTranscript && (
-              <div className="pt-1.5 pb-0.5 px-2 rounded-[6px] bg-emerald-950/40 border border-emerald-500/30 text-[11px] text-emerald-200 flex items-start gap-1.5">
-                <Mic size={12} className="text-emerald-400 shrink-0 mt-0.5 animate-bounce" />
-                <div className="min-w-0 flex-1">
-                  <span className="font-semibold text-emerald-300">Kakak: </span>
-                  <span className="italic text-white">"{liveUserTranscript}"</span>
-                </div>
+            ) : isListening ? (
+              <div className="inline-flex items-center gap-1.5 py-1 px-3.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-semibold animate-pulse shadow-sm">
+                <Mic size={13} className="text-emerald-400" />
+                <span>{liveUserTranscript ? `"${liveUserTranscript}"` : 'Mendengarkan ucapanmu...'}</span>
               </div>
-            )}
+            ) : isThinking ? (
+              <div className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-medium">
+                <Sparkles size={12} className="animate-spin text-amber-300" />
+                <span>Meracik aroma karaktermu...</span>
+              </div>
+            ) : isVoiceMode ? (
+              <div className="inline-flex items-center gap-1.5 py-0.5 px-3 rounded-full bg-emerald-500/10 border border-emerald-400/25 text-[10px] text-emerald-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span>Sesi Suara Aktif · {formatSessionTime(sessionSeconds)}</span>
+              </div>
+            ) : null}
           </div>
+        </div>
 
+        {/* B. Area Rekomendasi (Muncul Elegan Saat Siap) & Kontrol Bawah */}
+        <div className="w-full shrink-0 space-y-3 pt-2">
           {/* Kartu Rekomendasi Parfum SINKI */}
           {matchResult && (
-            <div className="p-2.5 sm:p-3 rounded-[10px] sinki-arch-bar border border-[#DFB76C]/50 flex items-center justify-between gap-3 shadow-[0_6px_20px_rgba(0,0,0,0.6)] animate-fadeIn">
+            <div className="p-2.5 sm:p-3 rounded-[10px] sinki-arch-bar border border-[#DFB76C]/60 flex items-center justify-between gap-3 shadow-[0_8px_24px_rgba(0,0,0,0.7)] animate-fadeIn">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-[6px] bg-black/50 border border-[#DFB76C]/30 flex items-center justify-center p-1 shrink-0">
+                <div className="w-11 h-11 rounded-[8px] bg-black/60 border border-[#DFB76C]/40 flex items-center justify-center p-1 shrink-0">
                   <img
                     src={matchResult.photoUrl}
                     alt={matchResult.perfumeName}
@@ -1228,13 +1130,13 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                   />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-[9px] font-semibold text-[#DFB76C] uppercase tracking-wider block">
-                    ✨ Rekomendasi SINKI Untukmu
+                  <span className="text-[9px] font-bold text-[#DFB76C] uppercase tracking-wider block">
+                    ✨ Racikan Rekomendasi
                   </span>
                   <h4 className="font-heading text-xs sm:text-[13px] font-bold text-white truncate">
                     {matchResult.perfumeName}
                   </h4>
-                  <p className="text-[9.5px] text-slate-300 truncate">
+                  <p className="text-[10px] text-slate-300 truncate">
                     {matchResult.categoryLabel}
                   </p>
                 </div>
@@ -1246,83 +1148,46 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                   handleBargeIn();
                   setScreenMode('result');
                 }}
-                className="py-1.5 px-3 rounded-[6px] champagne-gold-btn text-slate-950 text-[10.5px] font-bold shrink-0 shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer hover:brightness-105"
+                className="py-1.5 px-3.5 rounded-[8px] champagne-gold-btn text-slate-950 text-[11px] font-bold shrink-0 shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer hover:brightness-105"
               >
                 <span>Lihat Botol</span>
                 <ChevronRight size={13} />
               </button>
             </div>
           )}
-        </div>
 
-        {/* C. Kontrol Voice-to-Voice Dua Arah */}
-        <div className="w-full shrink-0 space-y-2 pt-1">
-          {/* Preset Topics */}
-          <div className="w-full space-y-1">
-            <div className="flex items-center justify-between px-0.5">
-              <span className="font-body text-[10px] font-semibold text-amber-200/85 tracking-wide">
-                ⚡ Topik Cepat (Tanpa Ketik):
-              </span>
-              <span className="font-body text-[9px] text-slate-400">1-Klik Konsultasi</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {MINSKI_PRESET_QUERIES.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  disabled={isThinking}
-                  onClick={() => handleSendTextMessage(preset.query)}
-                  className="p-1.5 sm:p-2 rounded-[8px] sinki-arch-card border border-[#DFB76C]/30 hover:border-[#DFB76C] flex flex-col items-center text-center gap-0.5 sm:gap-1 transition-all active:scale-95 cursor-pointer group disabled:opacity-50"
-                >
-                  <span className="text-sm sm:text-base group-hover:scale-110 transition-transform">{preset.icon}</span>
-                  <span className="font-heading text-[9.5px] sm:text-[10.5px] font-bold text-white leading-tight">
-                    {preset.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Tombol Utama Mode Suara Dua Arah (ChatGPT Voice) */}
-          <div className="flex flex-col items-center justify-center pt-1">
+          {/* Tombol Utama Suara (Ganti Kotak Kapsul) */}
+          <div className="w-full">
             <button
               type="button"
               onClick={toggleVoiceMode}
-              className={`relative py-2.5 px-6 rounded-full flex items-center justify-center gap-2 text-xs font-bold transition-all duration-300 cursor-pointer shadow-lg active:scale-95 ${
+              className={`w-full py-3 px-5 rounded-[12px] flex items-center justify-center gap-2 text-xs sm:text-[13px] font-bold tracking-wide transition-all duration-300 cursor-pointer shadow-lg active:scale-98 ${
                 isVoiceMode
-                  ? 'bg-rose-600 text-white minski-voice-active border border-rose-400 shadow-[0_0_20px_rgba(225,29,72,0.6)]'
-                  : 'champagne-gold-btn text-slate-950 shadow-[0_4px_18px_rgba(197,160,89,0.38)] hover:brightness-105'
+                  ? 'bg-rose-600 hover:bg-rose-500 text-white border border-rose-400/80 shadow-[0_0_22px_rgba(225,29,72,0.45)]'
+                  : 'champagne-gold-btn text-slate-950 shadow-[0_4px_18px_rgba(197,160,89,0.35)] hover:brightness-105'
               }`}
             >
               {isVoiceMode ? (
                 <>
-                  <MicOff size={15} />
-                  <span>Selesai Sesi Suara (Ketuk Matikan)</span>
+                  <MicOff size={16} className="text-white" />
+                  <span>Akhiri Konsultasi Suara</span>
                 </>
               ) : (
                 <>
-                  <Mic size={15} />
-                  <span>Mulai Percakapan Suara (ChatGPT Voice)</span>
+                  <Mic size={16} className="text-slate-950" />
+                  <span>Bicara Langsung dengan MinSKI</span>
                 </>
               )}
             </button>
-
-            <span className="font-body text-[9.5px] sm:text-[10px] text-slate-400 font-normal mt-1 text-center">
-              {isVoiceMode
-                ? 'Mikrofon terus aktif. Bicaralah bebas kapan saja, MinSKI akan merespon dan membiarkanmu memotong pembicaraan.'
-                : micDenied
-                ? 'Mikrofon tidak diizinkan. Silakan ketik pertanyaan di bawah ya Kak!'
-                : 'Ketuk untuk mengaktifkan sesi audio dua arah tanpa perlu menekan tombol berulang kali'}
-            </span>
           </div>
 
-          {/* Input Teks Cadangan */}
+          {/* Bar Teks Input (Dipertahankan & Ditata Rapi) */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSendTextMessage(typedMessage);
             }}
-            className={`flex items-center gap-1.5 p-1 rounded-[8px] sinki-arch-input border ${
+            className={`w-full flex items-center gap-2 p-1.5 rounded-[10px] sinki-arch-input border ${
               micDenied ? 'border-amber-400/80 shadow-[0_0_12px_rgba(223,183,108,0.25)]' : 'border-[#DFB76C]/30'
             } backdrop-blur-md`}
           >
@@ -1330,16 +1195,16 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               type="text"
               value={typedMessage}
               onChange={(e) => setTypedMessage(e.target.value)}
-              placeholder={micDenied ? "Ketik wangi impianmu di sini..." : "Atau ketik wangi impianmu ke MinSKI..."}
-              className="flex-1 bg-transparent px-2.5 py-1 text-xs text-white placeholder:text-slate-400 focus:outline-none"
+              placeholder="Ketik wangi impianmu ke MinSKI..."
+              className="flex-1 bg-transparent px-3 py-1.5 text-xs text-white placeholder:text-slate-400 focus:outline-none"
             />
             <button
               type="submit"
               disabled={!typedMessage.trim() || isThinking}
-              className="p-1.5 rounded-[6px] bg-[#DFB76C] text-slate-950 hover:bg-[#F0DFB6] disabled:opacity-40 transition-all cursor-pointer"
+              className="p-2 rounded-[8px] bg-[#DFB76C] text-slate-950 hover:bg-[#F0DFB6] disabled:opacity-40 transition-all cursor-pointer shrink-0"
               title="Kirim ke MinSKI"
             >
-              <Send size={13} />
+              <Send size={14} />
             </button>
           </form>
 
@@ -1350,8 +1215,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               onClick={() => {
                 cleanupAudio();
                 setScreenMode('manual');
+                setManualStep(1);
               }}
-              className="font-body text-[10.5px] text-slate-400 hover:text-[#DFB76C] transition-colors cursor-pointer"
+              className="font-body text-[11px] text-slate-400 hover:text-[#DFB76C] transition-colors cursor-pointer"
             >
               Atau racik manual lewat kuis 3 langkah →
             </button>
