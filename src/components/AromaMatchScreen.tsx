@@ -539,7 +539,10 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           } else if (msg.type === 'unsupported' || msg.type === 'error') {
             console.warn('[Gemini Live Notice]:', msg.message || msg.reason);
             setActiveEngine('fallback-speech');
+            activeEngineRef.current = 'fallback-speech';
             setEngineTitle('Natural Voice Assistant (Web Speech + AI)');
+            try { ws.close(); } catch {}
+            wsRef.current = null;
             if (isVoiceModeRef.current) {
               startSpeechRecognitionFallback();
             }
@@ -550,19 +553,22 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       };
 
       ws.onclose = () => {
-        if (isVoiceModeRef.current) {
-          // Reconnect once if disconnected unexpectedly
+        wsRef.current = null;
+        if (isVoiceModeRef.current && activeEngineRef.current === 'gemini-live') {
           setTimeout(() => {
-            if (isVoiceModeRef.current && (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED)) {
+            if (isVoiceModeRef.current && activeEngineRef.current === 'gemini-live' && !wsRef.current) {
               connectGeminiLive();
             }
-          }, 1500);
+          }, 2000);
         }
       };
 
       ws.onerror = () => {
         setActiveEngine('fallback-speech');
+        activeEngineRef.current = 'fallback-speech';
         setEngineTitle('Natural Voice Assistant (Web Speech + AI)');
+        try { ws.close(); } catch {}
+        wsRef.current = null;
         if (isVoiceModeRef.current) {
           startSpeechRecognitionFallback();
         }
@@ -720,8 +726,8 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       const nowTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
       setChatHistory((prev) => [...prev, { sender: 'user', text: q, time: nowTime }]);
 
-      // Jika WebSocket Gemini Live aktif, kirim via WebSocket
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      // Jika WebSocket Gemini Live aktif dan model native audio berjalan, kirim via WebSocket
+      if (activeEngineRef.current === 'gemini-live' && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         currentOutputTranscriptRef.current = '';
         wsRef.current.send(JSON.stringify({ type: 'text', text: q }));
         setIsThinking(false);

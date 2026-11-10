@@ -994,6 +994,9 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                     fallback: 'web-speech-tts',
                   })
                 );
+                setTimeout(() => {
+                  try { server.close(1000, 'Fallback to HTTP'); } catch {}
+                }, 300);
               }
             } catch (err: any) {
               console.warn('Worker Gemini Live error:', err);
@@ -1004,6 +1007,9 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                   fallback: 'web-speech-tts',
                 })
               );
+              setTimeout(() => {
+                try { server.close(1000, 'Fallback to HTTP'); } catch {}
+              }, 300);
             }
           })();
         }
