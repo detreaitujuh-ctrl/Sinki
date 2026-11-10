@@ -1101,7 +1101,7 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                 return new Response(bytes, {
                   headers: {
                     'Content-Type': 'audio/wav',
-                    'Cache-Control': 'public, max-age=86400',
+                    'Cache-Control': 'public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400',
                     ...getSecurityAndCorsHeaders(),
                   },
                 });
@@ -1242,6 +1242,7 @@ Jika informasi sudah cukup dan siap merekomendasikan:
                 },
                 generationConfig: {
                   responseMimeType: 'application/json',
+                  maxOutputTokens: 250,
                   thinkingConfig: {
                     thinkingLevel: 'LOW',
                   },

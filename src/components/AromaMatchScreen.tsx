@@ -224,6 +224,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const speakingStartTimeRef = useRef<number>(0);
   const consecutiveSpeechFramesRef = useRef<number>(0);
   const speakingEndDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isThinkingRef = useRef<boolean>(false);
 
   const onShowToastRef = useRef(onShowToast);
   useEffect(() => {
@@ -242,6 +243,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   isVoiceModeRef.current = isVoiceMode;
   isMutedRef.current = isMuted;
   activeEngineRef.current = activeEngine;
+  isThinkingRef.current = isThinking;
 
   const catalog = perfumes.length > 0 ? perfumes : [];
 
@@ -320,8 +322,8 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       let transcriptBuffer = '';
 
       recognition.onresult = (event: any) => {
-        // Jangan rekam suara MinSKI sendiri saat sedang berbicara
-        if (isSpeakingRef.current) return;
+        // Jangan rekam jika MinSKI sedang berbicara atau sedang berpikir (Perisai Anti-Gema)
+        if (isSpeakingRef.current || isThinkingRef.current) return;
 
         let interim = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -351,7 +353,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       };
 
       recognition.onend = () => {
-        if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech' && !isSpeakingRef.current) {
+        if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech' && !isSpeakingRef.current && !isThinkingRef.current) {
           try {
             recognition.start();
           } catch {}
@@ -633,26 +635,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           lastActivityTimeRef.current = Date.now();
         }
 
-        // 2. Perlindungan Cerdas Interupsi (Anti-Patah & Anti-Feedback):
-        // Jangan potong suara MinSKI karena bunyi AC, ketukan meja, desahan nafas, atau gema speaker HP!
+        // 2. Perlindungan Cerdas Interupsi (Anti-Patah & Anti-Feedback Mutlak):
+        // Jika MinSKI sedang berbicara, abaikan audio mikrofon sepenuhnya agar suara speaker HP tidak memotong MinSKI
         if (isSpeakingRef.current) {
-          const speakingDuration = Date.now() - speakingStartTimeRef.current;
-          // Inhibit interupsi pada 800ms pertama kalimat agar audio speaker stabil
-          if (speakingDuration > 800 && rms > 0.085) {
-            consecutiveSpeechFramesRef.current++;
-            // Wajib konsisten minimal 6 frame berturut-turut (~250ms suara bicara jelas)
-            if (consecutiveSpeechFramesRef.current >= 6) {
-              consecutiveSpeechFramesRef.current = 0;
-              handleBargeIn();
-            }
-          } else {
-            consecutiveSpeechFramesRef.current = 0;
-          }
-
-          // Supresi kebocoran suara speaker: jangan kirim audio volume rendah kembali ke Gemini Live
-          if (rms < 0.065) {
-            return;
-          }
+          consecutiveSpeechFramesRef.current = 0;
+          return;
         } else {
           consecutiveSpeechFramesRef.current = 0;
         }
@@ -722,6 +709,10 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       setTypedMessage('');
       setLiveUserTranscript(q);
       setIsThinking(true);
+      isThinkingRef.current = true;
+
+      // Hentikan sementara speech recognition saat pengguna selesai bicara & MinSKI memproses
+      stopSpeechRecognitionFallback();
 
       const nowTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
       setChatHistory((prev) => [...prev, { sender: 'user', text: q, time: nowTime }]);
@@ -731,6 +722,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         currentOutputTranscriptRef.current = '';
         wsRef.current.send(JSON.stringify({ type: 'text', text: q }));
         setIsThinking(false);
+        isThinkingRef.current = false;
         return;
       }
 
@@ -744,6 +736,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         if (res.ok) {
           const data = await res.json();
           setIsThinking(false);
+          isThinkingRef.current = false;
+
+          // Tampilkan teks jawaban & rekomendasi seketika agar respon terasa instan
           setMinskiDialogue(data.reply);
           setChatHistory((prev) => [...prev, { sender: 'minski', text: data.reply, time: nowTime }]);
 
@@ -755,6 +750,8 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
           stopFallbackSpeech();
           if (!isMutedRef.current) {
+            setIsSpeaking(true);
+            isSpeakingRef.current = true;
             fallbackSpeechRef.current = speakMinskiVoice(
               data.reply,
               () => {
@@ -764,20 +761,31 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               () => {
                 setIsSpeaking(false);
                 isSpeakingRef.current = false;
-                if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech') {
-                  startSpeechRecognitionFallback();
-                }
+                // Jeda aman 450ms sebelum mikrofon aktif kembali agar tidak menangkap pantulan gema speaker HP
+                setTimeout(() => {
+                  if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech' && !isSpeakingRef.current) {
+                    startSpeechRecognitionFallback();
+                  }
+                }, 450);
               },
               data.audioKey
             );
+          } else {
+            // Jika mode bisu, buka kembali mikrofon setelah jeda singkat
+            setTimeout(() => {
+              if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech' && !isSpeakingRef.current) {
+                startSpeechRecognitionFallback();
+              }
+            }, 300);
           }
           return;
         }
       } catch (err) {
         console.warn('Error calling /api/minski/chat:', err);
+      } finally {
+        setIsThinking(false);
+        isThinkingRef.current = false;
       }
-
-      setIsThinking(false);
     },
     [chatHistory, startSpeechRecognitionFallback, stopFallbackSpeech]
   );

@@ -1121,6 +1121,7 @@ Jika informasi sudah cukup dan siap merekomendasikan:
           config: {
             systemInstruction: systemPrompt,
             responseMimeType: 'application/json',
+            maxOutputTokens: 250,
             thinkingConfig: {
               thinkingLevel: ThinkingLevel.LOW,
             },

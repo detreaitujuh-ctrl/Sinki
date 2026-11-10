@@ -471,9 +471,11 @@ export function speakMinskiVoice(
   // Hentikan audio sebelumnya agar tidak tumpang tindih
   stopMinskiVoice();
 
-  // Gunakan pita suara resmi Gemini Kore via endpoint /api/minski/tts
+  // 1. Cek audio statis ultra-cepat jika ada key spesifik (zero network delay)
   let audioSrc: string | null = null;
-  if (text.trim().length > 0) {
+  if (preferredAudioKey && MINSKI_STATIC_AUDIO_MAP[preferredAudioKey]) {
+    audioSrc = MINSKI_STATIC_AUDIO_MAP[preferredAudioKey];
+  } else if (text.trim().length > 0) {
     audioSrc = `/api/minski/tts?text=${encodeURIComponent(text.trim())}`;
   }
 
@@ -481,8 +483,11 @@ export function speakMinskiVoice(
     const audio = new Audio(audioSrc);
     activeMinskiAudio = audio;
 
+    // Perisai Akustik: Aktifkan status bicara seketika saat audio di-request agar mikrofon terlindungi dari gema
+    if (onStart) onStart();
+
     audio.onplay = () => {
-      if (onStart) onStart();
+      // Audio mulai terputar di speaker
     };
 
     audio.onended = () => {
