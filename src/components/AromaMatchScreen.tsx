@@ -213,6 +213,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const isSpeakingRef = useRef<boolean>(false);
   const isVoiceModeRef = useRef<boolean>(false);
   const isMutedRef = useRef<boolean>(false);
+  const activeEngineRef = useRef<'gemini-live' | 'fallback-speech'>('gemini-live');
+  const recognitionRef = useRef<any>(null);
+  const handleSendTextMessageRef = useRef<(text: string) => Promise<void>>(async () => {});
   const fallbackSpeechRef = useRef<(() => void) | null>(null);
   const currentOutputTranscriptRef = useRef<string>('');
   const craftingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -238,6 +241,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   isSpeakingRef.current = isSpeaking;
   isVoiceModeRef.current = isVoiceMode;
   isMutedRef.current = isMuted;
+  activeEngineRef.current = activeEngine;
 
   const catalog = perfumes.length > 0 ? perfumes : [];
 
@@ -271,6 +275,83 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     setIsSpeaking(false);
   }, []);
 
+  // Stop Web Speech Recognition fallback
+  const stopSpeechRecognitionFallback = useCallback(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch {}
+      recognitionRef.current = null;
+    }
+  }, []);
+
+  // Start Web Speech Recognition fallback (Continuous conversational speech in Indonesian)
+  const startSpeechRecognitionFallback = useCallback(() => {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      console.warn('[Web Speech]: SpeechRecognition tidak didukung browser ini.');
+      return;
+    }
+    stopSpeechRecognitionFallback();
+    try {
+      const recognition = new SpeechRec();
+      recognition.lang = 'id-ID';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      let transcriptBuffer = '';
+
+      recognition.onresult = (event: any) => {
+        // Jangan rekam suara MinSKI sendiri saat sedang berbicara
+        if (isSpeakingRef.current) return;
+
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const item = event.results[i];
+          if (item.isFinal) {
+            transcriptBuffer += item[0].transcript;
+          } else {
+            interim += item[0].transcript;
+          }
+        }
+        const showText = transcriptBuffer || interim;
+        if (showText) {
+          setLiveUserTranscript(showText);
+        }
+        if (transcriptBuffer.trim().length > 0) {
+          const query = transcriptBuffer.trim();
+          transcriptBuffer = '';
+          handleSendTextMessageRef.current(query);
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        console.warn('[Web Speech Recognition Error]:', e?.error);
+        if (e?.error === 'not-allowed') {
+          setMicDenied(true);
+        }
+      };
+
+      recognition.onend = () => {
+        if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech' && !isSpeakingRef.current) {
+          try {
+            recognition.start();
+          } catch {}
+        }
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+      setIsListening(true);
+    } catch (err) {
+      console.warn('[Speech Recognition Start Error]:', err);
+    }
+  }, [stopSpeechRecognitionFallback]);
+
   // User interupsi (Barge-In)
   const handleBargeIn = useCallback(() => {
     stopAllPlaybackSources();
@@ -291,6 +372,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const cleanupAudio = useCallback(() => {
     stopAllPlaybackSources();
     stopFallbackSpeech();
+    stopSpeechRecognitionFallback();
 
     if (scriptProcessorRef.current) {
       try {
@@ -332,7 +414,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       setIsSpeaking(false);
     }
     isSpeakingRef.current = false;
-  }, [stopAllPlaybackSources, stopFallbackSpeech]);
+  }, [stopAllPlaybackSources, stopFallbackSpeech, stopSpeechRecognitionFallback]);
 
   // Play audio chunk from Gemini Live (24kHz PCM)
   const schedule24kPcmChunk = useCallback((base64Audio: string) => {
@@ -444,6 +526,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             console.warn('[Gemini Live Notice]:', msg.message || msg.reason);
             setActiveEngine('fallback-speech');
             setEngineTitle('Natural Voice Assistant (Web Speech + AI)');
+            if (isVoiceModeRef.current) {
+              startSpeechRecognitionFallback();
+            }
           }
         } catch (e) {
           console.warn('WS message parsing error:', e);
@@ -464,14 +549,20 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       ws.onerror = () => {
         setActiveEngine('fallback-speech');
         setEngineTitle('Natural Voice Assistant (Web Speech + AI)');
+        if (isVoiceModeRef.current) {
+          startSpeechRecognitionFallback();
+        }
       };
 
       wsRef.current = ws;
     } catch (e) {
       setActiveEngine('fallback-speech');
       setEngineTitle('Natural Voice Assistant (Web Speech + AI)');
+      if (isVoiceModeRef.current) {
+        startSpeechRecognitionFallback();
+      }
     }
-  }, [handleBargeIn, schedule24kPcmChunk]);
+  }, [handleBargeIn, schedule24kPcmChunk, startSpeechRecognitionFallback]);
 
   // Start Real-Time Microphone Streaming (Native 16kHz PCM to Gemini Live)
   const startNativeMicStream = useCallback(async () => {
@@ -653,6 +744,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               () => {
                 setIsSpeaking(false);
                 isSpeakingRef.current = false;
+                if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech') {
+                  startSpeechRecognitionFallback();
+                }
               },
               data.audioKey
             );
@@ -665,8 +759,12 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
       setIsThinking(false);
     },
-    [chatHistory, stopFallbackSpeech]
+    [chatHistory, startSpeechRecognitionFallback, stopFallbackSpeech]
   );
+
+  useEffect(() => {
+    handleSendTextMessageRef.current = handleSendTextMessage;
+  }, [handleSendTextMessage]);
 
 
   // Reset sesi
