@@ -8,6 +8,7 @@ export interface Env {
   OWNER_PIN?: string;
   SESSION_SECRET?: string;
   GEMINI_API_KEY?: string;
+  GROQ_API_KEY?: string;
 }
 
 const DEFAULT_SUPABASE_URL = 'https://tsxclttisxnmvdkwziqx.supabase.co';
@@ -90,6 +91,21 @@ function checkNeedsConsultationWorker(
     'blue emotion', 'polo sport', 'good girl', 'sugar baby', 'santal 33'
   ];
   if (specificVariants.some((v) => lower.includes(v))) {
+    return { needsConsultation: false };
+  }
+
+  if (
+    lower.includes('solusi') ||
+    lower.includes('rekomendasi') ||
+    lower.includes('terlaris') ||
+    lower.includes('bestseller') ||
+    lower.includes('paling enak') ||
+    lower.includes('parfum apa') ||
+    lower.includes('mana yang cocok') ||
+    lower.includes('apa yang bagus') ||
+    lower.includes('pilihan terbaik') ||
+    lower.includes('juara')
+  ) {
     return { needsConsultation: false };
   }
 
@@ -824,7 +840,7 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                 upstreamWs.send(
                   JSON.stringify({
                     setup: {
-                      model: 'models/gemini-2.0-flash-exp',
+                      model: 'models/gemini-3.8-live',
                       generationConfig: {
                         responseModalities: ['AUDIO'],
                         speechConfig: {
@@ -1252,6 +1268,106 @@ Jika informasi sudah cukup dan siap merekomendasikan:
             }
           } catch (geminiErr) {
             console.warn('[Worker Gemini AI Fallback Notice]:', geminiErr);
+          }
+        }
+
+        // 3b. Failover ke Groq Cloud (Llama 3.3 70B Versatile) jika Gemini belum menjawab
+        const groqKey = (env.GROQ_API_KEY || '').trim();
+        if (groqKey && groqKey.length > 10) {
+          try {
+            const activeCatalog = (catalog || []).filter((p: any) => p.isActive !== false);
+            const catalogBrief = activeCatalog.slice(0, 30).map((p: any) => `- ${p.name} (${p.categoryLabel || p.category}): ${(p.accords || []).join(', ')}`).join('\n');
+            const groqMessages = [
+              {
+                role: 'system',
+                content: `Kamu adalah MinSKI, konsultan parfum pribadi dari Atelier SINKI Parfums Indonesia. Karaktermu perempuan ramah, ceria, dan sopan menyapa pelanggan "Kakak".
+Tugasmu: Berikan SATU rekomendasi parfum terbaik beserta penjelasan memikat mengapa wangi tersebut sangat cocok untuk Kakak.
+PILIH HANYA DARI DAFTAR INI:
+${catalogBrief}
+
+Keluarkan HANYA format JSON valid berikut:
+{
+  "reply": "Respons ramah MinSKI yang menjelaskan parfum rekomendasi untuk Kakak",
+  "selectedPerfumeName": "Nama persis parfum dari katalog",
+  "accords": "Accords utama parfum"
+}`
+              },
+              ...history.slice(-4).map((h: any) => ({
+                role: (h.sender === 'user' || h.role === 'user') ? 'user' : 'assistant',
+                content: String(h.text || '').trim()
+              })),
+              { role: 'user', content: rawMessage }
+            ];
+
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${groqKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: groqMessages,
+                response_format: { type: 'json_object' },
+                temperature: 0.6,
+                max_tokens: 500,
+              }),
+              signal: AbortSignal.timeout(6000),
+            });
+
+            if (groqRes.ok) {
+              const groqData: any = await groqRes.json();
+              const content = groqData.choices?.[0]?.message?.content;
+              const parsed = JSON.parse(content || '{}');
+              if (parsed.reply && parsed.selectedPerfumeName) {
+                const matchedItem = activeCatalog.find(
+                  (p: any) => (p.name || '').toLowerCase() === parsed.selectedPerfumeName.toLowerCase() ||
+                              (p.name || '').toLowerCase().includes(parsed.selectedPerfumeName.toLowerCase()) ||
+                              parsed.selectedPerfumeName.toLowerCase().includes((p.name || '').toLowerCase())
+                ) || activeCatalog[0];
+
+                if (matchedItem) {
+                  let photo = assets?.masterFlacon || DEFAULT_MASTER_FLACON;
+                  const nameLower = (matchedItem.name || '').toLowerCase();
+                  for (const [k, v] of Object.entries(top11Photos)) {
+                    if (v && typeof v === 'string' && (k.toLowerCase().includes(nameLower) || nameLower.includes(k.toLowerCase()))) {
+                      photo = v;
+                      break;
+                    }
+                  }
+
+                  let audioKey: string | null = null;
+                  if (nameLower.includes('monaco') || rawMessage.toLowerCase().includes('kencan')) {
+                    audioKey = 'preset_kencan';
+                  } else if (nameLower.includes('dunhill') || rawMessage.toLowerCase().includes('kerja')) {
+                    audioKey = 'preset_kerja';
+                  } else if (nameLower.includes('aqua') || rawMessage.toLowerCase().includes('segar')) {
+                    audioKey = 'preset_segar';
+                  }
+
+                  return jsonResponse({
+                    reply: parsed.reply,
+                    audioKey,
+                    recommendedPerfume: {
+                      perfumeName: matchedItem.name,
+                      categoryLabel: matchedItem.categoryLabel || 'SINKI Luxury Signature',
+                      matchScore: 98,
+                      matchScoreLabel: 'Estimasi Kecocokan Aroma',
+                      hypnoticScript: parsed.reply,
+                      shortVoiceSpeech: parsed.reply,
+                      accords: parsed.accords || (matchedItem.accords ? matchedItem.accords.join(' · ') : 'Amber · Woods'),
+                      longevity: (matchedItem as any).longevity || 'Informasi belum tersedia',
+                      sillage: (matchedItem as any).sillage || 'Informasi belum tersedia',
+                      photoUrl: photo,
+                      pricePerMl: matchedItem.pricePerMl || 3000,
+                    },
+                    isRecommendationReady: true,
+                  });
+                }
+              }
+            }
+          } catch (groqErr) {
+            console.warn('[Worker Groq Fallback Notice]:', groqErr);
           }
         }
 

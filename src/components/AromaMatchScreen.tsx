@@ -296,6 +296,20 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       return;
     }
     stopSpeechRecognitionFallback();
+
+    if (mediaStreamRef.current) {
+      try {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      } catch {}
+      mediaStreamRef.current = null;
+    }
+    if (scriptProcessorRef.current) {
+      try {
+        scriptProcessorRef.current.disconnect();
+      } catch {}
+      scriptProcessorRef.current = null;
+    }
+
     try {
       const recognition = new SpeechRec();
       recognition.lang = 'id-ID';
