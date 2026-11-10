@@ -388,60 +388,7 @@ export function resolveMinskiRecommendation(
   };
 }
 
-// FUNGSI PENCARIAN SUARA PALING LEMBUT & NATURAL (MENGHINDARI SUARA KAKU / ROBOTIK)
-export function getBestMinskiVoice(): SpeechSynthesisVoice | null {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return null;
-  const voices = window.speechSynthesis.getVoices();
-  if (!voices || voices.length === 0) return null;
-
-  // 1. Suara Bahasa Indonesia dengan prioritas suara lembut / natural
-  const idVoices = voices.filter(
-    (v) =>
-      v.lang.toLowerCase().startsWith('id') ||
-      v.lang.toLowerCase().includes('indonesia') ||
-      v.name.toLowerCase().includes('indonesia')
-  );
-
-  if (idVoices.length > 0) {
-    // Prioritas 1: Google Bahasa Indonesia (sangat lembut, bersahabat & natural)
-    const googleId = idVoices.find((v) => v.name.toLowerCase().includes('google'));
-    if (googleId) return googleId;
-
-    // Prioritas 2: Microsoft Natural / Online / Gadis (halus dan ekspresif)
-    const naturalId = idVoices.find(
-      (v) =>
-        v.name.toLowerCase().includes('natural') ||
-        v.name.toLowerCase().includes('online') ||
-        v.name.toLowerCase().includes('gadis') ||
-        v.name.toLowerCase().includes('female')
-    );
-    if (naturalId) return naturalId;
-
-    // Prioritas 3: Suara Indonesia pertama
-    return idVoices[0];
-  }
-
-  // 2. Fallback jika sistem belum mengunduh suara ID: cari suara lembut lainnya
-  const softVoice = voices.find(
-    (v) =>
-      v.name.toLowerCase().includes('natural') ||
-      v.name.toLowerCase().includes('google') ||
-      v.name.toLowerCase().includes('samantha')
-  );
-  return softVoice || voices[0] || null;
-}
-
-// MAP FILE AUDIO SUARA MANUSIA ASLI (ZERO LATENCY, SANGAT LEMBUT & ALAMI)
-export const MINSKI_STATIC_AUDIO_MAP: Record<string, string> = {
-  intro: '/assets/audio/minski_intro.mp3',
-  kencan: '/assets/audio/minski_preset_kencan.mp3',
-  kerja: '/assets/audio/minski_preset_kerja.mp3',
-  segar: '/assets/audio/minski_preset_segar.mp3',
-  profanity: '/assets/audio/minski_profanity.mp3',
-  offtopic: '/assets/audio/minski_offtopic.mp3',
-};
-
-// Global reference untuk audio yang sedang berputar
+// Global reference untuk audio Google TTS Kore yang sedang berputar
 let activeMinskiAudio: HTMLAudioElement | null = null;
 
 export function stopMinskiVoice() {
@@ -449,67 +396,63 @@ export function stopMinskiVoice() {
     try {
       activeMinskiAudio.pause();
       activeMinskiAudio.currentTime = 0;
+      activeMinskiAudio.src = '';
     } catch {}
     activeMinskiAudio = null;
   }
-  if (typeof window !== 'undefined' && window.speechSynthesis) {
-    try {
-      window.speechSynthesis.cancel();
-    } catch {}
-  }
 }
 
-// SUARA AUDIO MINSKI SEPERTI SUARA MANUSIA ASLI (LEMBUT, INTERAKTIF & TIDAK ROBOTIK)
+// SUARA RESMI MINSKI: HANYA GOOGLE TTS KORE (GEMINI AUDIO MODEL)
+// Jika kuota habis atau server offline, tampilkan pesan error & teks, tanpa fallback ke suara lain.
 export function speakMinskiVoice(
   text: string,
   onStart?: () => void,
   onEnd?: () => void,
-  preferredAudioKey?: string
+  onError?: (errorMessage: string) => void
 ): () => void {
   if (typeof window === 'undefined') return () => {};
 
-  // Hentikan audio sebelumnya agar tidak tumpang tindih
+  // Hentikan audio sebelumnya
   stopMinskiVoice();
 
-  // 1. Cek audio statis ultra-cepat jika ada key spesifik (zero network delay)
-  let audioSrc: string | null = null;
-  if (preferredAudioKey && MINSKI_STATIC_AUDIO_MAP[preferredAudioKey]) {
-    audioSrc = MINSKI_STATIC_AUDIO_MAP[preferredAudioKey];
-  } else if (text.trim().length > 0) {
-    audioSrc = `/api/minski/tts?text=${encodeURIComponent(text.trim())}`;
+  const trimmedText = text.trim();
+  if (!trimmedText) {
+    if (onEnd) onEnd();
+    return () => {};
   }
 
-  if (audioSrc) {
-    const audio = new Audio(audioSrc);
-    activeMinskiAudio = audio;
+  // Seluruh keluaran suara wajib melalui endpoint Google TTS Kore
+  const audioSrc = `/api/minski/tts?text=${encodeURIComponent(trimmedText)}`;
+  const audio = new Audio(audioSrc);
+  activeMinskiAudio = audio;
 
-    // Perisai Akustik: Aktifkan status bicara seketika saat audio di-request agar mikrofon terlindungi dari gema
-    if (onStart) onStart();
+  // Callback onStart saat mulai memuat/memutar
+  if (onStart) onStart();
 
-    audio.onplay = () => {
-      // Audio mulai terputar di speaker
-    };
-
-    audio.onended = () => {
-      activeMinskiAudio = null;
-      if (onEnd) onEnd();
-    };
-
-    audio.onerror = (err) => {
-      console.warn('[Gemini Voice Audio Notice]:', err);
-      activeMinskiAudio = null;
-      if (onEnd) onEnd();
-    };
-
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch((err) => {
-        console.warn('Playback interrupted:', err);
-        if (onEnd) onEnd();
-      });
-    }
-  } else {
+  audio.onended = () => {
+    activeMinskiAudio = null;
     if (onEnd) onEnd();
+  };
+
+  audio.onerror = (err) => {
+    console.warn('[Google TTS Kore Error]: Gagal memuat audio TTS Kore:', err);
+    activeMinskiAudio = null;
+    if (onError) {
+      onError('Layanan suara Google Kore sedang terkendala / kuota habis. Respon ditampilkan dalam bentuk teks.');
+    }
+    if (onEnd) onEnd();
+  };
+
+  const playPromise = audio.play();
+  if (playPromise !== undefined) {
+    playPromise.catch((err) => {
+      console.warn('[Google TTS Kore Playback Error]:', err);
+      activeMinskiAudio = null;
+      if (onError) {
+        onError('Gagal memutar suara Google Kore. Respon ditampilkan dalam bentuk teks.');
+      }
+      if (onEnd) onEnd();
+    });
   }
 
   return () => {

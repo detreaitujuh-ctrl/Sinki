@@ -138,13 +138,14 @@ function float32ToInt16PCM(float32: Float32Array): Int16Array {
   return int16;
 }
 
-// Base64 encoding of Int16Array
+// High-performance Base64 encoding of Int16Array avoiding per-sample string allocations
 function int16ToBase64(int16: Int16Array): string {
   const bytes = new Uint8Array(int16.buffer, int16.byteOffset, int16.byteLength);
+  const CHUNK_SIZE = 0x8000;
   let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    const chunk = bytes.subarray(i, i + CHUNK_SIZE);
+    binary += String.fromCharCode.apply(null, chunk as any);
   }
   return window.btoa(binary);
 }
@@ -225,6 +226,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const consecutiveSpeechFramesRef = useRef<number>(0);
   const speakingEndDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isThinkingRef = useRef<boolean>(false);
+  const chatAbortRef = useRef<AbortController | null>(null);
 
   const onShowToastRef = useRef(onShowToast);
   useEffect(() => {
@@ -236,6 +238,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      if (chatAbortRef.current) {
+        try {
+          chatAbortRef.current.abort();
+        } catch {}
+      }
     };
   }, []);
 
@@ -368,12 +375,16 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     }
   }, [stopSpeechRecognitionFallback]);
 
-  // User interupsi (Barge-In)
+  // User interupsi (Smart Real-Time Barge-In - Focus 4)
   const handleBargeIn = useCallback(() => {
     stopAllPlaybackSources();
     stopFallbackSpeech();
 
-    // Kirim sinyal interrupt ke Gemini Live
+    // Hentikan status bicara secara instan
+    setIsSpeaking(false);
+    isSpeakingRef.current = false;
+
+    // Kirim sinyal interrupt ke Gemini Live agar server menghentikan generasi audio lanjutan
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       try {
         wsRef.current.send(JSON.stringify({ type: 'interrupt' }));
@@ -381,7 +392,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     }
 
     setInterruptedNotice(true);
-    setTimeout(() => setInterruptedNotice(false), 1200);
+    setTimeout(() => setInterruptedNotice(false), 900);
   }, [stopAllPlaybackSources, stopFallbackSpeech]);
 
   // Clean up mic & audio contexts
@@ -432,7 +443,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     isSpeakingRef.current = false;
   }, [stopAllPlaybackSources, stopFallbackSpeech, stopSpeechRecognitionFallback]);
 
-  // Play audio chunk from Gemini Live (24kHz PCM)
+  // Play audio chunk from Gemini Live (24kHz PCM) with Jitter Buffer & Anti-Stutter GainNode
   const schedule24kPcmChunk = useCallback((base64Audio: string) => {
     if (isMutedRef.current) return;
 
@@ -454,19 +465,51 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
     const source = ctx.createBufferSource();
     source.buffer = audioBuffer;
-    source.connect(ctx.destination);
+
+    // GainNode untuk smoothing transisi chunk (micro fade-in 3ms dan micro fade-out 3ms)
+    // Mencegah letupan digital / clicks pada batas antar-chunk (Focus 1 & 2)
+    const gainNode = ctx.createGain();
 
     const currentTime = ctx.currentTime;
-    // Jitter buffer lead-time (85ms):
-    // Menghilangkan jeda di awal & patah-patah suku kata pertama saat suara mulai diputar
-    const JITTER_BUFFER_LEAD = 0.085;
-    if (nextPlaybackTimeRef.current < currentTime) {
-      nextPlaybackTimeRef.current = currentTime + JITTER_BUFFER_LEAD;
-      speakingStartTimeRef.current = Date.now();
+    // Jitter buffer lead-time 160ms untuk awal bicara:
+    // Memberikan cadangan waktu yang cukup untuk 2-3 chunk tiba di awal tanpa patah-patah
+    const INITIAL_JITTER_LEAD = 0.160;
+    const MAX_ACCUMULATED_DELAY = 1.8; // Batas atas antrean audio agar tidak delay bertumpuk (Focus 5)
+
+    // Focus 5: Cegah penumpukan audio jika antrean melampaui batas real-time
+    if (nextPlaybackTimeRef.current - currentTime > MAX_ACCUMULATED_DELAY) {
+      nextPlaybackTimeRef.current = currentTime + INITIAL_JITTER_LEAD;
     }
 
-    source.start(nextPlaybackTimeRef.current);
-    nextPlaybackTimeRef.current += audioBuffer.duration;
+    // Jika waktu pemutaran berikutnya sudah tertinggal dari waktu sekarang
+    if (nextPlaybackTimeRef.current < currentTime) {
+      // Jika jeda sangat mikro (< 25ms) dan masih aktif bicara, sambungkan langsung tanpa jeda buatan
+      if (currentTime - nextPlaybackTimeRef.current < 0.025 && activeSourcesRef.current.length > 0) {
+        nextPlaybackTimeRef.current = currentTime;
+      } else {
+        // Mulai rangkaian bicara baru dengan buffer awal 160ms
+        nextPlaybackTimeRef.current = currentTime + INITIAL_JITTER_LEAD;
+        speakingStartTimeRef.current = Date.now();
+      }
+    }
+
+    const startTime = nextPlaybackTimeRef.current;
+    const duration = audioBuffer.duration;
+    const endTime = startTime + duration;
+
+    // Haluskan awal dan akhir chunk untuk mencegah bunyi letupan digital (clicks)
+    try {
+      gainNode.gain.setValueAtTime(0.001, startTime);
+      gainNode.gain.linearRampToValueAtTime(1.0, startTime + 0.003);
+      gainNode.gain.setValueAtTime(1.0, Math.max(startTime + 0.003, endTime - 0.003));
+      gainNode.gain.linearRampToValueAtTime(0.001, endTime);
+    } catch {}
+
+    source.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    source.start(startTime);
+    nextPlaybackTimeRef.current += duration;
 
     activeSourcesRef.current.push(source);
     setIsSpeaking(true);
@@ -475,14 +518,20 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     source.onended = () => {
       const idx = activeSourcesRef.current.indexOf(source);
       if (idx !== -1) activeSourcesRef.current.splice(idx, 1);
-      if (activeSourcesRef.current.length === 0 && ctx.currentTime >= nextPlaybackTimeRef.current - 0.04) {
+      try {
+        source.disconnect();
+        gainNode.disconnect();
+      } catch {}
+
+      // Debounce akhir bicara 280ms agar jeda nafas/frasa AI tidak memicu pergantian status prematur
+      if (activeSourcesRef.current.length === 0) {
         if (speakingEndDebounceRef.current) clearTimeout(speakingEndDebounceRef.current);
         speakingEndDebounceRef.current = setTimeout(() => {
           if (activeSourcesRef.current.length === 0 && ctx.currentTime >= nextPlaybackTimeRef.current - 0.04) {
             setIsSpeaking(false);
             isSpeakingRef.current = false;
           }
-        }, 120);
+        }, 280);
       }
     };
   }, []);
@@ -615,8 +664,8 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       setMicDenied(false);
 
       const source = inputCtx.createMediaStreamSource(stream);
-      // Use bufferSize 2048 (~42ms audio chunk for low latency)
-      const processor = inputCtx.createScriptProcessor(2048, 1, 1);
+      // Use bufferSize 4096 (~85ms audio chunk at 48kHz for low CPU, smooth stability & anti-freezing)
+      const processor = inputCtx.createScriptProcessor(4096, 1, 1);
       scriptProcessorRef.current = processor;
 
       processor.onaudioprocess = (e) => {
@@ -635,11 +684,23 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           lastActivityTimeRef.current = Date.now();
         }
 
-        // 2. Perlindungan Cerdas Interupsi (Anti-Patah & Anti-Feedback Mutlak):
-        // Jika MinSKI sedang berbicara, abaikan audio mikrofon sepenuhnya agar suara speaker HP tidak memotong MinSKI
+        // 2. DETEKSI MENYELA CERDAS (SMART BARGE-IN - Focus 4):
+        // Jika MinSKI sedang berbicara, periksa apakah pengguna sengaja bersuara untuk menyela
         if (isSpeakingRef.current) {
-          consecutiveSpeechFramesRef.current = 0;
-          return;
+          // Ambang batas interupsi pengguna: RMS >= 0.042 selama 2 frame berturut-turut (~170ms)
+          if (rms >= 0.042) {
+            consecutiveSpeechFramesRef.current++;
+            if (consecutiveSpeechFramesRef.current >= 2) {
+              consecutiveSpeechFramesRef.current = 0;
+              handleBargeIn();
+              // Lanjutkan alur agar audio pengguna yang memotong langsung terkirim ke AI
+            } else {
+              return; // Tunggu konfirmasi frame kedua untuk memastikan bukan letupan sesaat
+            }
+          } else {
+            consecutiveSpeechFramesRef.current = 0;
+            return; // Abaikan residual pantulan speaker ponsel agar MinSKI tidak memotong dirinya sendiri
+          }
         } else {
           consecutiveSpeechFramesRef.current = 0;
         }
@@ -726,15 +787,39 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         return;
       }
 
-      // Fallback HTTP endpoint /api/minski/chat
+      // Fallback HTTP endpoint /api/minski/chat dengan perlindungan anti-menggantung & anti-race condition
+      if (chatAbortRef.current) {
+        try {
+          chatAbortRef.current.abort();
+        } catch {}
+      }
+      const abortController = new AbortController();
+      chatAbortRef.current = abortController;
+
       try {
+        const timeoutId = setTimeout(() => {
+          try {
+            abortController.abort();
+          } catch {}
+        }, 8000);
+
         const res = await fetch('/api/minski/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: q, history: chatHistory }),
+          signal: abortController.signal,
         });
+
+        clearTimeout(timeoutId);
+
+        if (!isMountedRef.current || abortController.signal.aborted) {
+          return;
+        }
+
         if (res.ok) {
           const data = await res.json();
+          if (!isMountedRef.current || abortController.signal.aborted) return;
+
           setIsThinking(false);
           isThinkingRef.current = false;
 
@@ -768,7 +853,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                   }
                 }, 450);
               },
-              data.audioKey
+              (errorMessage) => {
+                onShowToastRef.current?.(errorMessage);
+              }
             );
           } else {
             // Jika mode bisu, buka kembali mikrofon setelah jeda singkat
@@ -780,11 +867,18 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           }
           return;
         }
-      } catch (err) {
-        console.warn('Error calling /api/minski/chat:', err);
+      } catch (err: any) {
+        if (err?.name === 'AbortError') {
+          console.log('[MinSKI Chat] Permintaan chat dibatalkan atau beralih ke input baru.');
+        } else {
+          console.warn('Error calling /api/minski/chat:', err);
+        }
       } finally {
-        setIsThinking(false);
-        isThinkingRef.current = false;
+        if (chatAbortRef.current === abortController) {
+          chatAbortRef.current = null;
+          setIsThinking(false);
+          isThinkingRef.current = false;
+        }
       }
     },
     [chatHistory, startSpeechRecognitionFallback, stopFallbackSpeech]
@@ -840,7 +934,20 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       setScreenMode('result');
       stopFallbackSpeech();
       if (!isMutedRef.current) {
-        fallbackSpeechRef.current = speakMinskiVoice(result.shortVoiceSpeech);
+        fallbackSpeechRef.current = speakMinskiVoice(
+          result.shortVoiceSpeech,
+          () => {
+            setIsSpeaking(true);
+            isSpeakingRef.current = true;
+          },
+          () => {
+            setIsSpeaking(false);
+            isSpeakingRef.current = false;
+          },
+          (errorMessage) => {
+            onShowToastRef.current?.(errorMessage);
+          }
+        );
       }
     }, 2800);
 

@@ -340,7 +340,7 @@ export const checkStoreLinksHealth = async (): Promise<StoreLinkCheck[]> => {
 
 // Update MinSKI Voice Preference on Server
 export const updateMinskiVoicePreference = async (
-  voicePreference: 'edge-neural' | 'gemini-live'
+  voicePreference: 'google-kore' | 'gemini-live'
 ): Promise<{ success: boolean; message?: string }> => {
   try {
     const token = getOwnerToken();
