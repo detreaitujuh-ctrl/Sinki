@@ -1035,7 +1035,148 @@ app.post('/api/minski/chat', async (req, res) => {
       });
     }
 
-    // 3. Lapisan Generative AI (Gemini 3.8 Flash) jika API Key Tersedia
+    // 3. Lapisan Generative AI Utama: Groq Cloud (Llama 3.3 70B Versatile - Respon 300ms, Bebas Kuota 14.400 Req/Hari)
+    const rawGroqKey = (process.env.GROQ_API_KEY || '').trim();
+    if (rawGroqKey && rawGroqKey.length > 10) {
+      try {
+        const activeCatalog = catalog.filter((p: any) => p.isActive !== false);
+        const catalogBrief = activeCatalog.map((p: any) => ({
+          name: p.name,
+          category: p.categoryLabel || p.category,
+          accords: Array.isArray(p.accords) ? p.accords.join(', ') : '',
+          tagline: p.tagline || '',
+        }));
+
+        const groqSystemPrompt = `Kamu adalah MinSKI (Admin SINKI), konsultan aroma wewangian pribadi dari Atelier SINKI Parfums Indonesia.
+Tugasmu adalah menemani pelanggan layaknya konsultan parfum pribadi di butik mewah melalui percakapan alami, hangat, ramah, dan cerdas.
+
+Karakter & Gaya Bahasa MinSKI:
+- Suara dan kepribadian perempuan muda yang ceria, ramah, hangat, sopan, dan elegan.
+- Selalu menyapa pelanggan dengan panggilan "Kakak" secara wajar dan konsisten.
+- Bahasa Indonesia natural percakapan sehari-hari (tidak kaku, tidak robotik, tidak seperti membaca formulir).
+- Pahami bahasa Indonesia informal, singkatan, dan ungkapan santai (nggak, ga suka, pusing, menyengat, enek, ngantor, kencan, dll).
+
+Katalog Parfum Aktif SINKI (PILIH HANYA DARI DAFTAR INI):
+${JSON.stringify(catalogBrief)}
+
+Prinsip Konsultasi Cerdas:
+1. JANGAN langsung memberikan rekomendasi jika informasi pelanggan masih umum, ambigu, atau baru tahap awal konsultasi!
+2. Jika pelanggan baru menyebutkan tujuan (misal: buat kerja tapi nggak suka menyengat, buat kencan malam, buat sehari-hari) atau aroma umum (suka aroma manis tapi jangan berlebihan, belum tahu suka aroma apa), AJUKAN SATU pertanyaan lanjutan yang relevan secara natural.
+3. JANGAN mengulang pertanyaan yang sudah dijawab oleh pelanggan dalam riwayat obrolan.
+4. Gunakan riwayat obrolan untuk memahami preferensi lengkap pelanggan (aroma yang disukai, yang dihindari, momen, karakter).
+5. Jika informasi SUDAH CUKUP (pelanggan sudah menjawab pertanyaan lanjutan, atau menyebutkan preferensi spesifik, atau langsung menunjuk varian tertentu), berikan SATU rekomendasi terbaik dari katalog aktif.
+6. Jelaskan secara ramah dan personal mengapa parfum tersebut cocok untuk kebutuhan Kakak.
+
+Format Output (HANYA JSON murni tanpa markdown/backticks):
+Jika masih tahap konsultasi / klarifikasi (informasi belum cukup):
+{
+  "status": "clarifying",
+  "reply": "Respons ramah MinSKI yang mendengarkan curhat Kakak dan mengajukan 1 pertanyaan lanjutan yang relevan.",
+  "selectedPerfumeName": null,
+  "accords": null
+}
+
+Jika informasi sudah cukup dan siap merekomendasikan:
+{
+  "status": "recommended",
+  "reply": "Penjelasan personal mengapa parfum ini sangat cocok untuk Kakak, dilanjutkan 2 kalimat rayuan elegan yang berkelas.",
+  "selectedPerfumeName": "Nama persis dari katalog aktif",
+  "accords": "Accords utama sesuai katalog"
+}`;
+
+        const groqMessages = [
+          { role: 'system', content: groqSystemPrompt },
+          ...history.slice(-6).map((h: any) => ({
+            role: (h.sender === 'user' || h.role === 'user') ? 'user' : 'assistant',
+            content: String(h.text || '').trim()
+          })),
+          { role: 'user', content: rawMessage }
+        ];
+
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${rawGroqKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: groqMessages,
+            response_format: { type: 'json_object' },
+            temperature: 0.6,
+            max_tokens: 350,
+          }),
+          signal: AbortSignal.timeout(6000),
+        });
+
+        if (groqRes.ok) {
+          const groqData: any = await groqRes.json();
+          const content = groqData.choices?.[0]?.message?.content;
+          const parsed = JSON.parse(content || '{}');
+
+          // Mode Klarifikasi / Konsultasi Groq
+          if (parsed.status === 'clarifying' || (parsed.reply && !parsed.selectedPerfumeName)) {
+            return res.json({
+              reply: parsed.reply,
+              audioKey: null,
+              recommendedPerfume: null,
+              isRecommendationReady: false,
+            });
+          }
+
+          if (parsed.reply && parsed.selectedPerfumeName) {
+            const matchedItem = activeCatalog.find(
+              (p: any) => (p.name || '').toLowerCase() === parsed.selectedPerfumeName.toLowerCase() ||
+                          (p.name || '').toLowerCase().includes(parsed.selectedPerfumeName.toLowerCase()) ||
+                          parsed.selectedPerfumeName.toLowerCase().includes((p.name || '').toLowerCase())
+            ) || activeCatalog[0];
+
+            if (matchedItem) {
+              let photo = assets.masterFlacon || DEFAULT_MASTER_FLACON;
+              const nameLower = (matchedItem.name || '').toLowerCase();
+              for (const [k, v] of Object.entries(top11Photos)) {
+                if (v && typeof v === 'string' && (k.toLowerCase().includes(nameLower) || nameLower.includes(k.toLowerCase()))) {
+                  photo = v;
+                  break;
+                }
+              }
+
+              let audioKey: string | null = null;
+              if (nameLower.includes('monaco') || rawMessage.toLowerCase().includes('kencan')) {
+                audioKey = 'preset_kencan';
+              } else if (nameLower.includes('dunhill') || rawMessage.toLowerCase().includes('kerja')) {
+                audioKey = 'preset_kerja';
+              } else if (nameLower.includes('aqua') || rawMessage.toLowerCase().includes('segar')) {
+                audioKey = 'preset_segar';
+              }
+
+              return res.json({
+                reply: parsed.reply,
+                audioKey,
+                recommendedPerfume: {
+                  perfumeName: matchedItem.name,
+                  categoryLabel: matchedItem.categoryLabel || 'SINKI Luxury Signature',
+                  matchScore: 98,
+                  matchScoreLabel: 'Estimasi Kecocokan Aroma',
+                  hypnoticScript: parsed.reply,
+                  shortVoiceSpeech: parsed.reply,
+                  accords: parsed.accords || (matchedItem.accords ? matchedItem.accords.join(' · ') : 'Amber · Woods'),
+                  longevity: (matchedItem as any).longevity || 'Informasi belum tersedia',
+                  sillage: (matchedItem as any).sillage || 'Informasi belum tersedia',
+                  photoUrl: photo,
+                  pricePerMl: matchedItem.pricePerMl || 3000,
+                },
+                isRecommendationReady: true,
+              });
+            }
+          }
+        }
+      } catch (groqErr) {
+        console.warn('[Server Groq Primary Notice]:', groqErr);
+      }
+    }
+
+    // 3b. Lapisan Generative AI Cadangan: Google Gemini 3.8 Flash
     const aiClient = getGeminiClient();
     if (aiClient) {
       try {
@@ -1066,11 +1207,6 @@ Prinsip Konsultasi Cerdas:
 4. Gunakan riwayat obrolan untuk memahami preferensi lengkap pelanggan (aroma yang disukai, yang dihindari, momen, karakter).
 5. Jika informasi SUDAH CUKUP (pelanggan sudah menjawab pertanyaan lanjutan, atau menyebutkan preferensi spesifik, atau langsung menunjuk varian tertentu), berikan SATU rekomendasi terbaik dari katalog aktif.
 6. Jelaskan secara ramah dan personal mengapa parfum tersebut cocok untuk kebutuhan Kakak.
-
-Larangan Keras (Anti-Halusinasi & Integritas Produk):
-- DILARANG merekomendasikan varian di luar katalog aktif di atas.
-- DILARANG mengarang spesifikasi ketahanan (longevity) seperti '12+ jam' atau sillage '2 meter'. Jika ditanya hal teknis yang tidak ada di katalog, sampaikan 'Informasi belum tersedia'.
-- Estimasi kecocokan adalah 'Estimasi Kecocokan Aroma', bukan skor ilmiah atau jaminan mutlak.
 
 Format Output (HANYA JSON murni tanpa markdown/backticks):
 Jika masih tahap konsultasi / klarifikasi (informasi belum cukup):
@@ -1134,7 +1270,7 @@ Jika informasi sudah cukup dan siap merekomendasikan:
 
         const parsed = JSON.parse(geminiRes.text?.trim() || '{}');
 
-        // Mode Klarifikasi / Konsultasi
+        // Mode Klarifikasi / Konsultasi Gemini
         if (parsed.status === 'clarifying' || !parsed.selectedPerfumeName) {
           if (parsed.reply) {
             return res.json({
@@ -1146,7 +1282,7 @@ Jika informasi sudah cukup dan siap merekomendasikan:
           }
         }
 
-        // Mode Rekomendasi
+        // Mode Rekomendasi Gemini
         if (parsed.selectedPerfumeName && parsed.reply) {
           const matchedItem = activeCatalog.find(
             (p: any) => p.name.toLowerCase() === parsed.selectedPerfumeName.toLowerCase()
@@ -1203,106 +1339,6 @@ Jika informasi sudah cukup dan siap merekomendasikan:
         }
       } catch (geminiErr: any) {
         console.log('[MinSKI AI Engine] Mengalihkan ke cadangan AI...');
-      }
-    }
-
-    // 3b. Failover ke Groq Cloud (Llama 3.3 70B Versatile) jika Gemini belum disetel atau limit
-    const rawGroqKey = (process.env.GROQ_API_KEY || '').trim();
-    if (rawGroqKey && rawGroqKey.length > 10) {
-      try {
-        const activeCatalog = catalog.filter((p: any) => p.isActive !== false);
-        const catalogBrief = activeCatalog.slice(0, 30).map((p: any) => `- ${p.name} (${p.categoryLabel || p.category}): ${(p.accords || []).join(', ')}`).join('\n');
-        const groqMessages = [
-          {
-            role: 'system',
-            content: `Kamu adalah MinSKI, konsultan parfum pribadi dari Atelier SINKI Parfums Indonesia. Karaktermu perempuan ramah, ceria, dan sopan memanggil pelanggan "Kakak".
-Tugasmu: Berikan SATU rekomendasi parfum terbaik beserta penjelasan memikat mengapa wangi tersebut sangat cocok untuk Kakak.
-PILIH HANYA DARI DAFTAR INI:
-${catalogBrief}
-
-Keluarkan HANYA format JSON valid berikut:
-{
-  "reply": "Respons ramah MinSKI yang menjelaskan parfum rekomendasi untuk Kakak",
-  "selectedPerfumeName": "Nama persis parfum dari katalog",
-  "accords": "Accords utama parfum"
-}`
-          },
-          ...history.slice(-4).map((h: any) => ({
-            role: (h.sender === 'user' || h.role === 'user') ? 'user' : 'assistant',
-            content: String(h.text || '').trim()
-          })),
-          { role: 'user', content: rawMessage }
-        ];
-
-        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${rawGroqKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: groqMessages,
-            response_format: { type: 'json_object' },
-            temperature: 0.6,
-            max_tokens: 500,
-          }),
-          signal: AbortSignal.timeout(6000),
-        });
-
-        if (groqRes.ok) {
-          const groqData: any = await groqRes.json();
-          const content = groqData.choices?.[0]?.message?.content;
-          const parsed = JSON.parse(content || '{}');
-          if (parsed.reply && parsed.selectedPerfumeName) {
-            const matchedItem = activeCatalog.find(
-              (p: any) => (p.name || '').toLowerCase() === parsed.selectedPerfumeName.toLowerCase() ||
-                          (p.name || '').toLowerCase().includes(parsed.selectedPerfumeName.toLowerCase()) ||
-                          parsed.selectedPerfumeName.toLowerCase().includes((p.name || '').toLowerCase())
-            ) || activeCatalog[0];
-
-            if (matchedItem) {
-              let photo = assets.masterFlacon || DEFAULT_MASTER_FLACON;
-              const nameLower = (matchedItem.name || '').toLowerCase();
-              for (const [k, v] of Object.entries(top11Photos)) {
-                if (v && typeof v === 'string' && (k.toLowerCase().includes(nameLower) || nameLower.includes(k.toLowerCase()))) {
-                  photo = v;
-                  break;
-                }
-              }
-
-              let audioKey: string | null = null;
-              if (nameLower.includes('monaco') || rawMessage.toLowerCase().includes('kencan')) {
-                audioKey = 'preset_kencan';
-              } else if (nameLower.includes('dunhill') || rawMessage.toLowerCase().includes('kerja')) {
-                audioKey = 'preset_kerja';
-              } else if (nameLower.includes('aqua') || rawMessage.toLowerCase().includes('segar')) {
-                audioKey = 'preset_segar';
-              }
-
-              return res.json({
-                reply: parsed.reply,
-                audioKey,
-                recommendedPerfume: {
-                  perfumeName: matchedItem.name,
-                  categoryLabel: matchedItem.categoryLabel || 'SINKI Luxury Signature',
-                  matchScore: 98,
-                  matchScoreLabel: 'Estimasi Kecocokan Aroma',
-                  hypnoticScript: parsed.reply,
-                  shortVoiceSpeech: parsed.reply,
-                  accords: parsed.accords || (matchedItem.accords ? matchedItem.accords.join(' · ') : 'Amber · Woods'),
-                  longevity: (matchedItem as any).longevity || 'Informasi belum tersedia',
-                  sillage: (matchedItem as any).sillage || 'Informasi belum tersedia',
-                  photoUrl: photo,
-                  pricePerMl: matchedItem.pricePerMl || 3000,
-                },
-                isRecommendationReady: true,
-              });
-            }
-          }
-        }
-      } catch (groqErr) {
-        console.warn('[Server Groq Fallback Notice]:', groqErr);
       }
     }
 
