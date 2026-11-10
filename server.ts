@@ -577,34 +577,46 @@ const getAssets = (): AssetsData => {
   };
 };
 
-// MinSKI High-Fidelity Human Voice (Microsoft Edge Neural TTS: id-ID-GadisNeural with In-Memory Cache)
+// MinSKI Official Gemini TTS (Voice: Kore - High-Fidelity Audio from Google Gemini)
 const minskiTtsCache = new Map<string, Buffer>();
 
-async function synthesizeWithEdgeTTS(text: string): Promise<Buffer | null> {
+async function synthesizeWithGeminiTTS(text: string): Promise<Buffer | null> {
+  const ai = getGeminiClient();
+  if (!ai) return null;
   try {
-    const tts = new MsEdgeTTS();
-    await tts.setMetadata('id-ID-GadisNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-    const { audioStream } = tts.toStream(text);
-    return await new Promise<Buffer>((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      const timeout = setTimeout(() => {
-        reject(new Error('Microsoft Edge TTS timeout'));
-      }, 12000);
-
-      audioStream.on('data', (chunk: Buffer) => chunks.push(chunk));
-      audioStream.on('end', () => {
-        clearTimeout(timeout);
-        resolve(Buffer.concat(chunks));
-      });
-      audioStream.on('error', (err: any) => {
-        clearTimeout(timeout);
-        reject(err);
-      });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash-lite-tts',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: text.slice(0, 450),
+              speechMetadata: {
+                style: 'Cheerful, warm, polite, and elegant fragrance consultant assistant',
+              },
+            },
+          ],
+        },
+      ],
+      config: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
+          },
+        },
+      },
     });
+
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (base64Audio) {
+      return Buffer.from(base64Audio, 'base64');
+    }
   } catch (err: any) {
-    console.warn('[Microsoft Edge TTS Notice]:', err?.message || err);
-    return null;
+    console.warn('[Gemini TTS Kore Notice]:', err?.message || err);
   }
+  return null;
 }
 
 app.get('/api/minski/tts', async (req, res) => {
@@ -615,65 +627,24 @@ app.get('/api/minski/tts', async (req, res) => {
     const cacheKey = rawText.toLowerCase().slice(0, 200);
     if (minskiTtsCache.has(cacheKey)) {
       const cached = minskiTtsCache.get(cacheKey)!;
-      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Content-Type', 'audio/wav');
       res.setHeader('Cache-Control', 'public, max-age=86400');
       return res.send(cached);
     }
 
-    // 1. Prioritas Utama: Microsoft Edge Neural TTS (id-ID-GadisNeural - 100% Gratis & Natural)
-    const edgeAudio = await synthesizeWithEdgeTTS(rawText);
-    if (edgeAudio && edgeAudio.length > 500) {
+    const audioBuffer = await synthesizeWithGeminiTTS(rawText);
+    if (audioBuffer && audioBuffer.length > 200) {
       if (minskiTtsCache.size > 200) {
         const firstKey = minskiTtsCache.keys().next().value;
         if (firstKey) minskiTtsCache.delete(firstKey);
       }
-      minskiTtsCache.set(cacheKey, edgeAudio);
-      res.setHeader('Content-Type', 'audio/mpeg');
+      minskiTtsCache.set(cacheKey, audioBuffer);
+      res.setHeader('Content-Type', 'audio/wav');
       res.setHeader('Cache-Control', 'public, max-age=86400');
-      return res.send(edgeAudio);
+      return res.send(audioBuffer);
     }
 
-    // 2. Fallback: Google Neural TTS Chunks (Fail-Safe)
-    const chunks: string[] = [];
-    const sentences = rawText.match(/[^.!?]+[.!?]*/g) || [rawText];
-    let cur = '';
-    for (const s of sentences) {
-      if ((cur + ' ' + s).trim().length <= 120) {
-        cur = (cur + ' ' + s).trim();
-      } else {
-        if (cur) chunks.push(cur);
-        cur = s.trim();
-      }
-    }
-    if (cur) chunks.push(cur);
-
-    const buffers: Buffer[] = [];
-    for (const chunk of chunks) {
-      const url =
-        'https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=' +
-        encodeURIComponent(chunk);
-      const upstreamRes = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-      if (upstreamRes.ok) {
-        const arr = await upstreamRes.arrayBuffer();
-        buffers.push(Buffer.from(arr));
-      }
-      await new Promise((r) => setTimeout(r, 120));
-    }
-
-    if (buffers.length === 0) {
-      return res.status(502).send('Failed to synthesize speech');
-    }
-
-    const merged = Buffer.concat(buffers);
-    if (minskiTtsCache.size > 200) {
-      const firstKey = minskiTtsCache.keys().next().value;
-      if (firstKey) minskiTtsCache.delete(firstKey);
-    }
-    minskiTtsCache.set(cacheKey, merged);
-
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    return res.send(merged);
+    return res.status(502).send('Failed to synthesize Gemini Kore speech');
   } catch (err: any) {
     console.error('Error in /api/minski/tts:', err);
     return res.status(500).send('Internal TTS error');

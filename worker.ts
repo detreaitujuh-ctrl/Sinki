@@ -1039,33 +1039,79 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
         });
       }
 
-      // MinSKI Voice (Google Neural Indonesian TTS Proxy)
-      if (pathname === '/api/minski/tts' && request.method === 'GET') {
+      // MinSKI Official Gemini TTS (Voice: Kore - Google Gemini Native Audio)
+      if (pathname === '/api/minski/tts' && (request.method === 'GET' || request.method === 'HEAD')) {
         const rawText = String(url.searchParams.get('text') || '').trim();
         if (!rawText) return new Response('Text parameter is required', { status: 400 });
-
-        const targetUrl =
-          'https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=' +
-          encodeURIComponent(rawText.slice(0, 200));
-
-        try {
-          const upstreamRes = await fetch(targetUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        if (request.method === 'HEAD') {
+          return new Response(null, {
+            status: 200,
+            headers: {
+              'Content-Type': 'audio/wav',
+              ...getSecurityAndCorsHeaders(),
+            },
           });
-          if (upstreamRes.ok) {
-            const audioBuffer = await upstreamRes.arrayBuffer();
-            return new Response(audioBuffer, {
-              headers: {
-                'Content-Type': 'audio/mpeg',
-                'Cache-Control': 'public, max-age=86400',
-                ...getSecurityAndCorsHeaders(),
-              },
-            });
-          }
-        } catch (err) {
-          console.warn('Worker TTS fetch error:', err);
         }
-        return new Response('Failed to synthesize speech', { status: 502 });
+
+        const geminiKey = (env.GEMINI_API_KEY || '').trim();
+        if (geminiKey && geminiKey.length > 10) {
+          try {
+            const geminiTtsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-lite-tts:generateContent?key=${geminiKey}`;
+            const ttsRes = await fetch(geminiTtsUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'aistudio-build',
+              },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [
+                      {
+                        text: rawText.slice(0, 450),
+                        speechMetadata: {
+                          style: 'Cheerful, warm, polite, and elegant fragrance consultant assistant',
+                        },
+                      },
+                    ],
+                  },
+                ],
+                generationConfig: {
+                  responseModalities: ['AUDIO'],
+                  speechConfig: {
+                    voiceConfig: {
+                      prebuiltVoiceConfig: { voiceName: 'Kore' },
+                    },
+                  },
+                },
+              }),
+              signal: AbortSignal.timeout(12000),
+            });
+
+            if (ttsRes.ok) {
+              const ttsJson: any = await ttsRes.json();
+              const base64Wav = ttsJson?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+              if (base64Wav) {
+                const binaryStr = atob(base64Wav);
+                const bytes = new Uint8Array(binaryStr.length);
+                for (let i = 0; i < binaryStr.length; i++) {
+                  bytes[i] = binaryStr.charCodeAt(i);
+                }
+                return new Response(bytes, {
+                  headers: {
+                    'Content-Type': 'audio/wav',
+                    'Cache-Control': 'public, max-age=86400',
+                    ...getSecurityAndCorsHeaders(),
+                  },
+                });
+              }
+            }
+          } catch (err) {
+            console.warn('[Gemini TTS Kore Exception]:', err);
+          }
+        }
+        return new Response('Failed to synthesize Gemini Kore speech', { status: 502 });
       }
 
       // MinSKI Hybrid AI Fragrance Consultant (Gemini 3.8 Flash + Guardrail)

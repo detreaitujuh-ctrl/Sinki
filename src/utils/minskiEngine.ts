@@ -471,62 +471,11 @@ export function speakMinskiVoice(
   // Hentikan audio sebelumnya agar tidak tumpang tindih
   stopMinskiVoice();
 
-  // 1. Cek apakah ada file MP3 suara manusia asli (kualitas studio, natural 100%)
+  // Gunakan pita suara resmi Gemini Kore via endpoint /api/minski/tts
   let audioSrc: string | null = null;
-  if (preferredAudioKey && MINSKI_STATIC_AUDIO_MAP[preferredAudioKey]) {
-    audioSrc = MINSKI_STATIC_AUDIO_MAP[preferredAudioKey];
-  } else {
-    const lower = text.toLowerCase();
-    if (lower.includes('kenalin, aku minski') || lower.includes('wangi impianmu yuk')) {
-      audioSrc = MINSKI_STATIC_AUDIO_MAP.intro;
-    } else if (lower.includes('mykonos monaco royale') || (lower.includes('kencan') && lower.includes('nempel'))) {
-      audioSrc = MINSKI_STATIC_AUDIO_MAP.kencan;
-    } else if (lower.includes('dunhill blue') || (lower.includes('kerja') && lower.includes('wibawa'))) {
-      audioSrc = MINSKI_STATIC_AUDIO_MAP.kerja;
-    } else if (lower.includes('bvlgari aqua') || lower.includes('segar banget') || lower.includes('sejuk murni')) {
-      audioSrc = MINSKI_STATIC_AUDIO_MAP.segar;
-    } else if (lower.includes('jangan galak-galak') || lower.includes('santun')) {
-      audioSrc = MINSKI_STATIC_AUDIO_MAP.profanity;
-    } else if (lower.includes('botol parfum kak, bukan guru les')) {
-      audioSrc = MINSKI_STATIC_AUDIO_MAP.offtopic;
-    }
-  }
-
-  // Jika tidak cocok dengan statis, gunakan endpoint audio MP3 manusia dari proxy server
-  if (!audioSrc && text.trim().length > 0) {
+  if (text.trim().length > 0) {
     audioSrc = `/api/minski/tts?text=${encodeURIComponent(text.trim())}`;
   }
-
-  // Fallback ke browser SpeechSynthesis jika HTML5 Audio tidak dapat diputar
-  const fallbackSpeechSynthesis = () => {
-    if (!window.speechSynthesis) {
-      if (onEnd) onEnd();
-      return;
-    }
-    const softenedText = text
-      .replace(/!+/g, ', ')
-      .replace(/\.\.\.+/g, ', ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const utterance = new SpeechSynthesisUtterance(softenedText);
-    utterance.lang = 'id-ID';
-    utterance.pitch = 1.15; // Ceria, bersahabat, perempuan muda
-    utterance.rate = 0.96; // Artikulasi jelas, elegan, santai
-
-    const bestVoice = getBestMinskiVoice();
-    if (bestVoice) utterance.voice = bestVoice;
-
-    if (onStart) utterance.onstart = onStart;
-    utterance.onend = () => {
-      if (onEnd) onEnd();
-    };
-    utterance.onerror = () => {
-      if (onEnd) onEnd();
-    };
-
-    window.speechSynthesis.speak(utterance);
-  };
 
   if (audioSrc) {
     const audio = new Audio(audioSrc);
@@ -541,20 +490,21 @@ export function speakMinskiVoice(
       if (onEnd) onEnd();
     };
 
-    audio.onerror = () => {
+    audio.onerror = (err) => {
+      console.warn('[Gemini Voice Audio Notice]:', err);
       activeMinskiAudio = null;
-      fallbackSpeechSynthesis();
+      if (onEnd) onEnd();
     };
 
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
-        console.warn('HTML5 Audio playback interrupted or blocked, fallback to SpeechSynthesis:', err);
-        fallbackSpeechSynthesis();
+        console.warn('Playback interrupted:', err);
+        if (onEnd) onEnd();
       });
     }
   } else {
-    fallbackSpeechSynthesis();
+    if (onEnd) onEnd();
   }
 
   return () => {
