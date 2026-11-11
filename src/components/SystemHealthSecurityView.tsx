@@ -393,21 +393,21 @@ export const SystemHealthSecurityView: React.FC<SystemHealthSecurityViewProps> =
             </div>
           </div>
 
-          {/* Card 2: Mesin Cadangan Groq Cloud */}
+          {/* Card 2: Mesin Cadangan Gemini Flash-Lite */}
           <div className="p-4 rounded-[8px] sinki-arch-subbox border space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
-                <Flame size={14} className="text-orange-400" />
-                <span>Cadangan Cepat (Groq)</span>
+                <Flame size={14} className="text-[#7CEAC0]" />
+                <span>Cadangan Ringan (Gemini Lite)</span>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-[4px] bg-sky-500/15 border border-sky-500/35 text-sky-300">
-                14.400 Req/Hari Gratis
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-[4px] bg-emerald-500/15 border border-emerald-500/35 text-emerald-300">
+                Multi-Key & Auto-Failover
               </span>
             </div>
             <div className="text-xs text-slate-300 space-y-1">
-              <p><span className="text-slate-400">Model:</span> <span className="font-semibold text-white">Llama 3.3 (70B Versatile)</span></p>
+              <p><span className="text-slate-400">Model:</span> <span className="font-semibold text-white">Gemini 3.1 Flash-Lite</span></p>
               <p className="text-[11px] text-slate-400 leading-[1.4]">
-                Kecepatan: <span className="text-sky-300">~600 token/detik, aktif otomatis saat Gemini sibuk.</span>
+                Efisiensi: <span className="text-[#7CEAC0]">Ringan & instan, aktif otomatis saat kuota utama 429 atau sibuk.</span>
               </p>
             </div>
           </div>

@@ -12,27 +12,57 @@ import { WebSocketServer, WebSocket } from 'ws';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Shared GoogleGenAI Client (Server-side only with User-Agent header)
-let geminiAi: GoogleGenAI | null = null;
-function getGeminiClient(): GoogleGenAI | null {
-  if (geminiAi) return geminiAi;
+// Shared GoogleGenAI Client Pool & Multi-Key Rotation (Server-side only with User-Agent header)
+function getGeminiApiKeys(): string[] {
   const rawGeminiKey = (process.env.GEMINI_API_KEY || '').trim();
-  if (rawGeminiKey && rawGeminiKey !== 'undefined' && rawGeminiKey !== 'null' && rawGeminiKey.length > 10) {
-    try {
-      geminiAi = new GoogleGenAI({
-        apiKey: rawGeminiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          },
-        },
-      });
-      console.log('[Gemini AI] GoogleGenAI Engine berhasil diinisialisasi untuk MinSKI');
-    } catch (err) {
-      console.warn('[Gemini AI Notice] Inisialisasi GoogleGenAI dilewati:', err);
-    }
+  if (!rawGeminiKey || rawGeminiKey === 'undefined' || rawGeminiKey === 'null') return [];
+  return rawGeminiKey
+    .split(/[,;\n]+/)
+    .map((k) => k.trim())
+    .filter((k) => k.length > 10 && k !== 'undefined' && k !== 'null');
+}
+
+let activeKeyIndex = 0;
+const geminiClientPool = new Map<string, GoogleGenAI>();
+
+function rotateToNextGeminiKey(): boolean {
+  const keys = getGeminiApiKeys();
+  if (keys.length <= 1) return false;
+  activeKeyIndex = (activeKeyIndex + 1) % keys.length;
+  console.log(`[Gemini Rotasi Kuota] Beralih otomatis ke API Key #${activeKeyIndex + 1} dari ${keys.length}`);
+  return true;
+}
+
+function getActiveGeminiKey(): string | null {
+  const keys = getGeminiApiKeys();
+  if (keys.length === 0) return null;
+  return keys[activeKeyIndex % keys.length];
+}
+
+function getGeminiClient(): GoogleGenAI | null {
+  const activeKey = getActiveGeminiKey();
+  if (!activeKey) return null;
+
+  if (geminiClientPool.has(activeKey)) {
+    return geminiClientPool.get(activeKey)!;
   }
-  return geminiAi;
+
+  try {
+    const client = new GoogleGenAI({
+      apiKey: activeKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
+    geminiClientPool.set(activeKey, client);
+    console.log(`[Gemini AI] GoogleGenAI Engine #${activeKeyIndex + 1} berhasil diinisialisasi untuk MinSKI`);
+    return client;
+  } catch (err) {
+    console.warn(`[Gemini AI Notice] Inisialisasi GoogleGenAI key #${activeKeyIndex + 1} dilewati:`, err);
+    return null;
+  }
 }
 getGeminiClient();
 
@@ -74,7 +104,8 @@ function setOwnerPin(newPin: string): boolean {
 interface MinskiConfig {
   voicePreference: 'google-kore';
   aiEnginePriority: string[];
-  groqModel: string;
+  primaryModel: string;
+  fallbackModel: string;
   updatedAt?: string;
 }
 
@@ -88,9 +119,10 @@ function getMinskiConfig(): MinskiConfig {
         return {
           voicePreference: 'google-kore',
           aiEnginePriority: Array.isArray(parsed.aiEnginePriority)
-            ? parsed.aiEnginePriority
-            : ['gemini', 'groq', 'deterministic'],
-          groqModel: parsed.groqModel || 'llama-3.3-70b-versatile',
+            ? parsed.aiEnginePriority.map((e: string) => (e === 'gemini' ? 'gemini-flash' : e === 'groq' ? 'gemini-lite' : e))
+            : ['gemini-flash', 'gemini-lite', 'deterministic'],
+          primaryModel: parsed.primaryModel || 'gemini-2.5-flash',
+          fallbackModel: parsed.fallbackModel || 'gemini-3.1-flash-lite',
           updatedAt: parsed.updatedAt || new Date().toISOString(),
         };
       }
@@ -98,8 +130,9 @@ function getMinskiConfig(): MinskiConfig {
   } catch {}
   return {
     voicePreference: 'google-kore',
-    aiEnginePriority: ['gemini', 'groq', 'deterministic'],
-    groqModel: 'llama-3.3-70b-versatile',
+    aiEnginePriority: ['gemini-flash', 'gemini-lite', 'deterministic'],
+    primaryModel: 'gemini-2.5-flash',
+    fallbackModel: 'gemini-3.1-flash-lite',
     updatedAt: new Date().toISOString(),
   };
 }
@@ -582,8 +615,9 @@ const minskiTtsCache = new Map<string, Buffer>();
 async function synthesizeWithGeminiTTS(text: string): Promise<Buffer | null> {
   const ai = getGeminiClient();
   if (!ai) return null;
-  try {
-    const ttsPromise = ai.models.generateContent({
+
+  const runSynthesis = async (client: GoogleGenAI) => {
+    return client.models.generateContent({
       model: 'gemini-3.8-flash-lite-tts',
       contents: [
         {
@@ -607,19 +641,35 @@ async function synthesizeWithGeminiTTS(text: string): Promise<Buffer | null> {
         },
       },
     });
+  };
 
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Google Gemini TTS timeout (5s)')), 5000)
-    );
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Google Gemini TTS timeout (5s)')), 5000)
+  );
 
-    const response = await Promise.race([ttsPromise, timeoutPromise]);
-
+  try {
+    const response = await Promise.race([runSynthesis(ai), timeoutPromise]);
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     if (base64Audio) {
       return Buffer.from(base64Audio, 'base64');
     }
   } catch (err: any) {
-    console.warn('[Gemini TTS Kore Notice]:', err?.message || err);
+    const errMsg = String(err?.message || err);
+    if (
+      (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('401') || errMsg.includes('ACCOUNT_STATE_INVALID')) &&
+      rotateToNextGeminiKey()
+    ) {
+      const nextAi = getGeminiClient();
+      if (nextAi) {
+        try {
+          const retryRes = await Promise.race([runSynthesis(nextAi), timeoutPromise]);
+          const base64 = retryRes.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+          if (base64) return Buffer.from(base64, 'base64');
+        } catch (retryErr) {
+          console.warn('[Gemini TTS Kore Retry Failed]:', retryErr);
+        }
+      }
+    }
   }
   return null;
 }
@@ -1080,28 +1130,8 @@ function buildGeminiContents(history: any[], rawMessage: string) {
   return turns;
 }
 
-function buildGroqMessages(systemPrompt: string, history: any[], rawMessage: string) {
-  const recentHistory = Array.isArray(history) ? history.slice(-6) : [];
-  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-    { role: 'system', content: systemPrompt },
-  ];
-
-  for (const h of recentHistory) {
-    const role: 'user' | 'assistant' = (h.sender === 'user' || h.role === 'user') ? 'user' : 'assistant';
-    const text = String(h.text || '').trim();
-    if (!text) continue;
-    messages.push({ role, content: text });
-  }
-
-  const last = messages[messages.length - 1];
-  if (!last || last.role !== 'user' || last.content !== rawMessage) {
-    messages.push({ role: 'user', content: rawMessage });
-  }
-
-  return messages;
-}
-
-async function callGeminiConsultation(
+async function callGeminiConsultationWithModel(
+  modelName: string,
   rawMessage: string,
   history: any[],
   systemPrompt: string
@@ -1113,24 +1143,46 @@ async function callGeminiConsultation(
 
   const conversationTurns = buildGeminiContents(history, rawMessage);
 
-  const geminiPromise = aiClient.models.generateContent({
-    model: 'gemini-3.8-flash',
-    contents: conversationTurns as any,
-    config: {
-      systemInstruction: systemPrompt,
-      responseMimeType: 'application/json',
-      maxOutputTokens: 250,
-      thinkingConfig: {
-        thinkingLevel: ThinkingLevel.LOW,
+  const runModel = async (client: GoogleGenAI) => {
+    return client.models.generateContent({
+      model: modelName,
+      contents: conversationTurns as any,
+      config: {
+        systemInstruction: systemPrompt,
+        responseMimeType: 'application/json',
+        maxOutputTokens: 250,
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.LOW,
+        },
       },
-    },
-  });
+    });
+  };
 
   const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('Google Gemini API timeout (5s)')), 5000)
+    setTimeout(() => reject(new Error(`Google Gemini API (${modelName}) timeout (5s)`)), 5000)
   );
 
-  const geminiRes = await Promise.race([geminiPromise, timeoutPromise]);
+  let geminiRes;
+  try {
+    geminiRes = await Promise.race([runModel(aiClient), timeoutPromise]);
+  } catch (err: any) {
+    const errMsg = String(err?.message || err);
+    // Jika limit 429, kuota habis, atau 401 akun tidak aktif, putar ke key cadangan di pool jika tersedia
+    if (
+      (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('401') || errMsg.includes('ACCOUNT_STATE_INVALID') || errMsg.includes('UNAUTHENTICATED')) &&
+      rotateToNextGeminiKey()
+    ) {
+      const nextAi = getGeminiClient();
+      if (nextAi) {
+        geminiRes = await Promise.race([runModel(nextAi), timeoutPromise]);
+      } else {
+        throw err;
+      }
+    } else {
+      throw err;
+    }
+  }
+
   const rawText = geminiRes.text?.trim() || '{}';
   const cleanJson = rawText
     .replace(/^```json\s*/i, '')
@@ -1140,56 +1192,7 @@ async function callGeminiConsultation(
 
   const parsed = JSON.parse(cleanJson);
   if (!parsed || typeof parsed !== 'object' || !parsed.reply) {
-    throw new Error('Respon Gemini tidak memiliki format JSON valid');
-  }
-  return parsed;
-}
-
-async function callGroqConsultation(
-  rawMessage: string,
-  history: any[],
-  systemPrompt: string,
-  modelName: string = 'llama-3.3-70b-versatile'
-): Promise<{ status: string; reply: string; selectedPerfumeName?: string | null; accords?: string | null }> {
-  const rawGroqKey = (process.env.GROQ_API_KEY || '').trim();
-  if (!rawGroqKey || rawGroqKey.length < 10) {
-    throw new Error('Groq API Key tidak terkonfigurasi');
-  }
-
-  const groqMessages = buildGroqMessages(systemPrompt, history, rawMessage);
-
-  const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${rawGroqKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: modelName,
-      messages: groqMessages,
-      response_format: { type: 'json_object' },
-      temperature: 0.6,
-      max_tokens: 350,
-    }),
-    signal: AbortSignal.timeout(5000),
-  });
-
-  if (!groqRes.ok) {
-    const errorText = await groqRes.text().catch(() => '');
-    throw new Error(`Groq API error HTTP ${groqRes.status}: ${errorText.slice(0, 100)}`);
-  }
-
-  const groqData: any = await groqRes.json();
-  const content = groqData.choices?.[0]?.message?.content?.trim() || '{}';
-  const cleanJson = content
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/, '')
-    .replace(/\s*```$/, '')
-    .trim();
-
-  const parsed = JSON.parse(cleanJson);
-  if (!parsed || typeof parsed !== 'object' || !parsed.reply) {
-    throw new Error('Respon Groq tidak memiliki format JSON valid');
+    throw new Error(`Respon Gemini (${modelName}) tidak memiliki format JSON valid`);
   }
   return parsed;
 }
@@ -1312,35 +1315,36 @@ app.post('/api/minski/chat', async (req, res) => {
     const enginePriority =
       Array.isArray(config.aiEnginePriority) && config.aiEnginePriority.length > 0
         ? config.aiEnginePriority
-        : ['gemini', 'groq', 'deterministic'];
-    const groqModel = config.groqModel || 'llama-3.3-70b-versatile';
+        : ['gemini-flash', 'gemini-lite', 'deterministic'];
+    const primaryModel = config.primaryModel || 'gemini-2.5-flash';
+    const fallbackModel = config.fallbackModel || 'gemini-3.1-flash-lite';
 
     console.log(`[MinSKI Chat] Menjalankan konsultasi MinSKI. Prioritas AI: ${enginePriority.join(' -> ')}`);
 
-    // 5. Eksekusi Prioritas dengan Failover Otomatis & Timeout 5 Detik
+    // 5. Eksekusi Prioritas Berlapis dengan Failover Otomatis & Timeout 5 Detik
     for (const engine of enginePriority) {
-      if (engine === 'gemini') {
+      if (engine === 'gemini' || engine === 'gemini-flash') {
         try {
-          console.log('[MinSKI Chat] Menghubungi Google Gemini 3.8 Flash (Timeout 5s)...');
-          const geminiParsed = await callGeminiConsultation(rawMessage, history, minskiPrompt);
+          console.log(`[MinSKI Chat] Menghubungi Lapisan 1: Google Gemini (${primaryModel}) (Timeout 5s)...`);
+          const geminiParsed = await callGeminiConsultationWithModel(primaryModel, rawMessage, history, minskiPrompt);
           const result = formatRecommendationResponse(geminiParsed, activeCatalog, assets, top11Photos);
-          console.log('[MinSKI Chat] Sukses mendapatkan respon dari Google Gemini.');
+          console.log(`[MinSKI Chat] Sukses mendapatkan respon dari Google Gemini (${primaryModel}).`);
           return res.json(result);
         } catch (geminiErr: any) {
-          console.warn(`[MinSKI Failover] Google Gemini gagal / timeout (${geminiErr.message}). Beralih ke antrean berikutnya...`);
+          console.warn(`[MinSKI Failover] Lapisan 1 (${primaryModel}) gagal / limit 429 (${geminiErr.message}). Beralih ke Lapisan 2...`);
         }
-      } else if (engine === 'groq') {
+      } else if (engine === 'gemini-lite') {
         try {
-          console.log(`[MinSKI Chat] Menghubungi Groq Cloud (${groqModel}) (Timeout 5s)...`);
-          const groqParsed = await callGroqConsultation(rawMessage, history, minskiPrompt, groqModel);
-          const result = formatRecommendationResponse(groqParsed, activeCatalog, assets, top11Photos);
-          console.log('[MinSKI Chat] Sukses mendapatkan respon dari Groq Cloud.');
+          console.log(`[MinSKI Chat] Menghubungi Lapisan 2: Google Gemini Flash-Lite (${fallbackModel}) (Timeout 5s)...`);
+          const liteParsed = await callGeminiConsultationWithModel(fallbackModel, rawMessage, history, minskiPrompt);
+          const result = formatRecommendationResponse(liteParsed, activeCatalog, assets, top11Photos);
+          console.log(`[MinSKI Chat] Sukses mendapatkan respon dari Google Gemini Lite (${fallbackModel}).`);
           return res.json(result);
-        } catch (groqErr: any) {
-          console.warn(`[MinSKI Failover] Groq Cloud gagal / timeout (${groqErr.message}). Beralih ke antrean berikutnya...`);
+        } catch (liteErr: any) {
+          console.warn(`[MinSKI Failover] Lapisan 2 (${fallbackModel}) gagal (${liteErr.message}). Beralih ke Mesin Deterministik...`);
         }
       } else if (engine === 'deterministic') {
-        console.log('[MinSKI Chat] Menjalankan Mesin Cerdas Deterministik SINKI...');
+        console.log('[MinSKI Chat] Menjalankan Mesin Cerdas Deterministik SINKI (Lapisan Bebas Kuota)...');
         const consultCheck = checkNeedsConsultationServer(rawMessage, history);
         if (consultCheck.needsConsultation && consultCheck.reply) {
           return res.json({
@@ -1410,12 +1414,14 @@ app.get('/api/admin/minski-config', (req, res) => {
     return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
   }
   const cfg = getMinskiConfig();
-  const rawGeminiKey = (process.env.GEMINI_API_KEY || '').trim();
-  const rawGroqKey = (process.env.GROQ_API_KEY || '').trim();
+  const keys = getGeminiApiKeys();
   return res.json({
     config: cfg,
-    hasGeminiKey: Boolean(rawGeminiKey && rawGeminiKey.length > 10),
-    hasGroqKey: Boolean(rawGroqKey && rawGroqKey.length > 10),
+    hasGeminiKey: keys.length > 0,
+    geminiKeyCount: keys.length,
+    activeKeyIndex: activeKeyIndex % (keys.length || 1),
+    primaryModel: cfg.primaryModel || 'gemini-2.5-flash',
+    fallbackModel: cfg.fallbackModel || 'gemini-3.1-flash-lite',
   });
 });
 
@@ -1424,10 +1430,11 @@ app.post('/api/admin/minski-config', (req, res) => {
   if (!isAuthorized(req)) {
     return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
   }
-  const { voicePreference, groqModel, aiEnginePriority } = req.body || {};
+  const { voicePreference, primaryModel, fallbackModel, aiEnginePriority } = req.body || {};
   const updated = saveMinskiConfig({
     ...(voicePreference ? { voicePreference } : {}),
-    ...(groqModel ? { groqModel } : {}),
+    ...(primaryModel ? { primaryModel } : {}),
+    ...(fallbackModel ? { fallbackModel } : {}),
     ...(Array.isArray(aiEnginePriority) ? { aiEnginePriority } : {}),
   });
   return res.json({
@@ -1585,19 +1592,19 @@ app.get('/api/system/health', (_req, res) => {
     },
     aiEngine: {
       gemini: {
-        status: Boolean((process.env.GEMINI_API_KEY || '').trim().length > 10)
-          ? 'Aktif & Terhubung'
+        status: getGeminiApiKeys().length > 0
+          ? `Aktif & Terhubung (${getGeminiApiKeys().length} API Key Siaga)`
           : 'Standby / Belum Disetel',
         model: 'Gemini 2.5 Flash & Live 3.8',
-        isConfigured: Boolean((process.env.GEMINI_API_KEY || '').trim().length > 10),
-        quotaProtection: 'Aktif (Failover otomatis bila limit 429)',
+        isConfigured: getGeminiApiKeys().length > 0,
+        quotaProtection: `Aktif (${getGeminiApiKeys().length} Akun Multi-Key Pool + Rotasi Otomatis)`,
       },
-      groqFailover: {
-        status: Boolean((process.env.GROQ_API_KEY || '').trim().length > 10)
-          ? 'Siaga & Terhubung (14.400 Req/Hari)'
-          : 'Siap Dikonfigurasi (Groq Free Tier)',
-        model: getMinskiConfig().groqModel || 'llama-3.3-70b-versatile',
-        isConfigured: Boolean((process.env.GROQ_API_KEY || '').trim().length > 10),
+      geminiLiteFailover: {
+        status: getGeminiApiKeys().length > 0
+          ? 'Siaga & Terhubung (Lapisan 2 Hemat Kuota)'
+          : 'Standby',
+        model: 'Gemini 3.1 Flash-Lite',
+        isConfigured: getGeminiApiKeys().length > 0,
       },
       deterministicEngine: {
         status: 'Aktif & Siaga 100% (Bebas Kuota)',
@@ -2985,13 +2992,29 @@ Aturan Percakapan & Rekomendasi:
             }
           },
           onclose: (ev) => {
+            console.warn('[MinSKI Live Session Closed]:', ev?.reason);
             if (clientWs.readyState === WebSocket.OPEN) {
-              clientWs.send(JSON.stringify({ type: 'session_closed', reason: ev?.reason }));
+              clientWs.send(
+                JSON.stringify({
+                  type: 'unsupported',
+                  reason: ev?.reason || 'SESSION_CLOSED',
+                  message: 'Sesi Gemini Live ditutup. Mengalihkan ke Mode Konsultasi Suara Cerdas SINKI.',
+                  fallback: 'web-speech-tts',
+                })
+              );
             }
           },
           onerror: (err) => {
+            console.warn('[MinSKI Live Session Error]:', err?.message || err);
             if (clientWs.readyState === WebSocket.OPEN) {
-              clientWs.send(JSON.stringify({ type: 'error', message: err?.message || 'Live session error' }));
+              clientWs.send(
+                JSON.stringify({
+                  type: 'unsupported',
+                  reason: err?.message || 'SESSION_ERROR',
+                  message: 'Kendala Gemini Live. Mengalihkan ke Mode Konsultasi Suara Cerdas SINKI.',
+                  fallback: 'web-speech-tts',
+                })
+              );
             }
           },
         },

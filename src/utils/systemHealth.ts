@@ -37,7 +37,12 @@ export interface SystemHealthData {
       isConfigured: boolean;
       quotaProtection: string;
     };
-    groqFailover: {
+    geminiLiteFailover?: {
+      status: string;
+      model: string;
+      isConfigured: boolean;
+    };
+    groqFailover?: {
       status: string;
       model: string;
       isConfigured: boolean;

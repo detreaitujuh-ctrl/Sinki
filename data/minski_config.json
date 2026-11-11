@@ -1,10 +1,11 @@
 {
   "voicePreference": "google-kore",
   "aiEnginePriority": [
-    "gemini",
-    "groq",
+    "gemini-flash",
+    "gemini-lite",
     "deterministic"
   ],
-  "groqModel": "llama-3.3-70b-versatile",
-  "updatedAt": "2026-11-10T17:31:09.576Z"
+  "primaryModel": "gemini-2.5-flash",
+  "fallbackModel": "gemini-3.1-flash-lite",
+  "updatedAt": "2026-11-11T03:36:00.000Z"
 }

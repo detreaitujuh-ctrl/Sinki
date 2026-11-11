@@ -225,6 +225,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const speakingStartTimeRef = useRef<number>(0);
   const consecutiveSpeechFramesRef = useRef<number>(0);
   const speakingEndDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speechDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isThinkingRef = useRef<boolean>(false);
   const chatAbortRef = useRef<AbortController | null>(null);
 
@@ -302,6 +303,8 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRec) {
       console.warn('[Web Speech]: SpeechRecognition tidak didukung browser ini.');
+      onShowToastRef.current?.('Peramban Anda memerlukan izin mikrofon aktif atau belum mendukung SpeechRecognition. Silakan gunakan Google Chrome atau ketik langsung di kolom chat.');
+      setIsListening(false);
       return;
     }
     stopSpeechRecognitionFallback();
@@ -332,6 +335,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         // Jangan rekam jika MinSKI sedang berbicara atau sedang berpikir (Perisai Anti-Gema)
         if (isSpeakingRef.current || isThinkingRef.current) return;
 
+        if (speechDebounceTimeoutRef.current) {
+          clearTimeout(speechDebounceTimeoutRef.current);
+          speechDebounceTimeoutRef.current = null;
+        }
+
         let interim = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           const item = event.results[i];
@@ -349,6 +357,17 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           const query = transcriptBuffer.trim();
           transcriptBuffer = '';
           handleSendTextMessageRef.current(query);
+        } else if (interim.trim().length > 2) {
+          // Debounce 1.2 detik saat user jeda bicara agar ucapan otomatis terkirim tanpa harus tap mic lagi
+          speechDebounceTimeoutRef.current = setTimeout(() => {
+            if (!isSpeakingRef.current && !isThinkingRef.current) {
+              const query = interim.trim();
+              if (query.length > 2) {
+                setLiveUserTranscript('');
+                handleSendTextMessageRef.current(query);
+              }
+            }
+          }, 1200);
         }
       };
 
@@ -356,6 +375,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         console.warn('[Web Speech Recognition Error]:', e?.error);
         if (e?.error === 'not-allowed') {
           setMicDenied(true);
+          onShowToastRef.current?.('Izin mikrofon belum diberikan. Silakan izinkan akses mikrofon di browser Kakak.');
+        } else if (e?.error === 'network') {
+          console.warn('[Web Speech Recognition Network Error]');
         }
       };
 
@@ -587,15 +609,30 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               const p = new Image();
               p.src = msg.perfume.photoUrl;
             }
-          } else if (msg.type === 'unsupported' || msg.type === 'error') {
+          } else if (msg.type === 'unsupported' || msg.type === 'error' || msg.type === 'session_closed') {
             console.warn('[Gemini Live Notice]:', msg.message || msg.reason);
             setActiveEngine('fallback-speech');
             activeEngineRef.current = 'fallback-speech';
-            setEngineTitle('Natural Voice Assistant (Web Speech + AI)');
+            setEngineTitle('Konsultan Suara Cerdas MinSKI');
             try { ws.close(); } catch {}
             wsRef.current = null;
             if (isVoiceModeRef.current) {
-              startSpeechRecognitionFallback();
+              const greeting = "Halo Kak! MinSKI siap bantu racik wangi impian Kakak. Boleh cerita, lagi cari wangi yang seperti apa nih?";
+              setMinskiDialogue(greeting);
+              speakMinskiVoice(
+                greeting,
+                () => {
+                  setIsSpeaking(true);
+                  isSpeakingRef.current = true;
+                },
+                () => {
+                  setIsSpeaking(false);
+                  isSpeakingRef.current = false;
+                  if (isVoiceModeRef.current) {
+                    startSpeechRecognitionFallback();
+                  }
+                }
+              );
             }
           }
         } catch (e) {
@@ -603,21 +640,22 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         }
       };
 
-      ws.onclose = () => {
+      ws.onclose = (ev) => {
         wsRef.current = null;
         if (isVoiceModeRef.current && activeEngineRef.current === 'gemini-live') {
-          setTimeout(() => {
-            if (isVoiceModeRef.current && activeEngineRef.current === 'gemini-live' && !wsRef.current) {
-              connectGeminiLive();
-            }
-          }, 2000);
+          console.warn('[Gemini Live WS Closed]:', ev?.reason);
+          setActiveEngine('fallback-speech');
+          activeEngineRef.current = 'fallback-speech';
+          setEngineTitle('Konsultan Suara Cerdas MinSKI');
+          startSpeechRecognitionFallback();
         }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (e) => {
+        console.warn('[Gemini Live WS Error]:', e);
         setActiveEngine('fallback-speech');
         activeEngineRef.current = 'fallback-speech';
-        setEngineTitle('Natural Voice Assistant (Web Speech + AI)');
+        setEngineTitle('Konsultan Suara Cerdas MinSKI');
         try { ws.close(); } catch {}
         wsRef.current = null;
         if (isVoiceModeRef.current) {

@@ -388,8 +388,9 @@ export function resolveMinskiRecommendation(
   };
 }
 
-// Global reference untuk audio Google TTS Kore yang sedang berputar
+// Global reference untuk audio MinSKI yang sedang berputar
 let activeMinskiAudio: HTMLAudioElement | null = null;
+let activeUtterance: SpeechSynthesisUtterance | null = null;
 
 export function stopMinskiVoice() {
   if (activeMinskiAudio) {
@@ -400,10 +401,97 @@ export function stopMinskiVoice() {
     } catch {}
     activeMinskiAudio = null;
   }
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch {}
+  }
+  activeUtterance = null;
 }
 
-// SUARA RESMI MINSKI: HANYA GOOGLE TTS KORE (GEMINI AUDIO MODEL)
-// Jika kuota habis atau server offline, tampilkan pesan error & teks, tanpa fallback ke suara lain.
+// Voice list caching untuk SpeechSynthesis agar tidak kaku/robot
+let cachedVoices: SpeechSynthesisVoice[] = [];
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  cachedVoices = window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => {
+    cachedVoices = window.speechSynthesis.getVoices();
+  };
+}
+
+function findBestIndonesianVoice(): SpeechSynthesisVoice | null {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return null;
+  const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) return null;
+
+  // 1. Cari suara Natural / Neural Online Indonesia (Google ID, Gadis, Damayanti)
+  const naturalId = voices.find(
+    (v) =>
+      (v.lang === 'id-ID' || v.lang === 'id_ID' || v.lang.startsWith('id')) &&
+      (v.name.toLowerCase().includes('natural') ||
+        v.name.toLowerCase().includes('online') ||
+        v.name.toLowerCase().includes('google') ||
+        v.name.toLowerCase().includes('gadis') ||
+        v.name.toLowerCase().includes('damayanti'))
+  );
+  if (naturalId) return naturalId;
+
+  // 2. Cari suara Indonesia umum yang wanita / ramah
+  const anyId = voices.find(
+    (v) => v.lang.startsWith('id') || v.lang.includes('ID') || v.name.toLowerCase().includes('indonesia')
+  );
+  if (anyId) return anyId;
+
+  return null;
+}
+
+// Fallback Suara Web Speech (Bahasa Indonesia Ramah) jika Google Kore TTS sedang standby / API Key belum diisi
+function playWebSpeechFallback(
+  text: string,
+  onStart?: () => void,
+  onEnd?: () => void
+) {
+  if (typeof window === 'undefined' || !window.speechSynthesis) {
+    if (onEnd) onEnd();
+    return;
+  }
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'id-ID';
+    utterance.rate = 0.96; // Intonasi elegan dan santai seperti konsultan parfum
+    utterance.pitch = 1.0; // Nada alami manusia (tidak cempreng/robot)
+
+    // Pilih suara Indonesia paling natural di perangkat
+    const bestVoice = findBestIndonesianVoice();
+    if (bestVoice) {
+      utterance.voice = bestVoice;
+    }
+
+    activeUtterance = utterance;
+
+    utterance.onstart = () => {
+      if (onStart) onStart();
+    };
+    utterance.onend = () => {
+      activeUtterance = null;
+      if (onEnd) onEnd();
+    };
+    utterance.onerror = (e) => {
+      console.warn('[Web Speech Fallback Error]:', e);
+      activeUtterance = null;
+      if (onEnd) onEnd();
+    };
+
+    window.speechSynthesis.speak(utterance);
+  } catch (err) {
+    console.warn('[Web Speech Fallback Exception]:', err);
+    if (onEnd) onEnd();
+  }
+}
+
+// SUARA RESMI MINSKI:
+// 1. Prioritas Utama: Google TTS Kore (Gemini High-Fidelity 24kHz Audio Model)
+// 2. Prioritas Cadangan: Web Speech Alami Bahasa Indonesia (jika API Key belum terpasang atau kuota limit)
 export function speakMinskiVoice(
   text: string,
   onStart?: () => void,
@@ -421,42 +509,46 @@ export function speakMinskiVoice(
     return () => {};
   }
 
-  // Seluruh keluaran suara wajib melalui endpoint Google TTS Kore
+  // Coba putar suara resmi Google TTS Kore via server
   const audioSrc = `/api/minski/tts?text=${encodeURIComponent(trimmedText)}`;
   const audio = new Audio(audioSrc);
   activeMinskiAudio = audio;
 
-  // Callback onStart saat mulai memuat/memutar
-  if (onStart) onStart();
+  let hasEnded = false;
+  const safeEnd = () => {
+    if (!hasEnded) {
+      hasEnded = true;
+      if (onEnd) onEnd();
+    }
+  };
+
+  audio.onplay = () => {
+    if (onStart) onStart();
+  };
 
   audio.onended = () => {
     activeMinskiAudio = null;
-    if (onEnd) onEnd();
+    safeEnd();
   };
 
   audio.onerror = (err) => {
-    console.warn('[Google TTS Kore Error]: Gagal memuat audio TTS Kore:', err);
+    console.warn('[Google TTS Kore Note]: Mengalihkan ke suara natural responsif...', err);
     activeMinskiAudio = null;
-    if (onError) {
-      onError('Layanan suara Google Kore sedang terkendala / kuota habis. Respon ditampilkan dalam bentuk teks.');
-    }
-    if (onEnd) onEnd();
+    // Beralih otomatis ke Web Speech agar pengguna tetap mendengar jawaban suara secara jelas
+    playWebSpeechFallback(trimmedText, onStart, safeEnd);
   };
 
   const playPromise = audio.play();
   if (playPromise !== undefined) {
     playPromise.catch((err) => {
-      console.warn('[Google TTS Kore Playback Error]:', err);
+      console.warn('[Google TTS Kore Playback Note]: Mengalihkan ke suara natural...', err);
       activeMinskiAudio = null;
-      if (onError) {
-        onError('Gagal memutar suara Google Kore. Respon ditampilkan dalam bentuk teks.');
-      }
-      if (onEnd) onEnd();
+      playWebSpeechFallback(trimmedText, onStart, safeEnd);
     });
   }
 
   return () => {
     stopMinskiVoice();
-    if (onEnd) onEnd();
+    safeEnd();
   };
 }
