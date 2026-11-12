@@ -14,6 +14,7 @@ import {
   Zap,
   User,
   RotateCcw,
+  AlertCircle,
 } from 'lucide-react';
 import { PerfumeItem } from '../data/perfumes';
 import masterBottleTransparent from '../assets/images/sinki_master_bottle_transparent.png';
@@ -198,6 +199,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'minski'; text: string; time: string }>>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
   const [micDenied, setMicDenied] = useState<boolean>(false);
+  const [showPermissionPrompt, setShowPermissionPrompt] = useState<boolean>(true);
 
   // Engine Status
   const [activeEngine, setActiveEngine] = useState<'gemini-live' | 'fallback-speech'>('gemini-live');
@@ -453,6 +455,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
     if (wsRef.current) {
       try {
+        wsRef.current.onmessage = null;
+        wsRef.current.onclose = null;
+        wsRef.current.onerror = null;
         wsRef.current.close();
       } catch {}
       wsRef.current = null;
@@ -496,12 +501,6 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     // Jitter buffer lead-time 160ms untuk awal bicara:
     // Memberikan cadangan waktu yang cukup untuk 2-3 chunk tiba di awal tanpa patah-patah
     const INITIAL_JITTER_LEAD = 0.160;
-    const MAX_ACCUMULATED_DELAY = 1.8; // Batas atas antrean audio agar tidak delay bertumpuk (Focus 5)
-
-    // Focus 5: Cegah penumpukan audio jika antrean melampaui batas real-time
-    if (nextPlaybackTimeRef.current - currentTime > MAX_ACCUMULATED_DELAY) {
-      nextPlaybackTimeRef.current = currentTime + INITIAL_JITTER_LEAD;
-    }
 
     // Jika waktu pemutaran berikutnya sudah tertinggal dari waktu sekarang
     if (nextPlaybackTimeRef.current < currentTime) {
@@ -562,6 +561,17 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
   // Connect to Gemini Live WebSocket Server
   const connectGeminiLive = useCallback(() => {
+    // Tutup koneksi lama dan lepas listener sebelum membuat koneksi baru
+    if (wsRef.current) {
+      try {
+        wsRef.current.onmessage = null;
+        wsRef.current.onclose = null;
+        wsRef.current.onerror = null;
+        wsRef.current.close();
+      } catch {}
+      wsRef.current = null;
+    }
+
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${proto}//${window.location.host}/api/minski/live-ws`;
 
@@ -619,7 +629,13 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             setActiveEngine('fallback-speech');
             activeEngineRef.current = 'fallback-speech';
             setEngineTitle('Konsultan Suara Cerdas MinSKI');
-            try { ws.close(); } catch {}
+            stopAllPlaybackSources();
+            try {
+              ws.onmessage = null;
+              ws.onclose = null;
+              ws.onerror = null;
+              ws.close();
+            } catch {}
             wsRef.current = null;
             if (isVoiceModeRef.current) {
               const greeting = "Halo Kak! MinSKI siap bantu racik wangi impian Kakak. Boleh cerita, lagi cari wangi yang seperti apa nih?";
@@ -676,25 +692,16 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         startSpeechRecognitionFallback();
       }
     }
-  }, [handleBargeIn, schedule24kPcmChunk, startSpeechRecognitionFallback]);
+  }, [handleBargeIn, schedule24kPcmChunk, startSpeechRecognitionFallback, stopAllPlaybackSources]);
 
   // Start Real-Time Microphone Streaming (Native 16kHz PCM to Gemini Live)
   const startNativeMicStream = useCallback(async () => {
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      const inputCtx = new AudioCtx();
-      inputAudioCtxRef.current = inputCtx;
-      if (inputCtx.state === 'suspended') {
-        await inputCtx.resume();
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Akses mikrofon tidak didukung peramban ini atau memerlukan koneksi aman (HTTPS).');
       }
 
-      if (!outputAudioCtxRef.current) {
-        outputAudioCtxRef.current = new AudioCtx({ sampleRate: 24000 });
-      }
-      if (outputAudioCtxRef.current.state === 'suspended') {
-        await outputAudioCtxRef.current.resume();
-      }
-
+      // Panggil getUserMedia langsung saat klik tanpa jeda await agar user gesture peramban tidak kedaluwarsa
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -705,6 +712,20 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       });
       mediaStreamRef.current = stream;
       setMicDenied(false);
+
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const inputCtx = new AudioCtx();
+      inputAudioCtxRef.current = inputCtx;
+      if (inputCtx.state === 'suspended') {
+        inputCtx.resume().catch(() => {});
+      }
+
+      if (!outputAudioCtxRef.current) {
+        outputAudioCtxRef.current = new AudioCtx({ sampleRate: 24000 });
+      }
+      if (outputAudioCtxRef.current.state === 'suspended') {
+        outputAudioCtxRef.current.resume().catch(() => {});
+      }
 
       const source = inputCtx.createMediaStreamSource(stream);
       // Use bufferSize 4096 (~85ms audio chunk at 48kHz for low CPU, smooth stability & anti-freezing)
@@ -764,8 +785,14 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         }
       };
 
+      // Gunakan silent GainNode (gain 0) agar scriptProcessor tetap memproses onaudioprocess
+      // tanpa membunyikan input mikrofon kembali ke speaker (mencegah loopback/echo ganda)
+      const muteNode = inputCtx.createGain();
+      muteNode.gain.setValueAtTime(0, inputCtx.currentTime);
+
       source.connect(processor);
-      processor.connect(inputCtx.destination);
+      processor.connect(muteNode);
+      muteNode.connect(inputCtx.destination);
       setIsListening(true);
     } catch (err: any) {
       console.warn('Gagal mengakses mikrofon:', err);
@@ -1551,6 +1578,73 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                 <span>Lihat Botol</span>
                 <ChevronRight size={13} />
               </button>
+            </div>
+          )}
+
+          {/* OPSI 2: Kartu Sambutan & Permintaan Izin Mikrofon MinSKI */}
+          {!isVoiceMode && showPermissionPrompt && (
+            <div className="w-full p-3 sm:p-3.5 rounded-[12px] sinki-arch-card border border-[#DFB76C]/50 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md relative overflow-hidden animate-fadeIn">
+              <div className="absolute -top-[1px] inset-x-4 h-[1px] bg-gradient-to-r from-transparent via-[#DFB76C] to-transparent opacity-80" />
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-[#DFB76C]/20 border border-[#DFB76C]/60 flex items-center justify-center shrink-0">
+                    <Mic size={14} className="text-[#DFB76C] animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="font-heading text-xs font-bold text-amber-200">
+                      Konsultasi Suara Bersama MinSKI
+                    </h4>
+                    <p className="text-[10px] text-slate-300">
+                      Definisikan wangi impianmu lewat obrolan suara dua arah
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPermissionPrompt(false)}
+                  className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  title="Tutup Kartu"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {micDenied ? (
+                <div className="p-2 rounded-[8px] bg-amber-500/15 border border-amber-400/40 text-[11px] text-amber-200 space-y-1 my-2">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <AlertCircle size={13} className="text-amber-400 shrink-0" />
+                    <span>Izin Mikrofon Sedang Terblokir di Browser</span>
+                  </div>
+                  <p className="text-[10px] text-slate-300 leading-normal">
+                    Klik ikon gembok / setelan situs di address bar browser Anda, ubah Mikrofon menjadi <strong>Izinkan (Allow)</strong>, lalu muat ulang halaman.
+                  </p>
+                </div>
+              ) : (
+                <p className="font-body text-[11px] text-slate-300 leading-relaxed mb-3">
+                  MinSKI siap menemani Kakak mencari racikan aroma yang paling pas secara interaktif. Aktifkan mikrofon untuk langsung berbicara.
+                </p>
+              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPermissionPrompt(false);
+                    toggleVoiceMode();
+                  }}
+                  className="flex-1 py-2 px-3 rounded-[8px] champagne-gold-btn text-slate-950 text-xs font-bold shadow-md hover:brightness-105 active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Mic size={14} />
+                  <span>Aktifkan Izin Mikrofon 🎙️</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPermissionPrompt(false)}
+                  className="py-2 px-3 rounded-[8px] sinki-arch-bar border border-[#DFB76C]/30 text-slate-300 hover:text-white text-[11px] font-medium transition-all cursor-pointer"
+                >
+                  Ketik Teks
+                </button>
+              </div>
             </div>
           )}
 

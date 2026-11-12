@@ -207,7 +207,7 @@ export interface MinskiRecommendationResult {
   longevity: string;
   sillage: string;
   photoUrl: string;
-  pricePerMl: number;
+  pricePerMl?: number;
 }
 
 export function resolveMinskiRecommendation(
@@ -373,6 +373,13 @@ export function resolveMinskiRecommendation(
   const resolvedSillage =
     bestPerfume.sillage || top11Match?.sillage || 'Informasi belum tersedia';
 
+  const cats = bestPerfume.collectionCategories || [];
+  const resolvedPricePerMl = cats.includes('new_trending')
+    ? 4000
+    : cats.includes('viral_hits')
+    ? 3000
+    : undefined;
+
   return {
     perfumeName: bestPerfume.name,
     categoryLabel,
@@ -384,7 +391,7 @@ export function resolveMinskiRecommendation(
     longevity: resolvedLongevity,
     sillage: resolvedSillage,
     photoUrl: photo,
-    pricePerMl: bestPerfume.pricePerMl || 3000,
+    pricePerMl: resolvedPricePerMl,
   };
 }
 

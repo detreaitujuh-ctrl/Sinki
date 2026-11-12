@@ -788,14 +788,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     tagline: string;
     accordsStr: string;
     collectionCategories: CollectionCategoryKey[];
-    pricePerMl: PricePerMlRate;
+    pricePerMl?: PricePerMlRate;
     usageRecommendation: string;
   }>({
     name: '',
     tagline: '',
     accordsStr: 'Warm, Floral, Woody',
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: '',
   });
   const [deleteConfirmPerfume, setDeleteConfirmPerfume] = useState<{
@@ -952,7 +951,6 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
       tagline: '',
       accordsStr: 'Warm, Floral, Woody',
       collectionCategories: ['daily_fresh'],
-      pricePerMl: 3000,
       usageRecommendation: '',
     });
     onShowToast(`Varian baru "${newItem.name}" berhasil ditambahkan & tampil di Collection!`);

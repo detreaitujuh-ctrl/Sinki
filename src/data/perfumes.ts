@@ -84,7 +84,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Citrus', 'Aromatic', 'Fresh'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Aktivitas harian, mobilitas tinggi, olahraga ringan, dan cuaca panas',
   },
   {
@@ -96,7 +95,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Aquatic', 'Citrus', 'Fresh'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kuliah, kerja harian, berkendara siang hari, dan aman di segala cuaca',
   },
   {
@@ -108,7 +106,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Fresh', 'Green', 'Sporty'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Olahraga, gym, aktivitas outdoor siang hari, dan kesegaran aktif',
   },
   {
@@ -120,7 +117,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Marine', 'Aquatic', 'Citrus'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Pemakaian harian pria aktif, cuaca tropis, dan kesan segar tenang',
   },
   {
@@ -132,7 +128,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Aquatic', 'Fresh', 'Aromatic'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Sehabis mandi pagi, rutinitas harian bersih, dan gaya kasual rapi',
   },
   {
@@ -144,7 +139,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Fresh', 'Floral', 'Green'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Aktivitas sehari-hari pagi hingga sore, kuliah, dan nongkrong santai',
   },
   {
@@ -156,7 +150,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Fruity', 'Tropical', 'Fresh'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kegiatan pagi hingga siang yang ceria, jalan santai, dan kuliah',
   },
   {
@@ -168,7 +161,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Aquatic', 'Floral', 'Clean'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Sehabis mandi, aktivitas harian santai, dan cuaca siang yang terik',
   },
   {
@@ -180,7 +172,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Powdery', 'Soft', 'Clean'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Santai di rumah, setelah mandi, dan pecinta wangi lembut menenangkan',
   },
   {
@@ -192,7 +183,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Powdery', 'Soft', 'Cozy'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Suasana santai harian, ruangan ber-AC, dan kesan bersih nyaman',
   },
   {
@@ -204,7 +194,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Powdery', 'Clean', 'Floral'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Pemakaian harian ringan yang kalem dan tidak menyengat di hidung',
   },
   {
@@ -216,7 +205,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Soapy', 'Floral', 'Clean'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Wangi bersih segar sepanjang hari untuk aktivitas kasual harian',
   },
   {
@@ -228,7 +216,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Clean', 'Fresh', 'Floral'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Pakaian harian rapi, kuliah, kerja santai, dan segar seharian',
   },
   {
@@ -240,7 +227,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Lavender', 'Herbal', 'Calming'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Relaksasi, istirahat nyaman, dan aktivitas harian yang tenang',
   },
   {
@@ -252,7 +238,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Rose', 'Floral', 'Soft'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Keseharian lembut, ibadah, dan pencinta wangi mawar alami',
   },
   {
@@ -264,7 +249,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Mango', 'Fruity', 'Tropical'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Hangout siang hari, suasana ceria bersama teman, dan harian segar',
   },
   {
@@ -276,7 +260,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Lychee', 'Fruity', 'Fresh'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Aktivitas harian kasual, kuliah, dan penyuka wangi buah segar ringan',
   },
   {
@@ -288,7 +271,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Strawberry', 'Fruity', 'Sweet'],
     isActive: true,
     collectionCategories: ['daily_fresh'],
-    pricePerMl: 3000,
     usageRecommendation: 'Jalan santai, kegiatan harian ceria, dan kesan muda menyenangkan',
   },
 
@@ -304,7 +286,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Citrus', 'Aromatic', 'Woody'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kerja kantoran, berkendara harian, dan tampilan pria rapi profesional',
   },
   {
@@ -316,7 +297,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Citrus', 'Green Tea', 'Cedarwood'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Bekerja di kantor, meeting pagi, dan menjaga fokus sepanjang hari',
   },
   {
@@ -328,7 +308,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Aromatic', 'Fresh', 'Woody'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 4000,
     usageRecommendation: 'Presentasi bisnis, kemeja kerja rapi, dan wibawa profesional',
   },
   {
@@ -340,7 +319,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Tea', 'Citrus', 'Woody'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Ruang kerja ber-AC, rapat eksekutif, dan aktivitas kantor seharian',
   },
   {
@@ -352,7 +330,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Woody', 'Warm Spicy', 'Crisp Apple'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Gaya smart-casual kantor, bertemu klien, dan diskusi di kafe',
   },
   {
@@ -364,7 +341,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Citrus', 'Fresh Spicy', 'Woody'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Produktivitas kerja tinggi dari pagi hingga sore hari',
   },
   {
@@ -376,7 +352,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Woody', 'Warm Spicy', 'Tobacco'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Pria dewasa berwibawa, setelan rapi kantor, dan jamuan bisnis',
   },
   {
@@ -388,7 +363,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Fresh', 'Green Tea', 'Musky'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kerja kantoran rapi, ibadah, dan kesan bersih sopan di ruang tertutup',
   },
   {
@@ -400,7 +374,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Woody', 'Aromatic', 'Leather'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Pertemuan resmi, kerja profesional, dan karakter maskulin matang',
   },
   {
@@ -412,7 +385,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Citrus', 'Warm Spicy', 'Woody'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Aktivitas kerja profesional, acara kantor, dan tampil maskulin elegan',
   },
   {
@@ -424,7 +396,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Tea', 'White Floral', 'Clean Musk'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Ruang kantor ber-AC, meeting tenang, dan tampil anggun dewasa',
   },
   {
@@ -436,7 +407,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Musky', 'Lavender', 'Powdery'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kerja kantoran seharian, presentasi, dan gaya feminin profesional',
   },
   {
@@ -448,7 +418,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['White Floral', 'Citrus', 'Fresh'],
     isActive: true,
     collectionCategories: ['professional'],
-    pricePerMl: 4000,
     usageRecommendation: 'Karier profesional, pertemuan bisnis, dan acara formal siang hari',
   },
 
@@ -464,7 +433,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Sweet', 'Vanilla', 'Fruity'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kencan romantis, jalan berdua, dan memancarkan pesona feminin manis',
   },
   {
@@ -476,7 +444,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Floral', 'Sweet', 'Fruity'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kencan sore hingga malam, hangout spesial, dan tampil anggun memikat',
   },
   {
@@ -488,7 +455,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Floral', 'Vanilla', 'Fruity'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Momen kencan spesial, dinner romantis, dan meninggalkan kesan rindu',
   },
   {
@@ -500,7 +466,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Fruity', 'White Floral', 'Patchouli'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Acara malam hari, kencan intens, dan tampil berani mencuri perhatian',
   },
   {
@@ -512,7 +477,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Coffee', 'Vanilla', 'Sweet'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 4000,
     usageRecommendation: 'Kencan malam hari, nongkrong di kafe/lounge, dan udara malam sejuk',
   },
   {
@@ -524,7 +488,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Sweet', 'Fruity', 'Creamy'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Momen dekat bersama pasangan dan kencan kasual yang manis',
   },
   {
@@ -536,7 +499,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Fruity', 'Sweet', 'Floral'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kencan malam romantis, hangout spesial, dan aura memikat perhatian',
   },
   {
@@ -548,7 +510,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Fruity', 'Sweet', 'Floral'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 4000,
     usageRecommendation: 'Makan malam romantis, perayaan berdua, dan tampil feminin menawan',
   },
   {
@@ -560,7 +521,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Cherry', 'Sweet', 'Fruity'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kencan siang maupun sore hari, jalan santai, dan kesan manis ceria',
   },
   {
@@ -572,7 +532,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Fruity', 'Tropical', 'Floral'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Hangout sore, kencan seru, dan memancarkan daya tarik energik',
   },
   {
@@ -584,7 +543,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Caramel', 'Fruity', 'Vanilla'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Pertemuan dekat, makan malam hangat, dan daya pikat yang lekat',
   },
   {
@@ -596,7 +554,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Vanilla', 'Sweet', 'Powdery'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kencan malam hari, acara semi-formal, dan suasana hangat intim',
   },
   {
@@ -608,7 +565,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Fruity', 'Floral', 'Fresh'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kencan pertama, tampil percaya diri, dan memikat di segala suasana',
   },
   {
@@ -620,7 +576,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['White Floral', 'Vanilla', 'Coffee'],
     isActive: true,
     collectionCategories: ['attraction'],
-    pricePerMl: 3000,
     usageRecommendation: 'Kencan malam elegan, hangout di kafe, dan kesan manis dewasa',
   },
 
@@ -636,7 +591,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Amber', 'Woody', 'Warm Spicy'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 4000,
     usageRecommendation: 'Pesta pernikahan, acara VIP malam hari, dan jejak aroma prestisius',
   },
   {
@@ -648,7 +602,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Amber', 'Warm Spicy', 'Leather'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 4000,
     usageRecommendation: 'Pesta malam eksklusif, acara spesial, dan karisma mewah berkelas',
   },
   {
@@ -660,7 +613,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Woody', 'Warm Spicy', 'Smoky'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 3000,
     usageRecommendation: 'Jamuan makan malam formal, jas rapi, dan suasana malam berwibawa',
   },
   {
@@ -672,7 +624,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Caramel', 'Vanilla', 'Sandalwood'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 3000,
     usageRecommendation: 'Silaturahmi besar, Hari Raya, kondangan, dan suasana hangat mewah',
   },
   {
@@ -684,7 +635,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Musky', 'Amber', 'Woody'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 4000,
     usageRecommendation: 'Majelis terhormat, ibadah khusyuk, dan acara keagamaan istimewa',
   },
   {
@@ -696,7 +646,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Oriental Floral', 'Musky', 'Woody'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 3000,
     usageRecommendation: 'Ibadah besar, silaturahmi resmi, dan ketenangan berwibawa',
   },
   {
@@ -708,7 +657,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Sparkling', 'Fruity', 'Floral'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 3000,
     usageRecommendation: 'Pesta perayaan, resepsi pernikahan, dan tampil glamor mempesona',
   },
   {
@@ -720,7 +668,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Amber', 'Oud', 'Warm Spicy'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 4000,
     usageRecommendation: 'Acara besar VIP, resepsi mewah, dan memancarkan aura eksklusif',
   },
   {
@@ -732,7 +679,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Aldehydic', 'Powdery', 'Floral'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 4000,
     usageRecommendation: 'Gala dinner, resepsi resmi, dan keanggunan kelas atas tak lekang waktu',
   },
   {
@@ -744,7 +690,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Vanilla', 'Salty', 'White Floral'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 4000,
     usageRecommendation: 'Pesta malam elegan, gaun formal, dan pesona ratu yang berkelas',
   },
   {
@@ -756,7 +701,6 @@ export const PERFUMES_DATA: PerfumeItem[] = [
     accords: ['Lavender', 'Orange Blossom', 'Vanilla'],
     isActive: true,
     collectionCategories: ['luxury'],
-    pricePerMl: 4000,
     usageRecommendation: 'Acara eksklusif, pertemuan eksekutif, dan simbol kemewahan modern',
   },
 

@@ -123,7 +123,7 @@ function getMinskiConfig(): MinskiConfig {
                 .map((e: string) => (e === 'gemini' ? 'gemini-flash' : e))
                 .filter((e: string) => e !== 'groq')
             : ['gemini-flash', 'gemini-lite', 'deterministic'],
-          primaryModel: parsed.primaryModel || 'gemini-2.5-flash',
+          primaryModel: (parsed.primaryModel && parsed.primaryModel !== 'gemini-2.5-flash') ? parsed.primaryModel : 'gemini-3.8-flash',
           fallbackModel: parsed.fallbackModel || 'gemini-3.1-flash-lite',
           updatedAt: parsed.updatedAt || new Date().toISOString(),
         };
@@ -133,7 +133,7 @@ function getMinskiConfig(): MinskiConfig {
   return {
     voicePreference: 'google-kore',
     aiEnginePriority: ['gemini-flash', 'gemini-lite', 'deterministic'],
-    primaryModel: 'gemini-2.5-flash',
+    primaryModel: 'gemini-3.8-flash',
     fallbackModel: 'gemini-3.1-flash-lite',
     updatedAt: new Date().toISOString(),
   };
@@ -970,7 +970,14 @@ function resolveServerRecommendation(
     });
   }
 
-  const bestPerfume = matchedPerfume || targetList[0] || { name: 'Dunhill Blue', pricePerMl: 3000 };
+  const bestPerfume = matchedPerfume || targetList[0];
+  if (!bestPerfume) {
+    return {
+      reply: 'MinSKI siap menemani Kakak mencari aroma yang paling pas. Ceritakan suasana wangi favorit Kakak ya!',
+      recommendedPerfume: null,
+      isRecommendationReady: false,
+    };
+  }
 
   // 3. Personalized Seductive & Explanatory Pitch
   let seductiveScript = '';
@@ -1027,11 +1034,26 @@ function resolveServerRecommendation(
   const resolvedSillage =
     bestPerfume.sillage || topMatch?.sillage || 'Informasi belum tersedia';
 
+  const cats = bestPerfume.collectionCategories || [];
+  const resolvedPricePerMl = cats.includes('new_trending')
+    ? 4000
+    : cats.includes('viral_hits')
+    ? 3000
+    : undefined;
+
+  let categoryLabel = bestPerfume.categoryLabel || 'SINKI Luxury Signature';
+  if (cats.includes('new_trending')) categoryLabel = 'Koleksi New & Trending';
+  else if (cats.includes('viral_hits')) categoryLabel = 'Koleksi Viral Hits';
+  else if (cats.includes('daily_fresh')) categoryLabel = 'Koleksi Daily Fresh';
+  else if (cats.includes('professional')) categoryLabel = 'Koleksi Professional';
+  else if (cats.includes('attraction')) categoryLabel = 'Koleksi Attraction';
+  else if (cats.includes('luxury')) categoryLabel = 'Koleksi Luxury';
+
   return {
     reply: seductiveScript,
     recommendedPerfume: {
       perfumeName: bestPerfume.name,
-      categoryLabel: bestPerfume.categoryLabel || 'SINKI Luxury Signature',
+      categoryLabel,
       matchScore: 98,
       matchScoreLabel: 'Estimasi Kecocokan Aroma',
       hypnoticScript: seductiveScript,
@@ -1040,7 +1062,7 @@ function resolveServerRecommendation(
       longevity: resolvedLongevity,
       sillage: resolvedSillage,
       photoUrl: photo,
-      pricePerMl: bestPerfume.pricePerMl || 3000,
+      pricePerMl: resolvedPricePerMl,
     },
     isRecommendationReady: true,
   };
@@ -1060,23 +1082,53 @@ Karakter & Gaya Bahasa MinSKI:
 - Jawab secara RINGKAS dan PADAT (1-2 kalimat per giliran bicara) agar percakapan terasa dinamis, responsif, dan interaktif layaknya konsultasi langsung.
 - Pahami bahasa Indonesia informal, singkatan, dan ungkapan santai (nggak, ga suka, pusing, menyengat, enek, ngantor, kencan, dll).`;
 
+function formatPerfumeCatalogSummary(p: any): string {
+  const cats = Array.isArray(p.collectionCategories) ? p.collectionCategories : [];
+  let categoryName = 'Koleksi SINKI';
+  let pricingInfo = 'Paket Botol 10–100 ml (10ml Rp17.000, 20ml Rp25.000, 30ml Rp39.000, 50ml Rp59.000, 100ml Rp115.000)';
+
+  if (cats.includes('new_trending')) {
+    categoryName = 'New & Trending';
+    pricingInfo = 'Rp4.000/ml (misalnya: 10ml Rp40.000, 30ml Rp120.000, 50ml Rp200.000, 100ml Rp400.000)';
+  } else if (cats.includes('viral_hits')) {
+    categoryName = 'Viral Hits';
+    pricingInfo = 'Rp3.000/ml (misalnya: 10ml Rp30.000, 30ml Rp90.000, 50ml Rp150.000, 100ml Rp300.000)';
+  } else if (cats.includes('daily_fresh')) {
+    categoryName = 'Daily Fresh';
+  } else if (cats.includes('professional')) {
+    categoryName = 'Professional';
+  } else if (cats.includes('attraction')) {
+    categoryName = 'Attraction';
+  } else if (cats.includes('luxury')) {
+    categoryName = 'Luxury';
+  }
+
+  const accordsStr = Array.isArray(p.accords) ? p.accords.join(', ') : (p.accords || '');
+  return `- ${p.name} [Kategori: ${categoryName}] | Karakter: ${accordsStr} | Skema Harga: ${pricingInfo}`;
+}
+
 function buildMinskiSystemPrompt(catalogBrief: any[]): string {
-  const catalogText = catalogBrief
-    .map((p: any) => `- ${p.name} (${p.category}): ${p.accords}`)
-    .join('\n');
+  const catalogText = catalogBrief.map(formatPerfumeCatalogSummary).join('\n');
 
   return `${MINSKI_PERSONA_GUIDELINES}
 
-Katalog Parfum Aktif SINKI (PILIH HANYA DARI DAFTAR INI):
+KATALOG RESMI PARFUM SINKI AKTIF (SATU-SATUNYA SUMBER VARIAN YANG VALID):
 ${catalogText}
 
-Prinsip Konsultasi Cerdas:
-1. JANGAN langsung memberikan rekomendasi jika informasi pelanggan masih umum, ambigu, atau baru tahap awal konsultasi!
-2. Jika pelanggan baru menyebutkan tujuan (misal: buat kerja tapi nggak suka menyengat, buat kencan malam, buat sehari-hari) atau aroma umum (suka aroma manis tapi jangan berlebihan, belum tahu suka aroma apa), sambut hangat dan AJUKAN SATU pertanyaan lanjutan yang cerdas dan relevan dalam 1-2 kalimat.
-3. JANGAN mengulang pertanyaan yang sudah dijawab oleh pelanggan dalam riwayat obrolan.
-4. Gunakan riwayat obrolan untuk memahami preferensi lengkap pelanggan (aroma yang disukai, yang dihindari, momen, karakter).
-5. Jika informasi SUDAH CUKUP (pelanggan sudah menjawab pertanyaan lanjutan, atau menyebutkan preferensi spesifik, atau langsung menunjuk varian tertentu), berikan SATU rekomendasi terbaik dari katalog aktif.
-6. Jelaskan secara ramah dan personal mengapa parfum tersebut cocok untuk kebutuhan Kakak dalam 1-2 kalimat rayuan elegan yang berkelas.
+ATURAN WAJIB VALIDASI KATALOG & LOGIKA HARGA:
+1. VALIDASI VARIAN KETAT:
+   - MinSKI HANYA BOLEH menyebutkan atau merekomendasikan varian yang BENAR-BENAR TERCANTUM di Katalog Resmi di atas.
+   - DILARANG KERAS mengarang, berhalusinasi, atau menyebut nama varian parfum di luar daftar ini (seperti merk luar atau varian yang tidak ada di katalog SINKI).
+   - Nama varian, kategori, dan harga WAJIB diambil dari katalog yang sama.
+2. ATURAN SKEMA HARGA KATEGORI:
+   - Kategori 'Daily Fresh', 'Professional', 'Attraction', dan 'Luxury': WAJIB menggunakan harga paket botol 10–100 ml (10ml Rp17.000, 20ml Rp25.000, 30ml Rp39.000, 50ml Rp59.000, 100ml Rp115.000). JANGAN PERNAH menyebut atau menghitung harga per-ml untuk 4 kategori ini!
+   - Kategori 'Viral Hits': Dihitung Rp3.000/ml (misalnya 30 ml = Rp90.000, 50 ml = Rp150.000).
+   - Kategori 'New & Trending': Dihitung Rp4.000/ml (misalnya 30 ml = Rp120.000, 50 ml = Rp200.000).
+3. Jika pelanggan bertanya harga atau varian, jelaskan secara akurat sesuai aturan kategori di atas dengan santun dan ramah.
+4. Prinsip Konsultasi Cerdas:
+   - JANGAN langsung memberikan rekomendasi jika informasi pelanggan masih umum, ambigu, atau baru tahap awal konsultasi! Ajukan SATU pertanyaan lanjutan yang cerdas dan relevan dalam 1-2 kalimat.
+   - JANGAN mengulang pertanyaan yang sudah dijawab oleh pelanggan dalam riwayat obrolan.
+   - Jika informasi SUDAH CUKUP, berikan SATU rekomendasi terbaik dari katalog aktif di atas, lalu jelaskan dengan rayuan elegan berkelas mengapa aroma ini cocok untuk Kakak (1-2 kalimat).
 
 Format Output (HANYA JSON murni tanpa pembungkus markdown atau backticks):
 Jika masih tahap konsultasi / klarifikasi (informasi belum cukup):
@@ -1091,7 +1143,7 @@ Jika informasi sudah cukup dan siap merekomendasikan:
 {
   "status": "recommended",
   "reply": "Penjelasan personal dan ringkas (1-2 kalimat) mengapa parfum ini sangat cocok untuk Kakak dengan rayuan elegan berkelas.",
-  "selectedPerfumeName": "Nama persis dari katalog aktif",
+  "selectedPerfumeName": "Nama persis dari katalog resmi di atas",
   "accords": "Accords utama sesuai katalog"
 }`;
 }
@@ -1146,15 +1198,15 @@ async function callGeminiConsultationWithModel(
   const conversationTurns = buildGeminiContents(history, rawMessage);
 
   const runModel = async (client: GoogleGenAI) => {
+    const isLite = modelName.includes('lite');
     return client.models.generateContent({
       model: modelName,
       contents: conversationTurns as any,
       config: {
         systemInstruction: systemPrompt,
         responseMimeType: 'application/json',
-        maxOutputTokens: 250,
         thinkingConfig: {
-          thinkingLevel: ThinkingLevel.LOW,
+          thinkingLevel: isLite ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW,
         },
       },
     });
@@ -1215,14 +1267,13 @@ function formatRecommendationResponse(
   }
 
   const queryName = parsed.selectedPerfumeName.trim().toLowerCase();
-  const matchedItem =
-    activeCatalog.find(
-      (p: any) =>
-        (p.name || '').toLowerCase() === queryName ||
-        (p.name || '').toLowerCase().includes(queryName) ||
-        queryName.includes((p.name || '').toLowerCase())
-    ) || activeCatalog[0];
+  // Validasi ketat: HANYA varian yang benar-benar ada di activeCatalog
+  const matchedItem = activeCatalog.find((p: any) => {
+    const pName = (p.name || '').trim().toLowerCase();
+    return pName === queryName || pName.includes(queryName) || queryName.includes(pName);
+  });
 
+  // Jika nama yang disebut model tidak ada di katalog aktif, tolak rekomendasi palsu
   if (!matchedItem) {
     return {
       reply: parsed.reply,
@@ -1250,11 +1301,26 @@ function formatRecommendationResponse(
   const resolvedSillage =
     (matchedItem as any).sillage || topMatch?.sillage || 'Informasi belum tersedia';
 
+  const cats = matchedItem.collectionCategories || [];
+  const resolvedPricePerMl = cats.includes('new_trending')
+    ? 4000
+    : cats.includes('viral_hits')
+    ? 3000
+    : undefined;
+
+  let categoryLabel = matchedItem.categoryLabel || 'SINKI Luxury Signature';
+  if (cats.includes('new_trending')) categoryLabel = 'Koleksi New & Trending';
+  else if (cats.includes('viral_hits')) categoryLabel = 'Koleksi Viral Hits';
+  else if (cats.includes('daily_fresh')) categoryLabel = 'Koleksi Daily Fresh';
+  else if (cats.includes('professional')) categoryLabel = 'Koleksi Professional';
+  else if (cats.includes('attraction')) categoryLabel = 'Koleksi Attraction';
+  else if (cats.includes('luxury')) categoryLabel = 'Koleksi Luxury';
+
   return {
     reply: parsed.reply,
     recommendedPerfume: {
       perfumeName: matchedItem.name,
-      categoryLabel: matchedItem.categoryLabel || 'SINKI Luxury Signature',
+      categoryLabel,
       matchScore: 98,
       matchScoreLabel: 'Estimasi Kecocokan Aroma',
       hypnoticScript: parsed.reply,
@@ -1263,7 +1329,7 @@ function formatRecommendationResponse(
       longevity: resolvedLongevity,
       sillage: resolvedSillage,
       photoUrl: photo,
-      pricePerMl: matchedItem.pricePerMl || 3000,
+      pricePerMl: resolvedPricePerMl,
     },
     isRecommendationReady: true,
   };
@@ -1304,13 +1370,7 @@ app.post('/api/minski/chat', async (req, res) => {
     }
 
     // 3. Bangun Prompt MinSKI Konsisten Berdasarkan Katalog Aktif
-    const catalogBrief = activeCatalog.map((p: any) => ({
-      name: p.name,
-      category: p.categoryLabel || p.category,
-      accords: Array.isArray(p.accords) ? p.accords.join(', ') : '',
-      tagline: p.tagline || '',
-    }));
-    const minskiPrompt = buildMinskiSystemPrompt(catalogBrief);
+    const minskiPrompt = buildMinskiSystemPrompt(activeCatalog);
 
     // 4. Baca Urutan Prioritas Engine AI dari data/minski_config.json
     const config = getMinskiConfig();
@@ -1318,7 +1378,7 @@ app.post('/api/minski/chat', async (req, res) => {
       Array.isArray(config.aiEnginePriority) && config.aiEnginePriority.length > 0
         ? config.aiEnginePriority
         : ['gemini-flash', 'gemini-lite', 'deterministic'];
-    const primaryModel = config.primaryModel || 'gemini-2.5-flash';
+    const primaryModel = (config.primaryModel && config.primaryModel !== 'gemini-2.5-flash') ? config.primaryModel : 'gemini-3.8-flash';
     const fallbackModel = config.fallbackModel || 'gemini-3.1-flash-lite';
 
     console.log(`[MinSKI Chat] Menjalankan konsultasi MinSKI. Prioritas AI: ${enginePriority.join(' -> ')}`);
@@ -1422,7 +1482,7 @@ app.get('/api/admin/minski-config', (req, res) => {
     hasGeminiKey: keys.length > 0,
     geminiKeyCount: keys.length,
     activeKeyIndex: activeKeyIndex % (keys.length || 1),
-    primaryModel: cfg.primaryModel || 'gemini-2.5-flash',
+    primaryModel: (cfg.primaryModel && cfg.primaryModel !== 'gemini-2.5-flash') ? cfg.primaryModel : 'gemini-3.8-flash',
     fallbackModel: cfg.fallbackModel || 'gemini-3.1-flash-lite',
   });
 });
@@ -2853,25 +2913,24 @@ async function startServer() {
       const assets = getAssets();
       const top11Photos = assets.top11 || {};
       const activeCatalog = catalog.filter((p: any) => p.isActive !== false);
-      const catalogBrief = activeCatalog
-        .map(
-          (p: any) =>
-            `${p.name} (${p.categoryLabel || p.category}): ${Array.isArray(p.accords) ? p.accords.join(', ') : ''} - Rp${p.pricePerMl || 3000}/ml`
-        )
-        .join('\n');
+      const catalogBrief = activeCatalog.map(formatPerfumeCatalogSummary).join('\n');
 
       const systemPrompt = `${MINSKI_PERSONA_GUIDELINES}
-Kamu sedang berbicara langsung dua arah melalui suara dengan pelanggan layaknya konsultan parfum pribadi di butik mewah.
+Kamu sedang berbicara langsung dua arah melalui suara dengan pelanggan layaknya konsultan wewangian pribadi di butik mewah.
 
-Katalog Parfum SINKI Aktif (SATU-SATUNYA SUMBER REKOMENDASI):
+KATALOG RESMI PARFUM SINKI AKTIF (SATU-SATUNYA SUMBER VARIAN YANG VALID):
 ${catalogBrief}
 
-Aturan Percakapan & Rekomendasi:
+ATURAN PERCAKAPAN, REKOMENDASI & LOGIKA HARGA:
 1. Dengarkan curhat aroma pelanggan dengan empati. Jika pelanggan baru membuka percakapan atau preferensinya masih umum, sambut hangat dan tanyakan 1 pertanyaan lanjutan yang cerdas (misal: "Kakak lebih suka wangi yang segar dingin seperti habis mandi atau manis vanila yang lembut?").
 2. Jangan mengulang-ulang pertanyaan yang sudah dijawab.
-3. Begitu informasi sudah cukup atau pelanggan meminta rekomendasi tertentu, sebutkan TEPAT SATU nama varian persis dari katalog aktif SINKI di atas, lalu jelaskan secara memikat mengapa racikan tersebut cocok untuk kepribadian dan momen Kakak. Panggil juga fungsi recommendPerfume agar botolnya tampil di layar Kakak.
-4. DILARANG merekomendasikan merk atau varian di luar katalog Sinki di atas.
-5. Jika pelanggan memotong atau mengganti topik, tanggapi dengan luwes dan alami.`;
+3. VALIDASI VARIAN MUTLAK: Begitu informasi sudah cukup atau pelanggan meminta rekomendasi, sebutkan TEPAT SATU nama varian persis dari katalog resmi SINKI di atas. DILARANG KERAS mengarang atau merekomendasikan varian di luar daftar katalog SINKI di atas.
+4. KETENTUAN SKEMA HARGA KATEGORI (WAJIB KONSISTEN DENGAN KATALOG):
+   - Kategori 'Daily Fresh', 'Professional', 'Attraction', dan 'Luxury': Menggunakan harga paket botol 10–100 ml (10ml Rp17.000, 20ml Rp25.000, 30ml Rp39.000, 50ml Rp59.000, 100ml Rp115.000). JANGAN PERNAH menyebut atau menghitung harga per ml untuk 4 kategori ini!
+   - Kategori 'Viral Hits': Dihitung Rp3.000/ml (misalnya 30 ml = Rp90.000).
+   - Kategori 'New & Trending': Dihitung Rp4.000/ml (misalnya 30 ml = Rp120.000).
+5. Panggil fungsi recommendPerfume agar kartu botol resmi tampil di layar Kakak saat rekomendasi siap.
+6. Jika pelanggan memotong atau mengganti topik, tanggapi dengan luwes dan alami.`;
 
       const session = await aiClient.live.connect({
         model: 'gemini-3.8-live',
@@ -2962,12 +3021,27 @@ Aturan Percakapan & Rekomendasi:
                       break;
                     }
                   }
+                  const cats = matchedItem.collectionCategories || [];
+                  const resolvedPricePerMl = cats.includes('new_trending')
+                    ? 4000
+                    : cats.includes('viral_hits')
+                    ? 3000
+                    : undefined;
+
+                  let categoryLabel = matchedItem.categoryLabel || 'SINKI Luxury Signature';
+                  if (cats.includes('new_trending')) categoryLabel = 'Koleksi New & Trending';
+                  else if (cats.includes('viral_hits')) categoryLabel = 'Koleksi Viral Hits';
+                  else if (cats.includes('daily_fresh')) categoryLabel = 'Koleksi Daily Fresh';
+                  else if (cats.includes('professional')) categoryLabel = 'Koleksi Professional';
+                  else if (cats.includes('attraction')) categoryLabel = 'Koleksi Attraction';
+                  else if (cats.includes('luxury')) categoryLabel = 'Koleksi Luxury';
+
                   clientWs.send(
                     JSON.stringify({
                       type: 'recommendation',
                       perfume: {
                         perfumeName: matchedItem.name,
-                        categoryLabel: matchedItem.categoryLabel || 'SINKI Luxury Signature',
+                        categoryLabel,
                         matchScore: 98,
                         matchScoreLabel: 'Estimasi Kecocokan Aroma',
                         hypnoticScript: args?.reason || matchedItem.tagline,
@@ -2976,7 +3050,7 @@ Aturan Percakapan & Rekomendasi:
                         longevity: matchedItem.longevity || 'Informasi belum tersedia',
                         sillage: matchedItem.sillage || 'Informasi belum tersedia',
                         photoUrl: photo,
-                        pricePerMl: matchedItem.pricePerMl || 3000,
+                        pricePerMl: resolvedPricePerMl,
                       },
                     })
                   );
