@@ -2,10 +2,9 @@
   "voicePreference": "google-kore",
   "aiEnginePriority": [
     "gemini-flash",
-    "gemini-lite",
     "deterministic"
   ],
-  "primaryModel": "gemini-3.8-flash",
-  "fallbackModel": "gemini-3.1-flash-lite",
-  "updatedAt": "2026-11-11T03:36:00.000Z"
+  "primaryModel": "gemini-2.5-flash",
+  "fallbackModel": "deterministic",
+  "updatedAt": "2026-11-12T13:06:00.000Z"
 }

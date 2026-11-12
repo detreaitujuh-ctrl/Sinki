@@ -13,13 +13,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Shared GoogleGenAI Client Pool & Multi-Key Rotation (Server-side only with User-Agent header)
+const invalidKeySet = new Set<string>();
+
 function getGeminiApiKeys(): string[] {
   const rawGeminiKey = (process.env.GEMINI_API_KEY || '').trim();
   if (!rawGeminiKey || rawGeminiKey === 'undefined' || rawGeminiKey === 'null') return [];
   return rawGeminiKey
     .split(/[,;\n]+/)
     .map((k) => k.trim())
-    .filter((k) => k.length > 10 && k !== 'undefined' && k !== 'null');
+    .filter((k) => k.length > 10 && k !== 'undefined' && k !== 'null' && !invalidKeySet.has(k));
 }
 
 let activeKeyIndex = 0;
@@ -60,7 +62,7 @@ function getGeminiClient(): GoogleGenAI | null {
     console.log(`[Gemini AI] GoogleGenAI Engine #${activeKeyIndex + 1} berhasil diinisialisasi untuk MinSKI`);
     return client;
   } catch (err) {
-    console.warn(`[Gemini AI Notice] Inisialisasi GoogleGenAI key #${activeKeyIndex + 1} dilewati:`, err);
+    console.warn(`[Gemini AI Notice] Inisialisasi GoogleGenAI key #${activeKeyIndex + 1} dilewati`);
     return null;
   }
 }
@@ -1198,17 +1200,21 @@ async function callGeminiConsultationWithModel(
   const conversationTurns = buildGeminiContents(history, rawMessage);
 
   const runModel = async (client: GoogleGenAI) => {
+    const isThinkingModel = modelName.includes('gemini-3') || modelName.includes('gemini-4');
     const isLite = modelName.includes('lite');
+    const modelConfig: any = {
+      systemInstruction: systemPrompt,
+      responseMimeType: 'application/json',
+    };
+    if (isThinkingModel) {
+      modelConfig.thinkingConfig = {
+        thinkingLevel: isLite ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW,
+      };
+    }
     return client.models.generateContent({
       model: modelName,
       contents: conversationTurns as any,
-      config: {
-        systemInstruction: systemPrompt,
-        responseMimeType: 'application/json',
-        thinkingConfig: {
-          thinkingLevel: isLite ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW,
-        },
-      },
+      config: modelConfig,
     });
   };
 
@@ -1221,9 +1227,22 @@ async function callGeminiConsultationWithModel(
     geminiRes = await Promise.race([runModel(aiClient), timeoutPromise]);
   } catch (err: any) {
     const errMsg = String(err?.message || err);
-    // Jika limit 429, kuota habis, atau 401 akun tidak aktif, putar ke key cadangan di pool jika tersedia
+    const activeKey = getActiveGeminiKey();
+    const isAuthError =
+      errMsg.includes('401') ||
+      errMsg.includes('ACCOUNT_STATE_INVALID') ||
+      errMsg.includes('UNAUTHENTICATED') ||
+      errMsg.includes('API_KEY_INVALID');
+
+    if (isAuthError && activeKey) {
+      invalidKeySet.add(activeKey);
+      geminiClientPool.delete(activeKey);
+      console.warn('[Gemini Auth Notice] Kunci Gemini tidak valid atau akun layanan dinonaktifkan. Mengalihkan ke mesin cadangan.');
+    }
+
+    // Jika limit 429 atau kuota habis, putar ke key cadangan di pool jika tersedia
     if (
-      (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('401') || errMsg.includes('ACCOUNT_STATE_INVALID') || errMsg.includes('UNAUTHENTICATED')) &&
+      (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || isAuthError) &&
       rotateToNextGeminiKey()
     ) {
       const nextAi = getGeminiClient();
@@ -1374,36 +1393,37 @@ app.post('/api/minski/chat', async (req, res) => {
 
     // 4. Baca Urutan Prioritas Engine AI dari data/minski_config.json
     const config = getMinskiConfig();
+    const primaryModel = config.primaryModel || 'gemini-2.5-flash';
     const enginePriority =
       Array.isArray(config.aiEnginePriority) && config.aiEnginePriority.length > 0
         ? config.aiEnginePriority
-        : ['gemini-flash', 'gemini-lite', 'deterministic'];
-    const primaryModel = (config.primaryModel && config.primaryModel !== 'gemini-2.5-flash') ? config.primaryModel : 'gemini-3.8-flash';
-    const fallbackModel = config.fallbackModel || 'gemini-3.1-flash-lite';
+        : ['gemini-flash', 'deterministic'];
 
-    console.log(`[MinSKI Chat] Menjalankan konsultasi MinSKI. Prioritas AI: ${enginePriority.join(' -> ')}`);
+    console.log(`[MinSKI Chat] Menjalankan konsultasi MinSKI (Otak: ${primaryModel})`);
 
-    // 5. Eksekusi Prioritas Berlapis dengan Failover Otomatis & Timeout 5 Detik
+    // 5. Eksekusi Prioritas: Otak Gemini 2.5 Flash -> Mesin Cerdas Deterministik SINKI
+    const aiAvailable = Boolean(getGeminiClient());
+
     for (const engine of enginePriority) {
-      if (engine === 'gemini' || engine === 'gemini-flash') {
+      if ((engine === 'gemini' || engine === 'gemini-flash') && aiAvailable) {
         try {
-          console.log(`[MinSKI Chat] Menghubungi Lapisan 1: Google Gemini (${primaryModel}) (Timeout 5s)...`);
+          console.log(`[MinSKI Chat] Menghubungi Otak Utama: Google Gemini (${primaryModel}) (Timeout 5s)...`);
           const geminiParsed = await callGeminiConsultationWithModel(primaryModel, rawMessage, history, minskiPrompt);
           const result = formatRecommendationResponse(geminiParsed, activeCatalog, assets, top11Photos);
           console.log(`[MinSKI Chat] Sukses mendapatkan respon dari Google Gemini (${primaryModel}).`);
           return res.json(result);
         } catch (geminiErr: any) {
-          console.warn(`[MinSKI Failover] Lapisan 1 (${primaryModel}) gagal / limit 429 (${geminiErr.message}). Beralih ke Lapisan 2...`);
-        }
-      } else if (engine === 'gemini-lite') {
-        try {
-          console.log(`[MinSKI Chat] Menghubungi Lapisan 2: Google Gemini Flash-Lite (${fallbackModel}) (Timeout 5s)...`);
-          const liteParsed = await callGeminiConsultationWithModel(fallbackModel, rawMessage, history, minskiPrompt);
-          const result = formatRecommendationResponse(liteParsed, activeCatalog, assets, top11Photos);
-          console.log(`[MinSKI Chat] Sukses mendapatkan respon dari Google Gemini Lite (${fallbackModel}).`);
-          return res.json(result);
-        } catch (liteErr: any) {
-          console.warn(`[MinSKI Failover] Lapisan 2 (${fallbackModel}) gagal (${liteErr.message}). Beralih ke Mesin Deterministik...`);
+          const errMsg = String(geminiErr?.message || geminiErr);
+          if (
+            errMsg.includes('401') ||
+            errMsg.includes('ACCOUNT_STATE_INVALID') ||
+            errMsg.includes('UNAUTHENTICATED') ||
+            errMsg.includes('API_KEY_INVALID')
+          ) {
+            console.warn(`[MinSKI Notice] Akun layanan / kunci Gemini tidak aktif. Mengalihkan langsung ke Mesin Deterministik SINKI.`);
+            break;
+          }
+          console.warn(`[MinSKI Failover] Lapisan AI (${primaryModel}) dialihkan ke Mesin Deterministik SINKI...`);
         }
       } else if (engine === 'deterministic') {
         console.log('[MinSKI Chat] Menjalankan Mesin Cerdas Deterministik SINKI (Lapisan Bebas Kuota)...');
@@ -3124,12 +3144,26 @@ ATURAN PERCAKAPAN, REKOMENDASI & LOGIKA HARGA:
         } catch {}
       });
     } catch (liveErr: any) {
-      console.warn('[MinSKI Live Connect Exception]:', liveErr?.message || liveErr);
+      const errMsg = String(liveErr?.message || liveErr);
+      if (
+        errMsg.includes('401') ||
+        errMsg.includes('ACCOUNT_STATE_INVALID') ||
+        errMsg.includes('UNAUTHENTICATED') ||
+        errMsg.includes('API_KEY_INVALID')
+      ) {
+        const activeKey = getActiveGeminiKey();
+        if (activeKey) {
+          invalidKeySet.add(activeKey);
+          geminiClientPool.delete(activeKey);
+        }
+      }
+      console.warn('[MinSKI Live Notice] Mengalihkan ke Mode Konsultasi Suara Cerdas SINKI');
       if (clientWs.readyState === WebSocket.OPEN) {
         clientWs.send(
           JSON.stringify({
             type: 'unsupported',
-            reason: liveErr?.message || 'GEMINI_LIVE_CONNECTION_FAILED',
+            reason: 'GEMINI_LIVE_CONNECTION_FAILED',
+            message: 'Mengalihkan ke Mode Konsultasi Suara Cerdas SINKI.',
             fallback: 'web-speech-tts',
           })
         );

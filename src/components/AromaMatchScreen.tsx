@@ -212,6 +212,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+  const activeGainsRef = useRef<GainNode[]>([]);
   const nextPlaybackTimeRef = useRef<number>(0);
   const isSpeakingRef = useRef<boolean>(false);
   const isVoiceModeRef = useRef<boolean>(false);
@@ -270,8 +271,18 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       } catch {}
     });
     activeSourcesRef.current = [];
+
+    activeGainsRef.current.forEach((gain) => {
+      try {
+        gain.disconnect();
+      } catch {}
+    });
+    activeGainsRef.current = [];
+
     if (outputAudioCtxRef.current) {
       nextPlaybackTimeRef.current = outputAudioCtxRef.current.currentTime;
+    } else {
+      nextPlaybackTimeRef.current = 0;
     }
     setIsSpeaking(false);
     isSpeakingRef.current = false;
@@ -470,7 +481,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     isSpeakingRef.current = false;
   }, [stopAllPlaybackSources, stopFallbackSpeech, stopSpeechRecognitionFallback]);
 
-  // Play audio chunk from Gemini Live (24kHz PCM) with Jitter Buffer & Anti-Stutter GainNode
+  // Play audio chunk from Gemini Live (24kHz PCM) with strictly sequential scheduling & clean node lifecycle
   const schedule24kPcmChunk = useCallback((base64Audio: string) => {
     if (isMutedRef.current) return;
 
@@ -493,58 +504,63 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     const source = ctx.createBufferSource();
     source.buffer = audioBuffer;
 
-    // GainNode untuk smoothing transisi chunk (micro fade-in 3ms dan micro fade-out 3ms)
-    // Mencegah letupan digital / clicks pada batas antar-chunk (Focus 1 & 2)
     const gainNode = ctx.createGain();
 
     const currentTime = ctx.currentTime;
-    // Jitter buffer lead-time 160ms untuk awal bicara:
-    // Memberikan cadangan waktu yang cukup untuk 2-3 chunk tiba di awal tanpa patah-patah
-    const INITIAL_JITTER_LEAD = 0.160;
+    const INITIAL_JITTER_LEAD = 0.040; // 40ms lead-time adaptif hanya di awal mulai bicara
 
-    // Jika waktu pemutaran berikutnya sudah tertinggal dari waktu sekarang
+    // Batalkan timeout akhir bicara sebelumnya agar tidak me-reset nextPlaybackTimeRef mundur saat audio baru masuk
+    if (speakingEndDebounceRef.current) {
+      clearTimeout(speakingEndDebounceRef.current);
+      speakingEndDebounceRef.current = null;
+    }
+
+    // Jika antrean pemutaran sebelumnya sudah lewat di masa lalu atau queue kosong
     if (nextPlaybackTimeRef.current < currentTime) {
-      // Jika jeda sangat mikro (< 25ms) dan masih aktif bicara, sambungkan langsung tanpa jeda buatan
-      if (currentTime - nextPlaybackTimeRef.current < 0.025 && activeSourcesRef.current.length > 0) {
+      // Jeda buffer awal HANYA saat mulai dari posisi diam (activeSources kosong)
+      // Jika audio sedang mengalir (activeSources > 0), sambungkan langsung di currentTime tanpa jeda buatan agar tidak terpotong/robotik!
+      if (activeSourcesRef.current.length > 0) {
         nextPlaybackTimeRef.current = currentTime;
       } else {
-        // Mulai rangkaian bicara baru dengan buffer awal 160ms
         nextPlaybackTimeRef.current = currentTime + INITIAL_JITTER_LEAD;
         speakingStartTimeRef.current = Date.now();
       }
     }
 
-    const startTime = nextPlaybackTimeRef.current;
+    // Waktu mulai selalu sequential, dijamin >= currentTime dan tidak pernah overlap dengan chunk sebelumnya
+    const startTime = Math.max(currentTime, nextPlaybackTimeRef.current);
     const duration = audioBuffer.duration;
-    const endTime = startTime + duration;
 
-    // Haluskan awal dan akhir chunk untuk mencegah bunyi letupan digital (clicks)
-    try {
-      gainNode.gain.setValueAtTime(0.001, startTime);
-      gainNode.gain.linearRampToValueAtTime(1.0, startTime + 0.003);
-      gainNode.gain.setValueAtTime(1.0, Math.max(startTime + 0.003, endTime - 0.003));
-      gainNode.gain.linearRampToValueAtTime(0.001, endTime);
-    } catch {}
+    // Gain flat 1.0 (Hapus fade-in & fade-out 3ms agar gelombang PCM kontinu sempurna tanpa distorsi/kresek)
+    gainNode.gain.setValueAtTime(1.0, startTime);
 
     source.connect(gainNode);
     gainNode.connect(ctx.destination);
 
     source.start(startTime);
-    nextPlaybackTimeRef.current += duration;
+    // Majukan pointer waktu untuk chunk berikutnya tepat di akhir durasi chunk ini (NO OVERLAP)
+    nextPlaybackTimeRef.current = startTime + duration;
 
     activeSourcesRef.current.push(source);
+    activeGainsRef.current.push(gainNode);
     setIsSpeaking(true);
     isSpeakingRef.current = true;
 
     source.onended = () => {
-      const idx = activeSourcesRef.current.indexOf(source);
-      if (idx !== -1) activeSourcesRef.current.splice(idx, 1);
+      const srcIdx = activeSourcesRef.current.indexOf(source);
+      if (srcIdx !== -1) activeSourcesRef.current.splice(srcIdx, 1);
+
+      const gainIdx = activeGainsRef.current.indexOf(gainNode);
+      if (gainIdx !== -1) activeGainsRef.current.splice(gainIdx, 1);
+
       try {
         source.disconnect();
+      } catch {}
+      try {
         gainNode.disconnect();
       } catch {}
 
-      // Debounce akhir bicara agar jeda nafas/frasa AI tidak memicu pergantian status prematur
+      // Debounce akhir bicara hanya setelah seluruh antrean sumber suara benar-benar kosong
       if (activeSourcesRef.current.length === 0) {
         if (speakingEndDebounceRef.current) clearTimeout(speakingEndDebounceRef.current);
         const remainingDelay = Math.max(0, (nextPlaybackTimeRef.current - ctx.currentTime) * 1000);
@@ -552,9 +568,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           if (activeSourcesRef.current.length === 0) {
             setIsSpeaking(false);
             isSpeakingRef.current = false;
-            nextPlaybackTimeRef.current = ctx.currentTime;
+            if (ctx.currentTime >= nextPlaybackTimeRef.current) {
+              nextPlaybackTimeRef.current = 0;
+            }
           }
-        }, Math.max(220, remainingDelay + 40));
+        }, Math.max(60, remainingDelay + 30));
       }
     };
   }, []);
@@ -615,6 +633,16 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                 { sender: 'minski', text: currentOutputTranscriptRef.current, time: nowTime },
               ]);
               currentOutputTranscriptRef.current = '';
+            }
+            // Bersihkan timeout & antrean jika seluruh audio turn ini sudah habis terputar
+            if (activeSourcesRef.current.length === 0 && (!outputAudioCtxRef.current || outputAudioCtxRef.current.currentTime >= nextPlaybackTimeRef.current)) {
+              if (speakingEndDebounceRef.current) {
+                clearTimeout(speakingEndDebounceRef.current);
+                speakingEndDebounceRef.current = null;
+              }
+              setIsSpeaking(false);
+              isSpeakingRef.current = false;
+              nextPlaybackTimeRef.current = 0;
             }
           } else if (msg.type === 'recommendation' && msg.perfume) {
             lastActivityTimeRef.current = Date.now();
