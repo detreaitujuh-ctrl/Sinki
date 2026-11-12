@@ -545,15 +545,17 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         gainNode.disconnect();
       } catch {}
 
-      // Debounce akhir bicara 280ms agar jeda nafas/frasa AI tidak memicu pergantian status prematur
+      // Debounce akhir bicara agar jeda nafas/frasa AI tidak memicu pergantian status prematur
       if (activeSourcesRef.current.length === 0) {
         if (speakingEndDebounceRef.current) clearTimeout(speakingEndDebounceRef.current);
+        const remainingDelay = Math.max(0, (nextPlaybackTimeRef.current - ctx.currentTime) * 1000);
         speakingEndDebounceRef.current = setTimeout(() => {
-          if (activeSourcesRef.current.length === 0 && ctx.currentTime >= nextPlaybackTimeRef.current - 0.04) {
+          if (activeSourcesRef.current.length === 0) {
             setIsSpeaking(false);
             isSpeakingRef.current = false;
+            nextPlaybackTimeRef.current = ctx.currentTime;
           }
-        }, 280);
+        }, Math.max(220, remainingDelay + 40));
       }
     };
   }, []);
@@ -577,6 +579,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           if (msg.type === 'ready') {
             setActiveEngine('gemini-live');
             setEngineTitle('Gemini 3.8 Live (Native Audio)');
+            setIsListening(true);
+            setIsSpeaking(false);
+            isSpeakingRef.current = false;
             lastActivityTimeRef.current = Date.now();
           } else if (msg.type === 'audio' && msg.audio) {
             lastActivityTimeRef.current = Date.now();

@@ -119,7 +119,9 @@ function getMinskiConfig(): MinskiConfig {
         return {
           voicePreference: 'google-kore',
           aiEnginePriority: Array.isArray(parsed.aiEnginePriority)
-            ? parsed.aiEnginePriority.map((e: string) => (e === 'gemini' ? 'gemini-flash' : e === 'groq' ? 'gemini-lite' : e))
+            ? parsed.aiEnginePriority
+                .map((e: string) => (e === 'gemini' ? 'gemini-flash' : e))
+                .filter((e: string) => e !== 'groq')
             : ['gemini-flash', 'gemini-lite', 'deterministic'],
           primaryModel: parsed.primaryModel || 'gemini-2.5-flash',
           fallbackModel: parsed.fallbackModel || 'gemini-3.1-flash-lite',
@@ -3028,16 +3030,10 @@ Aturan Percakapan & Rekomendasi:
               audio: { data: data.audio, mimeType: 'audio/pcm;rate=16000' },
             });
           } else if (data.type === 'text' && data.text) {
-            try {
-              session.sendRealtimeInput({
-                text: String(data.text),
-              });
-            } catch {
-              session.sendClientContent({
-                turns: [{ role: 'user', parts: [{ text: String(data.text) }] }],
-                turnComplete: true,
-              });
-            }
+            session.sendClientContent({
+              turns: [{ role: 'user', parts: [{ text: String(data.text) }] }],
+              turnComplete: true,
+            });
           } else if (data.type === 'interrupt') {
             try {
               session.sendRealtimeInput({ activityStart: {} });

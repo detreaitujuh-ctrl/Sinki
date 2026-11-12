@@ -1,5 +1,5 @@
 {
-  "totalVisits": 90,
+  "totalVisits": 100,
   "uniqueVisitors": 1,
   "startedAt": "2026-10-22T07:28:13.621Z",
   "sources": {
@@ -7,39 +7,41 @@
     "tiktok": 0,
     "whatsapp": 0,
     "facebook": 0,
-    "google": 90,
+    "google": 18,
     "shopee": 0,
     "tokopedia": 0,
     "direct": 0,
     "other": 0
   },
   "devices": {
-    "mobile": 90,
+    "mobile": 18,
     "desktop": 0,
     "tablet": 0
   },
   "os": {
-    "android": 90,
+    "android": 18,
     "ios": 0,
     "windows": 0,
     "mac": 0,
     "other": 0
   },
   "pages": {
-    "Beranda": 15,
+    "Beranda": 7,
     "Top 11 Bestseller": 0,
-    "Katalog Koleksi": 20,
-    "Review Pembeli": 11,
-    "Order VIP": 22,
-    "Racik Aroma": 22
+    "Katalog Koleksi": 4,
+    "Review Pembeli": 1,
+    "Order VIP": 2,
+    "Racik Aroma": 4
   },
   "dailyTrends": {
     "2026-10-22": 20,
     "2026-10-23": 12,
     "2026-10-26": 15,
-    "2026-11-04": 90
+    "2026-11-04": 90,
+    "2026-11-11": 18
   },
   "hourlyTrends": [
+    18,
     0,
     0,
     0,
@@ -60,12 +62,111 @@
     0,
     0,
     0,
-    90,
     0,
     0,
     0
   ],
   "recentVisitors": [
+    {
+      "id": "evt_1794419613515_fbp9",
+      "timestamp": "2026-11-11T17:53:33.515Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Katalog Koleksi",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1794419598030_f93j",
+      "timestamp": "2026-11-11T17:53:18.030Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Beranda",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1794419596735_urpk",
+      "timestamp": "2026-11-11T17:53:16.734Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Katalog Koleksi",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1794419595345_gyau",
+      "timestamp": "2026-11-11T17:53:15.345Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Racik Aroma",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1794419593826_qp9a",
+      "timestamp": "2026-11-11T17:53:13.826Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Order VIP",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1794419591062_7sym",
+      "timestamp": "2026-11-11T17:53:11.062Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Review Pembeli",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1794419578240_03kl",
+      "timestamp": "2026-11-11T17:52:58.239Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Order VIP",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1794419499400_cjeu",
+      "timestamp": "2026-11-11T17:51:39.400Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Racik Aroma",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1794419497846_mqyf",
+      "timestamp": "2026-11-11T17:51:37.845Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Katalog Koleksi",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
+    {
+      "id": "evt_1794419490723_7rv9",
+      "timestamp": "2026-11-11T17:51:30.723Z",
+      "source": "Google",
+      "sourceDetail": "Pencarian Google Search",
+      "page": "Beranda",
+      "device": "Mobile",
+      "os": "Android",
+      "path": "/"
+    },
     {
       "id": "evt_1793799880164_e39p",
       "timestamp": "2026-11-04T13:44:40.164Z",

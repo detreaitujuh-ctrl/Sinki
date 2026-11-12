@@ -42,11 +42,6 @@ export interface SystemHealthData {
       model: string;
       isConfigured: boolean;
     };
-    groqFailover?: {
-      status: string;
-      model: string;
-      isConfigured: boolean;
-    };
     deterministicEngine: {
       status: string;
       catalogVariants: number;
