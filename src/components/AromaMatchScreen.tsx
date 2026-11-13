@@ -26,6 +26,7 @@ import {
   resolveMinskiRecommendation,
   speakMinskiVoice,
   stopMinskiVoice,
+  MINSKI_VOICE_VOLUME,
   MinskiRecommendationResult,
   evaluateMinskiConsultation,
 } from '../utils/minskiEngine';
@@ -203,7 +204,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
   // Engine Status
   const [activeEngine, setActiveEngine] = useState<'gemini-live' | 'fallback-speech'>('gemini-live');
-  const [engineTitle, setEngineTitle] = useState<string>('Gemini 3.8 Live (Native Audio)');
+  const [engineTitle, setEngineTitle] = useState<string>('Gemini 3.8 Live (Kore)');
 
   // Audio & WebSocket Refs
   const wsRef = useRef<WebSocket | null>(null);
@@ -211,6 +212,8 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const outputAudioCtxRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const highpassFilterRef = useRef<BiquadFilterNode | null>(null);
+  const lowpassFilterRef = useRef<BiquadFilterNode | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const activeGainsRef = useRef<GainNode[]>([]);
   const nextPlaybackTimeRef = useRef<number>(0);
@@ -226,11 +229,21 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   const lastActivityTimeRef = useRef<number>(Date.now());
   const hasDeliveredRecommendationRef = useRef<boolean>(false);
   const speakingStartTimeRef = useRef<number>(0);
-  const consecutiveSpeechFramesRef = useRef<number>(0);
   const speakingEndDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const speechDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isThinkingRef = useRef<boolean>(false);
   const chatAbortRef = useRef<AbortController | null>(null);
+
+  // Single Audio Lock, Anti-Double-Send, & Strict Hands-Free Filter Refs
+  const audioTurnIdRef = useRef<number>(0);
+  const suppressLiveAudioUntilRef = useRef<number>(0);
+  const echoGuardUntilRef = useRef<number>(0);
+  const hasSwitchedToFallbackRef = useRef<boolean>(false);
+  const noiseFloorRef = useRef<number>(0.012);
+  const noiseSampleCountRef = useRef<number>(0);
+  const speechAccumMsRef = useRef<number>(0);
+  const preRollFramesRef = useRef<string[]>([]);
+  const lastSubmittedSpeechRef = useRef<{ text: string; at: number }>({ text: '', at: 0 });
 
   const onShowToastRef = useRef(onShowToast);
   useEffect(() => {
@@ -258,14 +271,16 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
   const catalog = perfumes.length > 0 ? perfumes : [];
 
-  // Stop all running audio buffers immediately (Instant Barge-in)
+  // Stop all running audio buffers immediately (Master Turn-ID Lock)
   const stopAllPlaybackSources = useCallback(() => {
+    audioTurnIdRef.current++;
     if (speakingEndDebounceRef.current) {
       clearTimeout(speakingEndDebounceRef.current);
       speakingEndDebounceRef.current = null;
     }
     activeSourcesRef.current.forEach((src) => {
       try {
+        src.onended = null;
         src.stop();
         src.disconnect();
       } catch {}
@@ -288,18 +303,85 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     isSpeakingRef.current = false;
   }, []);
 
-  // Stop fallback audio
+  // Stop HTTP Kore TTS playback cleanly
   const stopFallbackSpeech = useCallback(() => {
+    audioTurnIdRef.current++;
     if (fallbackSpeechRef.current) {
-      fallbackSpeechRef.current();
+      try {
+        fallbackSpeechRef.current();
+      } catch {}
       fallbackSpeechRef.current = null;
     }
     stopMinskiVoice();
     setIsSpeaking(false);
+    isSpeakingRef.current = false;
   }, []);
+
+  // Single Master Audio Lock: memutus SEMUA pemutar audio (Live PCM + Kore HTTP TTS) sekaligus
+  const stopAllAudio = useCallback(() => {
+    stopAllPlaybackSources();
+    if (fallbackSpeechRef.current) {
+      try {
+        fallbackSpeechRef.current();
+      } catch {}
+      fallbackSpeechRef.current = null;
+    }
+    stopMinskiVoice();
+    setIsSpeaking(false);
+    isSpeakingRef.current = false;
+  }, [stopAllPlaybackSources]);
+
+  // Putar suara Google Kore HTTP dengan pengunci tunggal (hanya 1 suara aktif pada satu waktu)
+  const speakWithKoreLock = useCallback(
+    (text: string, onAfterEnd?: () => void) => {
+      stopAllAudio();
+      if (isMutedRef.current) {
+        onAfterEnd?.();
+        return;
+      }
+
+      const myTurnId = audioTurnIdRef.current;
+      setIsSpeaking(true);
+      isSpeakingRef.current = true;
+
+      fallbackSpeechRef.current = speakMinskiVoice(
+        text,
+        () => {
+          if (myTurnId !== audioTurnIdRef.current) {
+            stopMinskiVoice();
+            return;
+          }
+          setIsSpeaking(true);
+          isSpeakingRef.current = true;
+        },
+        () => {
+          if (myTurnId === audioTurnIdRef.current) {
+            fallbackSpeechRef.current = null;
+            setIsSpeaking(false);
+            isSpeakingRef.current = false;
+            echoGuardUntilRef.current = Date.now() + 200;
+            onAfterEnd?.();
+          }
+        },
+        () => {
+          if (myTurnId === audioTurnIdRef.current) {
+            fallbackSpeechRef.current = null;
+            setIsSpeaking(false);
+            isSpeakingRef.current = false;
+            onAfterEnd?.();
+          }
+        }
+      );
+    },
+    [stopAllAudio]
+  );
 
   // Stop Web Speech Recognition fallback
   const stopSpeechRecognitionFallback = useCallback(() => {
+    if (speechDebounceTimeoutRef.current) {
+      clearTimeout(speechDebounceTimeoutRef.current);
+      speechDebounceTimeoutRef.current = null;
+    }
     if (recognitionRef.current) {
       try {
         recognitionRef.current.onresult = null;
@@ -311,28 +393,40 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     }
   }, []);
 
-  // Start Web Speech Recognition fallback (Continuous conversational speech in Indonesian)
+  // Start Web Speech Recognition fallback (Continuous conversational speech in Indonesian, Anti-Double-Send)
   const startSpeechRecognitionFallback = useCallback(() => {
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRec) {
       console.warn('[Web Speech]: SpeechRecognition tidak didukung browser ini.');
-      onShowToastRef.current?.('Peramban Anda memerlukan izin mikrofon aktif atau belum mendukung SpeechRecognition. Silakan gunakan Google Chrome atau ketik langsung di kolom chat.');
+      onShowToastRef.current?.('Browser belum mendukung pengenalan mic langsung. Silakan gunakan Google Chrome atau ketik langsung di kolom chat.');
       setIsListening(false);
       return;
     }
     stopSpeechRecognitionFallback();
 
-    if (mediaStreamRef.current) {
+    if (highpassFilterRef.current) {
       try {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        highpassFilterRef.current.disconnect();
       } catch {}
-      mediaStreamRef.current = null;
+      highpassFilterRef.current = null;
+    }
+    if (lowpassFilterRef.current) {
+      try {
+        lowpassFilterRef.current.disconnect();
+      } catch {}
+      lowpassFilterRef.current = null;
     }
     if (scriptProcessorRef.current) {
       try {
         scriptProcessorRef.current.disconnect();
       } catch {}
       scriptProcessorRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      try {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      } catch {}
+      mediaStreamRef.current = null;
     }
 
     try {
@@ -344,9 +438,25 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
       let transcriptBuffer = '';
 
+      const submitUtteranceOnce = (rawText: string) => {
+        const query = rawText.trim();
+        if (!query || query.length < 2) return;
+        if (isSpeakingRef.current || isThinkingRef.current) return;
+
+        const now = Date.now();
+        const prev = lastSubmittedSpeechRef.current;
+        if (prev.text.toLowerCase() === query.toLowerCase() && now - prev.at < 2600) {
+          return;
+        }
+        lastSubmittedSpeechRef.current = { text: query, at: now };
+        transcriptBuffer = '';
+        setLiveUserTranscript('');
+        handleSendTextMessageRef.current(query);
+      };
+
       recognition.onresult = (event: any) => {
         // Jangan rekam jika MinSKI sedang berbicara atau sedang berpikir (Perisai Anti-Gema)
-        if (isSpeakingRef.current || isThinkingRef.current) return;
+        if (isSpeakingRef.current || isThinkingRef.current || Date.now() < echoGuardUntilRef.current) return;
 
         if (speechDebounceTimeoutRef.current) {
           clearTimeout(speechDebounceTimeoutRef.current);
@@ -362,25 +472,20 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             interim += item[0].transcript;
           }
         }
-        const showText = transcriptBuffer || interim;
+
+        const showText = (transcriptBuffer || interim).trim();
         if (showText) {
           setLiveUserTranscript(showText);
         }
+
         if (transcriptBuffer.trim().length > 0) {
-          const query = transcriptBuffer.trim();
-          transcriptBuffer = '';
-          handleSendTextMessageRef.current(query);
+          submitUtteranceOnce(transcriptBuffer);
         } else if (interim.trim().length > 2) {
-          // Debounce 1.2 detik saat user jeda bicara agar ucapan otomatis terkirim tanpa harus tap mic lagi
+          // Debounce cepat 650ms saat user jeda bicara; anti-kirim-ganda mencegah isFinal mengirim ulang kalimat sama
+          const capturedInterim = interim.trim();
           speechDebounceTimeoutRef.current = setTimeout(() => {
-            if (!isSpeakingRef.current && !isThinkingRef.current) {
-              const query = interim.trim();
-              if (query.length > 2) {
-                setLiveUserTranscript('');
-                handleSendTextMessageRef.current(query);
-              }
-            }
-          }, 1200);
+            submitUtteranceOnce(capturedInterim);
+          }, 650);
         }
       };
 
@@ -389,8 +494,6 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         if (e?.error === 'not-allowed') {
           setMicDenied(true);
           onShowToastRef.current?.('Izin mikrofon belum diberikan. Silakan izinkan akses mikrofon di browser Kakak.');
-        } else if (e?.error === 'network') {
-          console.warn('[Web Speech Recognition Network Error]');
         }
       };
 
@@ -410,31 +513,47 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     }
   }, [stopSpeechRecognitionFallback]);
 
-  // User interupsi (Smart Real-Time Barge-In - Focus 4)
-  const handleBargeIn = useCallback(() => {
-    stopAllPlaybackSources();
-    stopFallbackSpeech();
+  // User interupsi (Smart Real-Time Barge-In dengan Turn-ID & Suppress Window)
+  const handleBargeIn = useCallback(
+    (notifyServer = true) => {
+      suppressLiveAudioUntilRef.current = Date.now() + 380;
+      stopAllAudio();
 
-    // Hentikan status bicara secara instan
-    setIsSpeaking(false);
-    isSpeakingRef.current = false;
+      if (notifyServer && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        try {
+          wsRef.current.send(JSON.stringify({ type: 'interrupt' }));
+        } catch {}
+      }
 
-    // Kirim sinyal interrupt ke Gemini Live agar server menghentikan generasi audio lanjutan
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      setInterruptedNotice(true);
+      setTimeout(() => setInterruptedNotice(false), 900);
+    },
+    [stopAllAudio]
+  );
+
+  // Clean up mic, filters & audio contexts
+  const cleanupAudio = useCallback(() => {
+    stopAllAudio();
+    stopSpeechRecognitionFallback();
+    speechAccumMsRef.current = 0;
+    preRollFramesRef.current = [];
+    suppressLiveAudioUntilRef.current = 0;
+    echoGuardUntilRef.current = 0;
+    hasSwitchedToFallbackRef.current = false;
+
+    if (highpassFilterRef.current) {
       try {
-        wsRef.current.send(JSON.stringify({ type: 'interrupt' }));
+        highpassFilterRef.current.disconnect();
       } catch {}
+      highpassFilterRef.current = null;
     }
 
-    setInterruptedNotice(true);
-    setTimeout(() => setInterruptedNotice(false), 900);
-  }, [stopAllPlaybackSources, stopFallbackSpeech]);
-
-  // Clean up mic & audio contexts
-  const cleanupAudio = useCallback(() => {
-    stopAllPlaybackSources();
-    stopFallbackSpeech();
-    stopSpeechRecognitionFallback();
+    if (lowpassFilterRef.current) {
+      try {
+        lowpassFilterRef.current.disconnect();
+      } catch {}
+      lowpassFilterRef.current = null;
+    }
 
     if (scriptProcessorRef.current) {
       try {
@@ -479,11 +598,21 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       setIsSpeaking(false);
     }
     isSpeakingRef.current = false;
-  }, [stopAllPlaybackSources, stopFallbackSpeech, stopSpeechRecognitionFallback]);
+  }, [stopAllAudio, stopSpeechRecognitionFallback]);
 
-  // Play audio chunk from Gemini Live (24kHz PCM) with strictly sequential scheduling & clean node lifecycle
+  // Play audio chunk from Gemini Live (24kHz PCM) with single audio lock
   const schedule24kPcmChunk = useCallback((base64Audio: string) => {
     if (isMutedRef.current) return;
+    if (Date.now() < suppressLiveAudioUntilRef.current) return;
+
+    // Pastikan suara Kore HTTP tidak ikut berbunyi saat Live PCM sedang berjalan
+    if (fallbackSpeechRef.current) {
+      try {
+        fallbackSpeechRef.current();
+      } catch {}
+      fallbackSpeechRef.current = null;
+      stopMinskiVoice();
+    }
 
     if (!outputAudioCtxRef.current) {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -507,18 +636,14 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     const gainNode = ctx.createGain();
 
     const currentTime = ctx.currentTime;
-    const INITIAL_JITTER_LEAD = 0.040; // 40ms lead-time adaptif hanya di awal mulai bicara
+    const INITIAL_JITTER_LEAD = 0.035;
 
-    // Batalkan timeout akhir bicara sebelumnya agar tidak me-reset nextPlaybackTimeRef mundur saat audio baru masuk
     if (speakingEndDebounceRef.current) {
       clearTimeout(speakingEndDebounceRef.current);
       speakingEndDebounceRef.current = null;
     }
 
-    // Jika antrean pemutaran sebelumnya sudah lewat di masa lalu atau queue kosong
     if (nextPlaybackTimeRef.current < currentTime) {
-      // Jeda buffer awal HANYA saat mulai dari posisi diam (activeSources kosong)
-      // Jika audio sedang mengalir (activeSources > 0), sambungkan langsung di currentTime tanpa jeda buatan agar tidak terpotong/robotik!
       if (activeSourcesRef.current.length > 0) {
         nextPlaybackTimeRef.current = currentTime;
       } else {
@@ -527,18 +652,15 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       }
     }
 
-    // Waktu mulai selalu sequential, dijamin >= currentTime dan tidak pernah overlap dengan chunk sebelumnya
     const startTime = Math.max(currentTime, nextPlaybackTimeRef.current);
     const duration = audioBuffer.duration;
 
-    // Gain flat 1.0 (Hapus fade-in & fade-out 3ms agar gelombang PCM kontinu sempurna tanpa distorsi/kresek)
-    gainNode.gain.setValueAtTime(1.0, startTime);
+    gainNode.gain.setValueAtTime(MINSKI_VOICE_VOLUME, startTime);
 
     source.connect(gainNode);
     gainNode.connect(ctx.destination);
 
     source.start(startTime);
-    // Majukan pointer waktu untuk chunk berikutnya tepat di akhir durasi chunk ini (NO OVERLAP)
     nextPlaybackTimeRef.current = startTime + duration;
 
     activeSourcesRef.current.push(source);
@@ -560,7 +682,6 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         gainNode.disconnect();
       } catch {}
 
-      // Debounce akhir bicara hanya setelah seluruh antrean sumber suara benar-benar kosong
       if (activeSourcesRef.current.length === 0) {
         if (speakingEndDebounceRef.current) clearTimeout(speakingEndDebounceRef.current);
         const remainingDelay = Math.max(0, (nextPlaybackTimeRef.current - ctx.currentTime) * 1000);
@@ -568,6 +689,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           if (activeSourcesRef.current.length === 0) {
             setIsSpeaking(false);
             isSpeakingRef.current = false;
+            echoGuardUntilRef.current = Date.now() + 180;
             if (ctx.currentTime >= nextPlaybackTimeRef.current) {
               nextPlaybackTimeRef.current = 0;
             }
@@ -577,9 +699,81 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     };
   }, []);
 
+  // Atomic transition to fallback speech mode (diperbolehkan maksimal 1x per sesi agar tidak memicu 2 suara)
+  const switchToFallbackMode = useCallback(
+    (shouldGreet: boolean) => {
+      if (hasSwitchedToFallbackRef.current) return;
+      hasSwitchedToFallbackRef.current = true;
+
+      stopAllAudio();
+      if (highpassFilterRef.current) {
+        try {
+          highpassFilterRef.current.disconnect();
+        } catch {}
+        highpassFilterRef.current = null;
+      }
+      if (lowpassFilterRef.current) {
+        try {
+          lowpassFilterRef.current.disconnect();
+        } catch {}
+        lowpassFilterRef.current = null;
+      }
+      if (scriptProcessorRef.current) {
+        try {
+          scriptProcessorRef.current.disconnect();
+        } catch {}
+        scriptProcessorRef.current = null;
+      }
+      if (mediaStreamRef.current) {
+        try {
+          mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        } catch {}
+        mediaStreamRef.current = null;
+      }
+      if (inputAudioCtxRef.current) {
+        try {
+          inputAudioCtxRef.current.close();
+        } catch {}
+        inputAudioCtxRef.current = null;
+      }
+      if (wsRef.current) {
+        try {
+          wsRef.current.onmessage = null;
+          wsRef.current.onclose = null;
+          wsRef.current.onerror = null;
+          wsRef.current.close();
+        } catch {}
+        wsRef.current = null;
+      }
+
+      setActiveEngine('fallback-speech');
+      activeEngineRef.current = 'fallback-speech';
+      setEngineTitle('Konsultan Suara Kore');
+
+      if (!isVoiceModeRef.current) return;
+
+      if (shouldGreet) {
+        const greeting =
+          'Halo Kak! MinSKI siap bantu racik wangi impian Kakak. Lagi cari aroma seperti apa nih?';
+        setMinskiDialogue(greeting);
+        speakWithKoreLock(greeting, () => {
+          setTimeout(() => {
+            if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech' && !isSpeakingRef.current) {
+              startSpeechRecognitionFallback();
+            }
+          }, 350);
+        });
+      } else {
+        startSpeechRecognitionFallback();
+      }
+    },
+    [speakWithKoreLock, startSpeechRecognitionFallback, stopAllAudio]
+  );
+
   // Connect to Gemini Live WebSocket Server
   const connectGeminiLive = useCallback(() => {
-    // Tutup koneksi lama dan lepas listener sebelum membuat koneksi baru
+    hasSwitchedToFallbackRef.current = false;
+
     if (wsRef.current) {
       try {
         wsRef.current.onmessage = null;
@@ -596,20 +790,18 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     try {
       const ws = new WebSocket(wsUrl);
 
-      ws.onopen = () => {
-        // Connected to server
-      };
-
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
 
           if (msg.type === 'ready') {
             setActiveEngine('gemini-live');
-            setEngineTitle('Gemini 3.8 Live (Native Audio)');
+            activeEngineRef.current = 'gemini-live';
+            setEngineTitle('Gemini 3.8 Live (Kore)');
             setIsListening(true);
             setIsSpeaking(false);
             isSpeakingRef.current = false;
+            suppressLiveAudioUntilRef.current = 0;
             lastActivityTimeRef.current = Date.now();
           } else if (msg.type === 'audio' && msg.audio) {
             lastActivityTimeRef.current = Date.now();
@@ -623,9 +815,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             setMinskiDialogue(currentOutputTranscriptRef.current);
           } else if (msg.type === 'interrupted') {
             lastActivityTimeRef.current = Date.now();
-            handleBargeIn();
+            suppressLiveAudioUntilRef.current = 0;
+            handleBargeIn(false);
           } else if (msg.type === 'turn_complete') {
             lastActivityTimeRef.current = Date.now();
+            suppressLiveAudioUntilRef.current = 0;
             const nowTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             if (currentOutputTranscriptRef.current) {
               setChatHistory((prev) => [
@@ -634,8 +828,10 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               ]);
               currentOutputTranscriptRef.current = '';
             }
-            // Bersihkan timeout & antrean jika seluruh audio turn ini sudah habis terputar
-            if (activeSourcesRef.current.length === 0 && (!outputAudioCtxRef.current || outputAudioCtxRef.current.currentTime >= nextPlaybackTimeRef.current)) {
+            if (
+              activeSourcesRef.current.length === 0 &&
+              (!outputAudioCtxRef.current || outputAudioCtxRef.current.currentTime >= nextPlaybackTimeRef.current)
+            ) {
               if (speakingEndDebounceRef.current) {
                 clearTimeout(speakingEndDebounceRef.current);
                 speakingEndDebounceRef.current = null;
@@ -654,35 +850,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             }
           } else if (msg.type === 'unsupported' || msg.type === 'error' || msg.type === 'session_closed') {
             console.warn('[Gemini Live Notice]:', msg.message || msg.reason);
-            setActiveEngine('fallback-speech');
-            activeEngineRef.current = 'fallback-speech';
-            setEngineTitle('Konsultan Suara Cerdas MinSKI');
-            stopAllPlaybackSources();
-            try {
-              ws.onmessage = null;
-              ws.onclose = null;
-              ws.onerror = null;
-              ws.close();
-            } catch {}
-            wsRef.current = null;
-            if (isVoiceModeRef.current) {
-              const greeting = "Halo Kak! MinSKI siap bantu racik wangi impian Kakak. Boleh cerita, lagi cari wangi yang seperti apa nih?";
-              setMinskiDialogue(greeting);
-              speakMinskiVoice(
-                greeting,
-                () => {
-                  setIsSpeaking(true);
-                  isSpeakingRef.current = true;
-                },
-                () => {
-                  setIsSpeaking(false);
-                  isSpeakingRef.current = false;
-                  if (isVoiceModeRef.current) {
-                    startSpeechRecognitionFallback();
-                  }
-                }
-              );
-            }
+            switchToFallbackMode(true);
           }
         } catch (e) {
           console.warn('WS message parsing error:', e);
@@ -693,43 +861,30 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         wsRef.current = null;
         if (isVoiceModeRef.current && activeEngineRef.current === 'gemini-live') {
           console.warn('[Gemini Live WS Closed]:', ev?.reason);
-          setActiveEngine('fallback-speech');
-          activeEngineRef.current = 'fallback-speech';
-          setEngineTitle('Konsultan Suara Cerdas MinSKI');
-          startSpeechRecognitionFallback();
+          switchToFallbackMode(false);
         }
       };
 
       ws.onerror = (e) => {
         console.warn('[Gemini Live WS Error]:', e);
-        setActiveEngine('fallback-speech');
-        activeEngineRef.current = 'fallback-speech';
-        setEngineTitle('Konsultan Suara Cerdas MinSKI');
-        try { ws.close(); } catch {}
-        wsRef.current = null;
-        if (isVoiceModeRef.current) {
-          startSpeechRecognitionFallback();
+        if (isVoiceModeRef.current && activeEngineRef.current === 'gemini-live') {
+          switchToFallbackMode(false);
         }
       };
 
       wsRef.current = ws;
-    } catch (e) {
-      setActiveEngine('fallback-speech');
-      setEngineTitle('Natural Voice Assistant (Web Speech + AI)');
-      if (isVoiceModeRef.current) {
-        startSpeechRecognitionFallback();
-      }
+    } catch {
+      switchToFallbackMode(false);
     }
-  }, [handleBargeIn, schedule24kPcmChunk, startSpeechRecognitionFallback, stopAllPlaybackSources]);
+  }, [handleBargeIn, schedule24kPcmChunk, switchToFallbackMode]);
 
-  // Start Real-Time Microphone Streaming (Native 16kHz PCM to Gemini Live)
+  // Start Real-Time Microphone Streaming (Band-Pass 250-3500Hz + Adaptive Noise Floor + 300ms Pre-Roll Barge-In)
   const startNativeMicStream = useCallback(async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Akses mikrofon tidak didukung peramban ini atau memerlukan koneksi aman (HTTPS).');
       }
 
-      // Panggil getUserMedia langsung saat klik tanpa jeda await agar user gesture peramban tidak kedaluwarsa
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -755,54 +910,101 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         outputAudioCtxRef.current.resume().catch(() => {});
       }
 
+      // Reset kalibrasi kebisingan ruangan & buffer pre-roll saat sesi mic dimulai
+      noiseFloorRef.current = 0.012;
+      noiseSampleCountRef.current = 0;
+      speechAccumMsRef.current = 0;
+      preRollFramesRef.current = [];
+
       const source = inputCtx.createMediaStreamSource(stream);
-      // Use bufferSize 4096 (~85ms audio chunk at 48kHz for low CPU, smooth stability & anti-freezing)
-      const processor = inputCtx.createScriptProcessor(4096, 1, 1);
+
+      // Filter Frekuensi Suara Manusia: High-Pass 250Hz + Low-Pass 3500Hz
+      const highpass = inputCtx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.setValueAtTime(250, inputCtx.currentTime);
+      highpass.Q.setValueAtTime(0.707, inputCtx.currentTime);
+      highpassFilterRef.current = highpass;
+
+      const lowpass = inputCtx.createBiquadFilter();
+      lowpass.type = 'lowpass';
+      lowpass.frequency.setValueAtTime(3500, inputCtx.currentTime);
+      lowpass.Q.setValueAtTime(0.707, inputCtx.currentTime);
+      lowpassFilterRef.current = lowpass;
+
+      // Buffer 2048 (~42ms di 48kHz) untuk jeda minimal & timing 300ms presisi
+      const processor = inputCtx.createScriptProcessor(2048, 1, 1);
       scriptProcessorRef.current = processor;
 
       processor.onaudioprocess = (e) => {
-        if (!isVoiceModeRef.current) return;
+        if (!isVoiceModeRef.current || activeEngineRef.current !== 'gemini-live') return;
         const channelData = e.inputBuffer.getChannelData(0);
+        const frameDurationMs = (channelData.length / inputCtx.sampleRate) * 1000;
 
-        // 1. Voice Activity Detection (VAD) Energy Calculation
+        // 1. Hitung energi suara manusia yang sudah melewati Band-Pass 250-3500Hz
         let sum = 0;
         for (let i = 0; i < channelData.length; i++) {
           sum += channelData[i] * channelData[i];
         }
         const rms = Math.sqrt(sum / channelData.length);
 
-        // Update timestamp aktivitas saat suara terdeteksi
-        if (rms > 0.02) {
+        // 2. Kalibrasi Noise Floor ruangan adaptif (hanya saat MinSKI diam & suara lingkungan tenang)
+        if (!isSpeakingRef.current && (noiseSampleCountRef.current < 15 || rms < Math.max(0.055, noiseFloorRef.current * 2.2))) {
+          const sample = Math.min(rms, 0.042);
+          const alpha = noiseSampleCountRef.current < 15 ? 0.2 : 0.06;
+          noiseFloorRef.current = Math.max(0.008, Math.min(0.042, noiseFloorRef.current * (1 - alpha) + sample * alpha));
+          noiseSampleCountRef.current++;
+        }
+
+        // 3. MODE BEBAS SELA KETAT (Saat MinSKI sedang berbicara):
+        // Butuh lolos 250-3500Hz + di atas ambang dinamis (2.4x noise floor, min 0.042) + stabil >= 300ms + pre-roll buffer
+        if (isSpeakingRef.current) {
+          const bargeInThreshold = Math.min(0.11, Math.max(0.042, noiseFloorRef.current * 2.4));
+
+          if (rms >= bargeInThreshold) {
+            const resampledCandidate = resampleTo16k(channelData, inputCtx.sampleRate);
+            const pcmCandidate = float32ToInt16PCM(resampledCandidate);
+            const base64Candidate = int16ToBase64(pcmCandidate);
+
+            preRollFramesRef.current.push(base64Candidate);
+            if (preRollFramesRef.current.length > 12) {
+              preRollFramesRef.current.shift();
+            }
+            speechAccumMsRef.current += frameDurationMs;
+
+            if (speechAccumMsRef.current >= 300) {
+              const bufferedFrames = [...preRollFramesRef.current];
+              preRollFramesRef.current = [];
+              speechAccumMsRef.current = 0;
+
+              handleBargeIn(true);
+
+              if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                for (const frameBase64 of bufferedFrames) {
+                  wsRef.current.send(JSON.stringify({ type: 'audio', audio: frameBase64 }));
+                }
+              }
+            }
+          } else {
+            speechAccumMsRef.current = 0;
+            preRollFramesRef.current = [];
+          }
+          return;
+        }
+
+        // 4. Perisai ekor pantulan speaker (~180ms sesaat setelah MinSKI selesai bicara)
+        if (Date.now() < echoGuardUntilRef.current) {
+          return;
+        }
+
+        if (rms > Math.max(0.02, noiseFloorRef.current * 1.4)) {
           lastActivityTimeRef.current = Date.now();
         }
 
-        // 2. DETEKSI MENYELA CERDAS (SMART BARGE-IN - Focus 4):
-        // Jika MinSKI sedang berbicara, periksa apakah pengguna sengaja bersuara untuk menyela
-        if (isSpeakingRef.current) {
-          // Ambang batas interupsi pengguna: RMS >= 0.042 selama 2 frame berturut-turut (~170ms)
-          if (rms >= 0.042) {
-            consecutiveSpeechFramesRef.current++;
-            if (consecutiveSpeechFramesRef.current >= 2) {
-              consecutiveSpeechFramesRef.current = 0;
-              handleBargeIn();
-              // Lanjutkan alur agar audio pengguna yang memotong langsung terkirim ke AI
-            } else {
-              return; // Tunggu konfirmasi frame kedua untuk memastikan bukan letupan sesaat
-            }
-          } else {
-            consecutiveSpeechFramesRef.current = 0;
-            return; // Abaikan residual pantulan speaker ponsel agar MinSKI tidak memotong dirinya sendiri
-          }
-        } else {
-          consecutiveSpeechFramesRef.current = 0;
-        }
-
-        // 3. Resample to 16kHz and convert to 16-bit PCM little-endian
+        // 5. Resample suara terfilter 250-3500Hz ke 16kHz PCM & kirim ke Gemini Live
         const resampled = resampleTo16k(channelData, inputCtx.sampleRate);
         const pcm16 = float32ToInt16PCM(resampled);
         const base64Audio = int16ToBase64(pcm16);
 
-        // 4. Stream to Gemini Live WebSocket
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.send(
             JSON.stringify({
@@ -813,12 +1015,12 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         }
       };
 
-      // Gunakan silent GainNode (gain 0) agar scriptProcessor tetap memproses onaudioprocess
-      // tanpa membunyikan input mikrofon kembali ke speaker (mencegah loopback/echo ganda)
       const muteNode = inputCtx.createGain();
       muteNode.gain.setValueAtTime(0, inputCtx.currentTime);
 
-      source.connect(processor);
+      source.connect(highpass);
+      highpass.connect(lowpass);
+      lowpass.connect(processor);
       processor.connect(muteNode);
       muteNode.connect(inputCtx.destination);
       setIsListening(true);
@@ -831,7 +1033,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
       }
       isVoiceModeRef.current = false;
       setTimeout(() => {
-        onShowToastRef.current?.('Izin mikrofon tidak aktif. Kakak tetap bisa berkonsultasi via teks atau opsi cepat di bawah!');
+        onShowToastRef.current?.('Izin mikrofon tidak aktif. Kakak tetap bisa berkonsultasi via teks atau kuis di bawah!');
       }, 0);
     }
   }, [handleBargeIn]);
@@ -839,44 +1041,48 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   // Start Voice Mode (ChatGPT Voice Style Hands-Free)
   const toggleVoiceMode = useCallback(() => {
     if (isVoiceMode) {
-      // Matikan sesi suara
       setIsVoiceMode(false);
       isVoiceModeRef.current = false;
       cleanupAudio();
-      stopFallbackSpeech();
       setSessionSeconds(0);
       onShowToastRef.current?.('Sesi suara MinSKI selesai (Standby)');
     } else {
-      // Aktifkan sesi suara dua arah real-time via Gemini Live
+      stopAllAudio();
       lastActivityTimeRef.current = Date.now();
       hasDeliveredRecommendationRef.current = false;
+      hasSwitchedToFallbackRef.current = false;
       setSessionSeconds(0);
       setIsVoiceMode(true);
       isVoiceModeRef.current = true;
+      setActiveEngine('gemini-live');
+      activeEngineRef.current = 'gemini-live';
       connectGeminiLive();
       startNativeMicStream();
-      onShowToastRef.current?.('🎙️ Percakapan Suara Real-Time Aktif (Bicara langsung)');
+      onShowToastRef.current?.('🎙️ Percakapan Suara Aktif (Filter Fokus 1 Suara)');
     }
-  }, [cleanupAudio, connectGeminiLive, isVoiceMode, startNativeMicStream, stopFallbackSpeech]);
+  }, [cleanupAudio, connectGeminiLive, isVoiceMode, startNativeMicStream, stopAllAudio]);
 
-  // Handler Kirim Pesan Teks (Jika mic ditolak / ingin mengetik)
+  // Handler Kirim Pesan Teks (Chat -> Langsung Jawab Suara Kore / Live)
   const handleSendTextMessage = useCallback(
     async (textToSend: string) => {
       const q = textToSend.trim();
       if (!q) return;
+
+      // Kunci suara tunggal: hentikan audio yang sedang berjalan sebelum memproses pesan baru
+      stopAllAudio();
+      suppressLiveAudioUntilRef.current = 0;
 
       setTypedMessage('');
       setLiveUserTranscript(q);
       setIsThinking(true);
       isThinkingRef.current = true;
 
-      // Hentikan sementara speech recognition saat pengguna selesai bicara & MinSKI memproses
       stopSpeechRecognitionFallback();
 
       const nowTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
       setChatHistory((prev) => [...prev, { sender: 'user', text: q, time: nowTime }]);
 
-      // Jika WebSocket Gemini Live aktif dan model native audio berjalan, kirim via WebSocket
+      // Jika WebSocket Gemini Live aktif, langsung teruskan via Live agar suara tetap 1 jalur
       if (activeEngineRef.current === 'gemini-live' && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         currentOutputTranscriptRef.current = '';
         wsRef.current.send(JSON.stringify({ type: 'text', text: q }));
@@ -885,7 +1091,6 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         return;
       }
 
-      // Fallback HTTP endpoint /api/minski/chat dengan perlindungan anti-menggantung & anti-race condition
       if (chatAbortRef.current) {
         try {
           chatAbortRef.current.abort();
@@ -899,7 +1104,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           try {
             abortController.abort();
           } catch {}
-        }, 8000);
+        }, 7000);
 
         const res = await fetch('/api/minski/chat', {
           method: 'POST',
@@ -921,7 +1126,6 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           setIsThinking(false);
           isThinkingRef.current = false;
 
-          // Tampilkan teks jawaban & rekomendasi seketika agar respon terasa instan
           setMinskiDialogue(data.reply);
           setChatHistory((prev) => [...prev, { sender: 'minski', text: data.reply, time: nowTime }]);
 
@@ -931,32 +1135,15 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             setMatchResult(null);
           }
 
-          stopFallbackSpeech();
           if (!isMutedRef.current) {
-            setIsSpeaking(true);
-            isSpeakingRef.current = true;
-            fallbackSpeechRef.current = speakMinskiVoice(
-              data.reply,
-              () => {
-                setIsSpeaking(true);
-                isSpeakingRef.current = true;
-              },
-              () => {
-                setIsSpeaking(false);
-                isSpeakingRef.current = false;
-                // Jeda aman 450ms sebelum mikrofon aktif kembali agar tidak menangkap pantulan gema speaker HP
-                setTimeout(() => {
-                  if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech' && !isSpeakingRef.current) {
-                    startSpeechRecognitionFallback();
-                  }
-                }, 450);
-              },
-              (errorMessage) => {
-                onShowToastRef.current?.(errorMessage);
-              }
-            );
-          } else {
-            // Jika mode bisu, buka kembali mikrofon setelah jeda singkat
+            speakWithKoreLock(data.reply, () => {
+              setTimeout(() => {
+                if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech' && !isSpeakingRef.current) {
+                  startSpeechRecognitionFallback();
+                }
+              }, 350);
+            });
+          } else if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech') {
             setTimeout(() => {
               if (isVoiceModeRef.current && activeEngineRef.current === 'fallback-speech' && !isSpeakingRef.current) {
                 startSpeechRecognitionFallback();
@@ -979,7 +1166,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
         }
       }
     },
-    [chatHistory, startSpeechRecognitionFallback, stopFallbackSpeech]
+    [chatHistory, speakWithKoreLock, startSpeechRecognitionFallback, stopAllAudio, stopSpeechRecognitionFallback]
   );
 
   useEffect(() => {
@@ -1030,23 +1217,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     const t1 = setTimeout(() => {
       setMatchResult(result);
       setScreenMode('result');
-      stopFallbackSpeech();
-      if (!isMutedRef.current) {
-        fallbackSpeechRef.current = speakMinskiVoice(
-          result.shortVoiceSpeech,
-          () => {
-            setIsSpeaking(true);
-            isSpeakingRef.current = true;
-          },
-          () => {
-            setIsSpeaking(false);
-            isSpeakingRef.current = false;
-          },
-          (errorMessage) => {
-            onShowToastRef.current?.(errorMessage);
-          }
-        );
-      }
+      speakWithKoreLock(result.shortVoiceSpeech);
     }, 2800);
 
     craftingTimersRef.current = [t1];
@@ -1544,7 +1715,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                 <span>MinSKI sedang berbicara</span>
                 <button
                   type="button"
-                  onClick={handleBargeIn}
+                  onClick={() => handleBargeIn(true)}
                   className="ml-1 text-[10px] text-amber-300 hover:text-white underline font-bold cursor-pointer"
                 >
                   Potong

@@ -113,6 +113,14 @@ interface MinskiConfig {
 
 const MINSKI_CONFIG_FILE = path.join(path.resolve(__dirname, 'data'), 'minski_config.json');
 
+function normalizeTextModel(model?: string): string {
+  const m = String(model || '').trim();
+  if (!m || m === 'gemini-2.5-flash' || m === 'gemini-3.8-flash' || m === 'deterministic') {
+    return 'gemini-3.1-flash-lite';
+  }
+  return m;
+}
+
 function getMinskiConfig(): MinskiConfig {
   try {
     if (fs.existsSync(MINSKI_CONFIG_FILE)) {
@@ -125,8 +133,8 @@ function getMinskiConfig(): MinskiConfig {
                 .map((e: string) => (e === 'gemini' ? 'gemini-flash' : e))
                 .filter((e: string) => e !== 'groq')
             : ['gemini-flash', 'gemini-lite', 'deterministic'],
-          primaryModel: (parsed.primaryModel && parsed.primaryModel !== 'gemini-2.5-flash') ? parsed.primaryModel : 'gemini-3.8-flash',
-          fallbackModel: parsed.fallbackModel || 'gemini-3.1-flash-lite',
+          primaryModel: normalizeTextModel(parsed.primaryModel),
+          fallbackModel: parsed.fallbackModel && parsed.fallbackModel !== 'deterministic' ? normalizeTextModel(parsed.fallbackModel) : 'gemini-4-hydrogen',
           updatedAt: parsed.updatedAt || new Date().toISOString(),
         };
       }
@@ -135,8 +143,8 @@ function getMinskiConfig(): MinskiConfig {
   return {
     voicePreference: 'google-kore',
     aiEnginePriority: ['gemini-flash', 'gemini-lite', 'deterministic'],
-    primaryModel: 'gemini-3.8-flash',
-    fallbackModel: 'gemini-3.1-flash-lite',
+    primaryModel: 'gemini-3.1-flash-lite',
+    fallbackModel: 'gemini-4-hydrogen',
     updatedAt: new Date().toISOString(),
   };
 }
@@ -231,6 +239,7 @@ const SOCIAL_FILE = path.join(DATA_DIR, 'social_links.json');
 const TOP_PERFUMES_FILE = path.join(DATA_DIR, 'top_perfumes.json');
 const ARTICLES_FILE = path.join(DATA_DIR, 'articles.json');
 const THEME_FILE = path.join(DATA_DIR, 'theme_config.json');
+const SALES_FILE = path.join(DATA_DIR, 'sales_records.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -1393,7 +1402,7 @@ app.post('/api/minski/chat', async (req, res) => {
 
     // 4. Baca Urutan Prioritas Engine AI dari data/minski_config.json
     const config = getMinskiConfig();
-    const primaryModel = config.primaryModel || 'gemini-2.5-flash';
+    const primaryModel = normalizeTextModel(config.primaryModel);
     const enginePriority =
       Array.isArray(config.aiEnginePriority) && config.aiEnginePriority.length > 0
         ? config.aiEnginePriority
@@ -1502,8 +1511,8 @@ app.get('/api/admin/minski-config', (req, res) => {
     hasGeminiKey: keys.length > 0,
     geminiKeyCount: keys.length,
     activeKeyIndex: activeKeyIndex % (keys.length || 1),
-    primaryModel: (cfg.primaryModel && cfg.primaryModel !== 'gemini-2.5-flash') ? cfg.primaryModel : 'gemini-3.8-flash',
-    fallbackModel: cfg.fallbackModel || 'gemini-3.1-flash-lite',
+    primaryModel: normalizeTextModel(cfg.primaryModel),
+    fallbackModel: cfg.fallbackModel && cfg.fallbackModel !== 'deterministic' ? normalizeTextModel(cfg.fallbackModel) : 'gemini-4-hydrogen',
   });
 });
 
@@ -1531,7 +1540,7 @@ app.post('/api/admin/minski-config', (req, res) => {
 let cachedShortUrl: string | null = null;
 const OFFICIAL_SHARED_URL =
   process.env.APP_URL?.replace('ais-dev-', 'ais-pre-') ||
-  'https://ais-pre-4pzyfp5lo6mqxqlkc2pspr-379981520046.asia-southeast1.run.app';
+  'https://sinkiparfum.my.id';
 
 app.get('/api/short-url', async (req, res) => {
   // Derive target public URL (convert internal dev URL to public ais-pre URL)
@@ -1677,7 +1686,7 @@ app.get('/api/system/health', (_req, res) => {
         status: getGeminiApiKeys().length > 0
           ? `Aktif & Terhubung (${getGeminiApiKeys().length} API Key Siaga)`
           : 'Standby / Belum Disetel',
-        model: 'Gemini 2.5 Flash & Live 3.8',
+        model: 'Gemini 3.1 Flash-Lite & Live 3.8',
         isConfigured: getGeminiApiKeys().length > 0,
         quotaProtection: `Aktif (${getGeminiApiKeys().length} Akun Multi-Key Pool + Rotasi Otomatis)`,
       },
@@ -2684,6 +2693,79 @@ app.post('/api/owner/update-theme', async (req, res) => {
   }
 
   return res.json({ success: true, theme: updated });
+});
+
+function getSalesRecords(): any[] {
+  if (fs.existsSync(SALES_FILE)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(SALES_FILE, 'utf-8'));
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
+}
+
+async function persistSalesRecords(records: any[]) {
+  try {
+    fs.writeFileSync(SALES_FILE, JSON.stringify(records, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Error saving sales_records.json locally:', err);
+  }
+  try {
+    await supabase.storage
+      .from(SUPABASE_BUCKET)
+      .upload('sales_records.json', JSON.stringify(records, null, 2), {
+        contentType: 'application/json',
+        upsert: true,
+      });
+  } catch (err) {
+    console.warn('[Supabase Sync Notice] sales_records.json:', err);
+  }
+}
+
+app.get('/api/sales', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  return res.json(getSalesRecords());
+});
+
+app.post('/api/owner/record-sale', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+  const sale = req.body?.sale;
+  if (!sale || typeof sale !== 'object' || !sale.perfumeName) {
+    return res.status(400).json({ error: 'Data transaksi penjualan tidak valid!' });
+  }
+  const currentSales = getSalesRecords();
+  const newSale = {
+    ...sale,
+    id: sale.id || `sale-${Date.now()}`,
+    date: sale.date || new Date().toISOString(),
+  };
+  const updated = [newSale, ...currentSales];
+  await persistSalesRecords(updated);
+  return res.json({
+    success: true,
+    message: `Penjualan ${newSale.perfumeName} (${newSale.volumeMl}ml) berhasil dicatat!`,
+    sales: updated,
+  });
+});
+
+app.post('/api/owner/delete-sale', async (req, res) => {
+  if (!isAuthorized(req)) {
+    return res.status(403).json({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' });
+  }
+  const saleId = req.body?.id;
+  if (!saleId) {
+    return res.status(400).json({ error: 'ID transaksi wajib disertakan!' });
+  }
+  const updated = getSalesRecords().filter((s: any) => s.id !== saleId);
+  await persistSalesRecords(updated);
+  return res.json({
+    success: true,
+    message: 'Catatan transaksi penjualan berhasil dihapus!',
+    sales: updated,
+  });
 });
 
 async function hydrateDataFromSupabase() {

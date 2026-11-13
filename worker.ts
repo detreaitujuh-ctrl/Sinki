@@ -787,55 +787,100 @@ export default {
           server.accept();
         }
 
-        const geminiKey = (env.GEMINI_API_KEY || '').trim();
-        if (!geminiKey || geminiKey.length < 10) {
+        const liveKeys = (env.GEMINI_API_KEY || '')
+          .split(/[,;\n]+/)
+          .map((k) => k.trim())
+          .filter((k) => k.length > 10 && k !== 'undefined' && k !== 'null');
+
+        if (liveKeys.length === 0) {
           if (server && typeof server.send === 'function') {
             server.send(
               JSON.stringify({
                 type: 'unsupported',
                 reason: 'GEMINI_API_KEY_NOT_CONFIGURED',
-                message: 'GEMINI_API_KEY belum disetel di Cloudflare Secret. Menggunakan mode suara santun MinSKI.',
-                fallback: 'web-speech-tts',
+                message: 'GEMINI_API_KEY belum disetel di Cloudflare Secret. Menggunakan mode suara Kore HTTP.',
+                fallback: 'google-kore-tts',
               })
             );
           }
         } else {
-          // Asynchronous Upstream Connection to Gemini Live Bidi WebSockets
+          // Asynchronous Upstream Connection to Gemini Live Bidi WebSockets with multi-key rotation
           (async () => {
             try {
-              const catalog = await readStorageJson<any[]>(env, 'perfumes_catalog.json', []);
+              const [catalog, assets] = await Promise.all([
+                readStorageJson<any[]>(env, 'perfumes_catalog.json', []),
+                readStorageJson<any>(env, 'assets.json', {}),
+              ]);
+              const top11Photos = assets?.top11 || {};
               const activeCatalog = (catalog || []).filter((p: any) => p.isActive !== false);
               const catalogBrief = activeCatalog
-                .map(
-                  (p: any) =>
-                    `${p.name} (${p.categoryLabel || p.category}): ${Array.isArray(p.accords) ? p.accords.join(', ') : ''} - Rp${p.pricePerMl || 3000}/ml`
-                )
+                .map((p: any) => {
+                  const cats = p.collectionCategories || [];
+                  let pricingInfo = 'Paket Botol (10ml Rp17.000, 20ml Rp25.000, 30ml Rp39.000, 50ml Rp59.000, 100ml Rp115.000)';
+                  let categoryName = p.categoryLabel || 'Signature';
+                  if (cats.includes('new_trending')) {
+                    pricingInfo = 'Rp4.000/ml';
+                    categoryName = 'New & Trending';
+                  } else if (cats.includes('viral_hits')) {
+                    pricingInfo = 'Rp3.000/ml';
+                    categoryName = 'Viral Hits';
+                  } else if (cats.includes('daily_fresh')) {
+                    categoryName = 'Daily Fresh';
+                  } else if (cats.includes('professional')) {
+                    categoryName = 'Professional';
+                  } else if (cats.includes('attraction')) {
+                    categoryName = 'Attraction';
+                  } else if (cats.includes('luxury')) {
+                    categoryName = 'Luxury';
+                  }
+                  const accordsStr = Array.isArray(p.accords) ? p.accords.join(', ') : '';
+                  return `- ${p.name} [Kategori: ${categoryName}] | Karakter: ${accordsStr} | Skema Harga: ${pricingInfo}`;
+                })
                 .join('\n');
 
               const systemPrompt = `Kamu adalah MinSKI (Admin SINKI), konsultan aroma wewangian pribadi dari Atelier SINKI Parfums Indonesia.
-Kamu sedang berbicara langsung dua arah melalui suara dengan pelanggan layaknya fitur ChatGPT Voice.
+Kamu sedang berbicara langsung dua arah melalui suara dengan pelanggan layaknya konsultan wewangian pribadi di butik mewah.
 Karakter & Kepribadian MinSKI:
 - Suara dan persona perempuan muda Indonesia: ceria, ramah, hangat, penuh perhatian, dan elegan.
 - Sapa pelanggan selalu dengan sebutan santun "Kakak" secara alami.
 - Berbicara dalam Bahasa Indonesia percakapan yang mengalir natural, santai, dan ekspresif.
 - Jawab dengan ringkas dan padat (1-2 kalimat per giliran bicara).
-Katalog Parfum SINKI Aktif:
+
+KATALOG RESMI PARFUM SINKI AKTIF (SATU-SATUNYA SUMBER VARIAN YANG VALID):
 ${catalogBrief}
-Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SINKI, jelaskan alasannya dan panggil recommendPerfume. Dilarang merekomendasikan merk di luar katalog SINKI.`;
 
-              const geminiLiveWsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(geminiKey)}`;
+ATURAN PERCAKAPAN, REKOMENDASI & LOGIKA HARGA:
+1. Dengarkan kebutuhan pelanggan dengan empati. Jika preferensinya masih umum, ajukan 1 pertanyaan lanjutan yang cerdas. Jangan mengulang pertanyaan yang sudah dijawab.
+2. VALIDASI VARIAN MUTLAK: Sebutkan TEPAT SATU nama varian persis dari katalog resmi SINKI di atas. DILARANG mengarang varian di luar daftar.
+3. ATURAN SKEMA HARGA KATEGORI:
+   - Kategori 'Daily Fresh', 'Professional', 'Attraction', dan 'Luxury': Menggunakan harga paket botol 10–100 ml (10ml Rp17.000, 20ml Rp25.000, 30ml Rp39.000, 50ml Rp59.000, 100ml Rp115.000). Jangan menyebut harga per-ml untuk 4 kategori ini!
+   - Kategori 'Viral Hits': Rp3.000/ml.
+   - Kategori 'New & Trending': Rp4.000/ml.
+4. Panggil fungsi recommendPerfume agar kartu botol resmi tampil di layar Kakak saat rekomendasi siap.`;
 
-              const upstreamRes = await fetch(geminiLiveWsUrl, {
-                headers: {
-                  Upgrade: 'websocket',
-                },
-              });
+              let upstreamWs: any = null;
+              for (const liveKey of liveKeys) {
+                try {
+                  const geminiLiveWsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(liveKey)}`;
+                  const upstreamRes = await fetch(geminiLiveWsUrl, {
+                    headers: {
+                      Upgrade: 'websocket',
+                      'User-Agent': 'aistudio-build',
+                    },
+                  });
+                  const candidateWs = (upstreamRes as any).webSocket;
+                  if (candidateWs && typeof candidateWs.accept === 'function') {
+                    upstreamWs = candidateWs;
+                    break;
+                  }
+                } catch (keyErr) {
+                  console.warn('[Worker Live Key Rotation Notice]:', keyErr);
+                }
+              }
 
-              const upstreamWs = (upstreamRes as any).webSocket;
               if (upstreamWs && typeof upstreamWs.accept === 'function') {
                 upstreamWs.accept();
 
-                // Send setup configuration
                 upstreamWs.send(
                   JSON.stringify({
                     setup: {
@@ -851,6 +896,8 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                       systemInstruction: {
                         parts: [{ text: systemPrompt }],
                       },
+                      inputAudioTranscription: {},
+                      outputAudioTranscription: {},
                       tools: [
                         {
                           functionDeclarations: [
@@ -873,7 +920,7 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                   })
                 );
 
-                server.send(JSON.stringify({ type: 'ready', model: 'gemini-live', voice: 'Kore' }));
+                server.send(JSON.stringify({ type: 'ready', model: 'gemini-3.8-live', voice: 'Kore' }));
 
                 server.addEventListener('message', (event: any) => {
                   try {
@@ -916,14 +963,26 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                       if (part.inlineData?.data) {
                         server.send(JSON.stringify({ type: 'audio', audio: part.inlineData.data, data: part.inlineData.data }));
                       }
-                      if (part.text) {
-                        server.send(JSON.stringify({ type: 'output_transcript', text: part.text }));
+                    }
+
+                    const content = msg.serverContent;
+                    if (content?.inputTranscription?.text) {
+                      server.send(JSON.stringify({ type: 'input_transcript', text: content.inputTranscription.text }));
+                    }
+                    if (content?.outputTranscription?.text) {
+                      server.send(JSON.stringify({ type: 'output_transcript', text: content.outputTranscription.text }));
+                    } else {
+                      for (const part of parts) {
+                        if (part.text) {
+                          server.send(JSON.stringify({ type: 'output_transcript', text: part.text }));
+                        }
                       }
                     }
-                    if (msg.serverContent?.interrupted) {
+
+                    if (content?.interrupted) {
                       server.send(JSON.stringify({ type: 'interrupted' }));
                     }
-                    if (msg.serverContent?.turnComplete) {
+                    if (content?.turnComplete) {
                       server.send(JSON.stringify({ type: 'turn_complete' }));
                     }
 
@@ -932,28 +991,51 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                       if (call.name === 'recommendPerfume') {
                         const args = call.args || {};
                         const perfumeName = String(args.perfumeName || '').toLowerCase();
-                        const matchedItem =
-                          activeCatalog.find((p: any) => {
-                            const pLower = (p.name || '').toLowerCase();
-                            return pLower.includes(perfumeName) || perfumeName.includes(pLower);
-                          }) || activeCatalog[0];
+                        const matchedItem = activeCatalog.find((p: any) => {
+                          const pLower = (p.name || '').toLowerCase();
+                          return pLower === perfumeName || pLower.includes(perfumeName) || perfumeName.includes(pLower);
+                        });
 
                         if (matchedItem) {
+                          let photo = assets?.masterFlacon || DEFAULT_MASTER_FLACON;
+                          const nameLower = (matchedItem.name || '').toLowerCase();
+                          for (const [k, v] of Object.entries(top11Photos)) {
+                            if (v && typeof v === 'string' && (k.toLowerCase().includes(nameLower) || nameLower.includes(k.toLowerCase()))) {
+                              photo = v;
+                              break;
+                            }
+                          }
+
+                          const cats = matchedItem.collectionCategories || [];
+                          const resolvedPricePerMl = cats.includes('new_trending')
+                            ? 4000
+                            : cats.includes('viral_hits')
+                            ? 3000
+                            : undefined;
+
+                          let categoryLabel = matchedItem.categoryLabel || 'SINKI Luxury Signature';
+                          if (cats.includes('new_trending')) categoryLabel = 'Koleksi New & Trending';
+                          else if (cats.includes('viral_hits')) categoryLabel = 'Koleksi Viral Hits';
+                          else if (cats.includes('daily_fresh')) categoryLabel = 'Koleksi Daily Fresh';
+                          else if (cats.includes('professional')) categoryLabel = 'Koleksi Professional';
+                          else if (cats.includes('attraction')) categoryLabel = 'Koleksi Attraction';
+                          else if (cats.includes('luxury')) categoryLabel = 'Koleksi Luxury';
+
                           server.send(
                             JSON.stringify({
                               type: 'recommendation',
                               perfume: {
                                 perfumeName: matchedItem.name,
-                                categoryLabel: matchedItem.categoryLabel || 'SINKI Luxury Signature',
+                                categoryLabel,
                                 matchScore: 98,
                                 matchScoreLabel: 'Estimasi Kecocokan Aroma',
                                 hypnoticScript: args.reason || matchedItem.tagline,
                                 shortVoiceSpeech: args.reason || matchedItem.tagline,
                                 accords: Array.isArray(matchedItem.accords) ? matchedItem.accords.join(' · ') : 'Amber · Woods',
-                                longevity: matchedItem.longevity || '8-12 Jam',
-                                sillage: matchedItem.sillage || 'Sillage Mewah',
-                                photoUrl: matchedItem.photoUrl || '/assets/sinki-master-flacon-transparent.png',
-                                pricePerMl: matchedItem.pricePerMl || 3000,
+                                longevity: matchedItem.longevity || 'Informasi belum tersedia',
+                                sillage: matchedItem.sillage || 'Informasi belum tersedia',
+                                photoUrl: photo,
+                                pricePerMl: resolvedPricePerMl,
                               },
                             })
                           );
@@ -980,6 +1062,15 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                 });
 
                 upstreamWs.addEventListener('close', () => {
+                  try {
+                    server.send(
+                      JSON.stringify({
+                        type: 'unsupported',
+                        reason: 'SESSION_CLOSED',
+                        fallback: 'google-kore-tts',
+                      })
+                    );
+                  } catch {}
                   try { server.close(); } catch {}
                 });
                 server.addEventListener('close', () => {
@@ -990,7 +1081,7 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                   JSON.stringify({
                     type: 'unsupported',
                     reason: 'GEMINI_LIVE_UPSTREAM_FAILED',
-                    fallback: 'web-speech-tts',
+                    fallback: 'google-kore-tts',
                   })
                 );
                 setTimeout(() => {
@@ -1003,7 +1094,7 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
                 JSON.stringify({
                   type: 'unsupported',
                   reason: err?.message || 'GEMINI_LIVE_ERROR',
-                  fallback: 'web-speech-tts',
+                  fallback: 'google-kore-tts',
                 })
               );
               setTimeout(() => {
@@ -1026,15 +1117,77 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
         return jsonResponse({
           geminiLiveSupported: hasKey,
           hasGeminiKey: hasKey,
-          primaryVoiceEngine: hasKey ? 'gemini-live' : 'msedge-neural-tts',
-          fallbackVoiceEngine: 'msedge-neural-tts (id-ID-GadisNeural)',
-          voicePreference: 'gemini-live',
-          model: hasKey ? 'gemini-3.8-live' : 'msedge-gadis-neural',
-          voiceName: 'Kore (Gemini Live Voice)',
-          voicePersona: 'Percakapan Langsung Multimodal (Google Gemini)',
+          primaryVoiceEngine: 'google-kore-gemini-live',
+          fallbackVoiceEngine: 'google-kore-tts',
+          voicePreference: 'google-kore',
+          model: hasKey ? 'gemini-3.8-live' : 'gemini-3.8-flash-lite-tts',
+          voiceName: 'Kore (Google Gemini)',
+          voicePersona: 'Konsultan Wewangian Lembut & Elegan (Bahasa Indonesia)',
           bargeInSupported: true,
           twoWaySupported: true,
           catalogCount: (catalog || []).length,
+        });
+      }
+
+      // MinSKI Admin Configuration (Parity with server.ts)
+      if (pathname === '/api/admin/minski-config' && request.method === 'GET') {
+        if (!(await isAuthorizedRequest(request, body, env))) {
+          return jsonResponse({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' }, 403);
+        }
+        const defaultCfg = {
+          voicePreference: 'google-kore',
+          aiEnginePriority: ['gemini-flash', 'gemini-lite', 'deterministic'],
+          primaryModel: 'gemini-3.1-flash-lite',
+          fallbackModel: 'gemini-4-hydrogen',
+          updatedAt: new Date().toISOString(),
+        };
+        const stored = await readStorageJson<any>(env, 'minski_config.json', defaultCfg);
+        const cfg = { ...defaultCfg, ...(stored && typeof stored === 'object' ? stored : {}) };
+        const resolvedPrimary =
+          cfg.primaryModel && cfg.primaryModel !== 'gemini-2.5-flash' && cfg.primaryModel !== 'gemini-3.8-flash'
+            ? cfg.primaryModel
+            : 'gemini-3.1-flash-lite';
+        const keys = (env.GEMINI_API_KEY || '')
+          .split(/[,;\n]+/)
+          .map((k) => k.trim())
+          .filter((k) => k.length > 10 && k !== 'undefined' && k !== 'null');
+        return jsonResponse({
+          config: { ...cfg, primaryModel: resolvedPrimary },
+          hasGeminiKey: keys.length > 0,
+          geminiKeyCount: keys.length,
+          activeKeyIndex: 0,
+          primaryModel: resolvedPrimary,
+          fallbackModel: cfg.fallbackModel || 'gemini-4-hydrogen',
+        });
+      }
+
+      if (pathname === '/api/admin/minski-config' && request.method === 'POST') {
+        if (!(await isAuthorizedRequest(request, body, env))) {
+          return jsonResponse({ error: 'Akses ditolak: PIN atau Sesi Pemilik tidak valid!' }, 403);
+        }
+        const defaultCfg = {
+          voicePreference: 'google-kore',
+          aiEnginePriority: ['gemini-flash', 'gemini-lite', 'deterministic'],
+          primaryModel: 'gemini-3.1-flash-lite',
+          fallbackModel: 'gemini-4-hydrogen',
+        };
+        const current = await readStorageJson<any>(env, 'minski_config.json', defaultCfg);
+        const { voicePreference, primaryModel, fallbackModel, aiEnginePriority } = body || {};
+        const updated = {
+          ...defaultCfg,
+          ...(current && typeof current === 'object' ? current : {}),
+          ...(voicePreference ? { voicePreference } : {}),
+          ...(primaryModel ? { primaryModel } : {}),
+          ...(fallbackModel ? { fallbackModel } : {}),
+          ...(Array.isArray(aiEnginePriority) ? { aiEnginePriority } : {}),
+          updatedAt: new Date().toISOString(),
+        };
+        const saved = await writeStorageJson(env, 'minski_config.json', updated);
+        if (!saved.ok) return jsonResponse({ error: saved.error }, 500);
+        return jsonResponse({
+          success: true,
+          message: 'Konfigurasi MinSKI berhasil diperbarui',
+          config: updated,
         });
       }
 
@@ -1053,7 +1206,7 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
         }
 
         const geminiKeys = (env.GEMINI_API_KEY || '')
-          .split(',')
+          .split(/[,;\n]+/)
           .map((k) => k.trim())
           .filter((k) => k.length > 10 && k !== 'undefined' && k !== 'null');
 
@@ -1155,9 +1308,9 @@ Aturan Rekomendasi: Sebutkan tepat satu nama varian persis dari katalog aktif SI
           });
         }
 
-        // 3. Lapisan Generative AI: Google Gemini 3.8 Flash (Multi-Key Auto Rotation)
+        // 3. Lapisan Generative AI: Google Gemini 3.1 Flash-Lite (Multi-Key Auto Rotation)
         const geminiChatKeys = (env.GEMINI_API_KEY || '')
-          .split(',')
+          .split(/[,;\n]+/)
           .map((k) => k.trim())
           .filter((k) => k.length > 10 && k !== 'undefined' && k !== 'null');
 
@@ -1232,7 +1385,7 @@ Jika informasi sudah cukup dan siap merekomendasikan:
               conversationTurns.shift();
             }
 
-            const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`;
+            const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${geminiKey}`;
             const geminiRes = await fetch(geminiApiUrl, {
               method: 'POST',
               headers: {
@@ -1246,13 +1399,13 @@ Jika informasi sudah cukup dan siap merekomendasikan:
                 },
                 generationConfig: {
                   responseMimeType: 'application/json',
-                  maxOutputTokens: 250,
+                  maxOutputTokens: 220,
                   thinkingConfig: {
-                    thinkingLevel: 'LOW',
+                    thinkingLevel: 'MINIMAL',
                   },
                 },
               }),
-              signal: AbortSignal.timeout(12000),
+              signal: AbortSignal.timeout(6000),
             });
 
             if (geminiRes.ok) {
@@ -1447,6 +1600,11 @@ Jika informasi sudah cukup dan siap merekomendasikan:
       // 5. System Health & Cache
       if (pathname === '/api/system/health' && request.method === 'GET') {
         const { key } = getSupabaseConfig(env);
+        const keys = (env.GEMINI_API_KEY || '')
+          .split(/[,;\n]+/)
+          .map((k) => k.trim())
+          .filter((k) => k.length > 10 && k !== 'undefined' && k !== 'null');
+        const catalog = await readStorageJson<any[]>(env, 'perfumes_catalog.json', []);
         return jsonResponse({
           status: 'optimal',
           score: 99,
@@ -1476,6 +1634,32 @@ Jika informasi sudah cukup dan siap merekomendasikan:
             supabase: key ? 'Connected (sinki-media)' : 'Read-Only (SUPABASE_KEY belum diset)',
             localStorage: 'Active',
             lastHealthCheck: new Date().toISOString(),
+          },
+          aiEngine: {
+            gemini: {
+              status: keys.length > 0
+                ? `Aktif & Terhubung (${keys.length} API Key Siaga)`
+                : 'Standby / Belum Disetel',
+              model: 'Gemini 3.1 Flash-Lite & Live 3.8',
+              isConfigured: keys.length > 0,
+              quotaProtection: `Aktif (${keys.length} Akun Multi-Key Pool + Rotasi Otomatis)`,
+            },
+            geminiLiteFailover: {
+              status: keys.length > 0 ? 'Siaga & Terhubung (Lapisan 2 Hemat Kuota)' : 'Standby',
+              model: 'Gemini 3.1 Flash-Lite',
+              isConfigured: keys.length > 0,
+            },
+            deterministicEngine: {
+              status: 'Aktif & Siaga 100% (Bebas Kuota)',
+              catalogVariants: (catalog || []).filter((p: any) => p.isActive !== false).length,
+              accuracy: '100% Terverifikasi Katalog SINKI',
+            },
+            voiceEngine: {
+              activeVoice: 'Google Kore (Gemini Live & TTS)',
+              voicePreference: 'google-kore',
+              geminiLive: 'Kore (Live Multimodal 24kHz)',
+              geminiTts: 'Kore (High-Fidelity 24kHz WAV)',
+            },
           },
         });
       }

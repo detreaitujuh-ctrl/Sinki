@@ -7,10 +7,8 @@ import {
   Settings,
   ChevronRight,
   ChevronLeft,
-  Bell,
   Crown,
   Upload,
-  ArrowRight,
   Trash2,
   Check,
   Save,
@@ -76,7 +74,6 @@ import {
   uploadVideoDirectlyToSupabase,
   deleteFileFromSupabase,
   compressImage,
-  removeTop11PhotoFromStorage,
   purgeSinkiBrowserCache,
   getStoredMasterFlacon,
   getOwnerToken,
@@ -301,7 +298,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
   const [heroHeightMode, setHeroHeightMode] = useState<HeroHeightMode>(() => propHeroHeightMode || getStoredHeroHeightMode());
   const [adminPreviewRatio, setAdminPreviewRatio] = useState<'9:16' | 'full' | '1:1' | '16:9'>('9:16');
   const [videoUrlInput, setVideoUrlInput] = useState<string>(() => propHeroVideoUrl || getStoredHeroVideoUrl() || '');
-  const [mediaSubTab, setMediaSubTab] = useState<'all' | 'video' | 'identity' | 'stage'>('all');
+  const [mediaSubTab, setMediaSubTab] = useState<'video' | 'identity' | 'stage'>('video');
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [isExtractingFrame, setIsExtractingFrame] = useState(false);
   const [isTestingFade, setIsTestingFade] = useState(false);
@@ -1387,7 +1384,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
     {
       groupTitle: 'Katalog & Tampilan',
       items: [
-        { id: 'media', label: 'Media & Video Hero', badge: '14', icon: ImageIcon },
+        { id: 'media', label: 'Media & Video Hero', icon: ImageIcon },
         { id: 'variants', label: 'Katalog Varian', badge: perfumesList.length.toString(), icon: Package },
         { id: 'banner', label: 'Teks & Harga', icon: Sliders },
       ],
@@ -1545,10 +1542,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
             {/* Hamburger Button (Mobile only) */}
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="lg:hidden w-8 h-8 rounded-[6px] sinki-arch-subbox border hover:border-[#D4AF6A]/55 flex items-center justify-center text-[#E8C782] active:scale-95 transition-all shrink-0"
+              className="lg:hidden h-8 px-2.5 rounded-[6px] sinki-arch-subbox border hover:border-[#D4AF6A]/55 flex items-center justify-center gap-1.5 text-[#E8C782] active:scale-95 transition-all shrink-0 text-xs font-semibold"
               title="Buka Menu"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={15} />
+              <span>Menu</span>
             </button>
 
             {/* Breadcrumb Display */}
@@ -1603,15 +1601,11 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               <Eye size={14} />
               <span className="hidden sm:inline">Lihat Web Publik</span>
             </button>
-
-            <div className="p-2 rounded-[8px] sinki-arch-subbox border text-[#E8C782] shadow-inner">
-              <Bell size={15} />
-            </div>
           </div>
         </header>
 
-        {/* HORIZONTAL LUXURY ADMIN TAB BAR (Responsive on Mobile & Desktop) */}
-        <div className="sticky top-[53px] z-20 bg-[#09090d]/95 backdrop-blur-md border-b border-[#D4AF6A]/25 px-3 sm:px-6 py-2 shadow-md">
+        {/* HORIZONTAL QUICK TAB BAR (MOBILE ONLY — DESKTOP SUDAH PAKAI SIDEBAR KIRI) */}
+        <div className="lg:hidden sticky top-[53px] z-20 bg-[#09090d]/95 backdrop-blur-md border-b border-[#D4AF6A]/25 px-3 py-2 shadow-md">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -1647,7 +1641,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
         </div>
 
         {/* CONTAINER ISI KONTEN (Widescreen di Laptop: max-w-7xl, fluid p-6) */}
-        <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24 lg:pb-12">
+        <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-5 pb-12">
           
           {/* ========================================================
               TAB 1: DASHBOARD UTAMA
@@ -1687,79 +1681,20 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </div>
               </div>
 
-              {/* BAR CEPAT: 5 PILIHAN WARNA TEMA LUXURY ARCHITECTURAL */}
-              <div className="p-4 sm:p-5 rounded-[10px] sinki-arch-card border flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border flex items-center justify-center text-[#E8C782] shrink-0">
-                    <Palette size={19} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-heading text-sm sm:text-base font-semibold text-white leading-[1.25]">
-                        Tema Warna Website & Admin
-                      </h3>
-                      <span className="px-2 py-0.5 rounded-[5px] bg-[#D4AF6A]/15 border border-[#D4AF6A]/35 text-[11px] font-semibold text-[#E8C782]">
-                        {activeThemeMeta.name}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5 truncate">
-                      Klik salah satu dari 5 warna kristal berlatar Pohon & Air Terjun (Anti-Redup).
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
-                  {LUXURY_THEMES.map((theme) => {
-                    const isSelected = selectedThemeId === theme.id;
-                    return (
-                      <button
-                        key={theme.id}
-                        type="button"
-                        disabled={isSavingTheme}
-                        onClick={() => handleSelectLuxuryTheme(theme.id)}
-                        className={`py-1.5 px-2.5 rounded-[8px] border text-xs font-semibold flex items-center gap-2 transition-all active:scale-95 ${
-                          isSelected
-                            ? 'sinki-arch-card-selected text-white'
-                            : 'sinki-arch-subbox text-slate-300 hover:text-white'
-                        }`}
-                        title={`${theme.name} — ${theme.subtitle}`}
-                      >
-                        <span
-                          className="w-3.5 h-3.5 rounded-[4px] border shrink-0"
-                          style={{
-                            background: `linear-gradient(135deg, ${theme.softHex} 0%, ${theme.accentHex} 100%)`,
-                            borderColor: theme.brightHex,
-                          }}
-                        />
-                        <span className="hidden xl:inline">{theme.name.split(' ')[0]}</span>
-                        {isSelected && <Check size={12} className="text-[#E8C782] shrink-0" />}
-                      </button>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={() => setActiveMenu('settings')}
-                    className="py-1.5 px-2.5 rounded-[8px] sinki-arch-subbox border text-xs font-medium text-[#E8C782] hover:text-white transition-colors shrink-0"
-                  >
-                    Detail →
-                  </button>
-                </div>
-              </div>
-
-              {/* 4 GRID KARTU METRIK STATISTIK (DESKTOP: 4 KOLOM, MOBILE: 2 KOLOM) */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+              {/* Ringkasan Cepat 6 Kartu Utama (Langsung buka fungsi masing-masing) */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
                 <div
-                  onClick={() => setActiveMenu('content')}
+                  onClick={() => setActiveMenu('variants')}
                   className="p-4 sm:p-5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 group space-y-2"
                 >
                   <div className="flex items-center justify-between text-slate-400 group-hover:text-[#E8C782]">
-                    <FileText size={20} className="text-[#E8C782]" />
+                    <Package size={20} className="text-[#E8C782]" />
                     <ChevronRight size={14} />
                   </div>
                   <div>
-                    <span className="text-xs text-slate-300 font-medium block">Konten Aktif</span>
-                    <span className="text-2xl sm:text-[28px] font-bold text-white tabular-nums leading-[1.15] block mt-0.5">{articlesList.length}</span>
-                    <span className="text-xs text-slate-400 block mt-1">Artikel & tips wewangian</span>
+                    <span className="text-xs text-slate-300 font-medium block">Katalog Varian</span>
+                    <span className="text-2xl sm:text-[28px] font-bold text-white tabular-nums leading-[1.15] block mt-0.5">{perfumesList.length}</span>
+                    <span className="text-xs text-slate-400 block mt-1">Atur stok & edit aroma</span>
                   </div>
                 </div>
 
@@ -1773,8 +1708,8 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   </div>
                   <div>
                     <span className="text-xs text-slate-300 font-medium block">Media & Galeri</span>
-                    <span className="text-2xl sm:text-[28px] font-bold text-white tabular-nums leading-[1.15] block mt-0.5">14</span>
-                    <span className="text-xs text-slate-400 block mt-1">Hero, Logo, QRIS & 11 Botol</span>
+                    <span className="text-2xl sm:text-[28px] font-bold text-white tabular-nums leading-[1.15] block mt-0.5">{Object.keys(top11Photos).length + 3}</span>
+                    <span className="text-xs text-slate-400 block mt-1">Video hero, logo, QRIS & botol</span>
                   </div>
                 </div>
 
@@ -1787,9 +1722,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <ChevronRight size={14} />
                   </div>
                   <div>
-                    <span className="text-xs text-slate-300 font-medium block">Tier Harga</span>
-                    <span className="text-2xl sm:text-[28px] font-bold text-white tabular-nums leading-[1.15] block mt-0.5">3</span>
-                    <span className="text-xs text-slate-400 block mt-1">Classic, Premium, Mykonos</span>
+                    <span className="text-xs text-slate-300 font-medium block">Teks & Harga</span>
+                    <span className="text-2xl sm:text-[28px] font-bold text-white tabular-nums leading-[1.15] block mt-0.5">3 Tier</span>
+                    <span className="text-xs text-slate-400 block mt-1">Running text & tarif botol</span>
                   </div>
                 </div>
 
@@ -1807,145 +1742,34 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     <span className="text-xs text-slate-400 block mt-1">Ulasan pembeli terverifikasi</span>
                   </div>
                 </div>
-              </div>
 
-              {/* BANNER REAL-TIME STATISTIK PENGUNJUNG & KEAMANAN SISTEM */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div
                   onClick={() => setActiveMenu('analytics')}
-                  className="p-4 sm:p-5 rounded-[10px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 flex flex-col justify-between gap-3 group"
+                  className="p-4 sm:p-5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 group space-y-2"
                 >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-[8px] sinki-arch-subbox border flex items-center justify-center text-[#E8C782] group-hover:scale-105 transition-transform shrink-0">
-                      <BarChart3 size={24} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold text-[#E8C782]">
-                          Grafik & Analitik Pengunjung
-                        </span>
-                        <span className="px-2 py-0.5 rounded-[5px] bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30 flex items-center gap-1 leading-tight">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          Live
-                        </span>
-                      </div>
-                      <h4 className="font-heading text-base font-semibold leading-[1.25] text-white mt-0.5">
-                        Lihat Kebanyakan Pengunjung Masuk dari Mana
-                      </h4>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Instagram, TikTok, WhatsApp, Facebook, Google, Direct
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-between text-slate-400 group-hover:text-[#E8C782]">
+                    <BarChart3 size={20} className="text-[#E8C782]" />
+                    <ChevronRight size={14} />
                   </div>
-
-                  <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#E8C782] group-hover:text-[#F3E6C8] self-end shrink-0 pt-2.5 border-t border-[#D4AF6A]/15 w-full justify-between">
-                    <span className="text-xs text-slate-400 font-normal">Pantau pertumbuhan website</span>
-                    <span className="flex items-center gap-1">
-                      Buka Grafik Penuh <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </span>
+                  <div>
+                    <span className="text-xs text-slate-300 font-medium block">Grafik Pengunjung</span>
+                    <span className="text-xl sm:text-2xl font-bold text-emerald-300 leading-[1.2] block mt-0.5">Live</span>
+                    <span className="text-xs text-slate-400 block mt-1">Sumber trafik IG, TikTok & WA</span>
                   </div>
                 </div>
 
                 <div
                   onClick={() => setActiveMenu('security')}
-                  className="p-4 sm:p-5 rounded-[10px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 flex flex-col justify-between gap-3 group"
+                  className="p-4 sm:p-5 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border cursor-pointer transition-all active:scale-98 group space-y-2"
                 >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-[8px] bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
-                      <ShieldCheck size={24} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold text-emerald-300">
-                          Keamanan & Kesehatan Sistem
-                        </span>
-                        <span className="px-2 py-0.5 rounded-[5px] bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30 flex items-center gap-1 leading-tight">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          Optimal 100%
-                        </span>
-                      </div>
-                      <h4 className="font-heading text-base font-semibold leading-[1.25] text-white mt-0.5">
-                        Sapu Bersih Cache & Proteksi Benteng
-                      </h4>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        1-Klik Bersihkan Sampah Web, Ganti PIN, & Cek Link Toko
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-between text-slate-400 group-hover:text-emerald-300">
+                    <ShieldCheck size={20} className="text-emerald-400" />
+                    <ChevronRight size={14} />
                   </div>
-
-                  <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-300 group-hover:text-emerald-200 self-end shrink-0 pt-2.5 border-t border-[#D4AF6A]/15 w-full justify-between">
-                    <span className="text-xs text-slate-400 font-normal">Website Cepat & Terlindungi</span>
-                    <span className="flex items-center gap-1">
-                      Buka Pusat Keamanan <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* QUICK ACTIONS (DESKTOP: 3 KOLOM) */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal size={15} className="text-[#E8C782]" />
-                  <h3 className="font-heading text-base font-semibold leading-[1.25] text-white">
-                    Pintasan Manajemen Cepat
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                  <div
-                    onClick={() => setActiveMenu('variants')}
-                    className="p-4 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border flex items-center justify-center text-[#E8C782] shrink-0">
-                        <Package size={18} />
-                      </div>
-                      <div>
-                        <span className="font-heading text-sm font-semibold text-white block leading-snug">
-                          Kelola Varian ({perfumesList.length})
-                        </span>
-                        <span className="text-xs text-slate-400 block mt-0.5">
-                          Atur stok aktif & edit aroma
-                        </span>
-                      </div>
-                    </div>
-                    <ArrowRight size={15} className="text-[#E8C782] shrink-0" />
-                  </div>
-
-                  <div
-                    onClick={() => setActiveMenu('media')}
-                    className="p-4 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border flex items-center justify-center text-[#E8C782] shrink-0">
-                        <Upload size={18} />
-                      </div>
-                      <div>
-                        <span className="font-heading text-sm font-semibold text-white block leading-snug">Ganti Foto & Media</span>
-                        <span className="text-xs text-slate-400 block mt-0.5">
-                          Upload foto botol utama & 11 botol
-                        </span>
-                      </div>
-                    </div>
-                    <ArrowRight size={15} className="text-[#E8C782] shrink-0" />
-                  </div>
-
-                  <div
-                    onClick={() => setActiveMenu('banner')}
-                    className="p-4 rounded-[8px] sinki-arch-card sinki-arch-card-interactive border flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-98"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-[8px] sinki-arch-subbox border flex items-center justify-center text-[#E8C782] shrink-0">
-                        <Sliders size={18} />
-                      </div>
-                      <div>
-                        <span className="font-heading text-sm font-semibold text-white block leading-snug">Teks Berjalan & Harga</span>
-                        <span className="text-xs text-slate-400 block mt-0.5">
-                          Ubah running text & tarif botol
-                        </span>
-                      </div>
-                    </div>
-                    <ArrowRight size={15} className="text-[#E8C782] shrink-0" />
+                  <div>
+                    <span className="text-xs text-slate-300 font-medium block">Keamanan & Cache</span>
+                    <span className="text-xl sm:text-2xl font-bold text-emerald-300 leading-[1.2] block mt-0.5">100%</span>
+                    <span className="text-xs text-slate-400 block mt-1">Ganti PIN, cache & cek link</span>
                   </div>
                 </div>
               </div>
@@ -2759,10 +2583,9 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               {/* SUB-TABS NAVIGATOR KHUSUS MEDIA */}
               <div className="flex items-center gap-1.5 p-1.5 sinki-arch-bar rounded-[8px] border overflow-x-auto no-scrollbar scroll-smooth">
                 {[
-                  { id: 'all', label: '🌐 Semua Bagian' },
-                  { id: 'video', label: '🎬 Video Sinematik 9:16' },
-                  { id: 'identity', label: '🖼️ Cover, Logo & QRIS' },
-                  { id: 'stage', label: '✨ Panggung 3D' },
+                  { id: 'video', label: '🎬 Video Hero' },
+                  { id: 'identity', label: '🖼️ Logo, Chibi & QRIS' },
+                  { id: 'stage', label: '✨ Botol & Panggung 3D' },
                 ].map((st) => {
                   const isCur = mediaSubTab === st.id;
                   return (
@@ -2799,7 +2622,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               />
 
               {/* KARTU UTAMA: VIDEO SINEMATIK BERANDA & EFEK TRANSISI MEMUDAR */}
-              {(mediaSubTab === 'all' || mediaSubTab === 'video') && (
+              {mediaSubTab === 'video' && (
                 <div className="p-5 sm:p-6 rounded-[10px] sinki-arch-card border space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -2854,16 +2677,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   </div>
                 </div>
 
-                {/* Info Card: Jawaban Pertanyaan Penggantian Video */}
-                <div className="p-3.5 rounded-[8px] sinki-arch-subbox border text-xs text-[#F3E6C8]/90 leading-[1.5] flex items-start gap-2.5">
-                  <Sparkles size={16} className="text-[#E8C782] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-[#E8C782]">Bagaimana Cara Kerja Gambar & Video?</span>
-                    <p className="text-slate-300 mt-0.5">
-                      Saat website dibuka, pengunjung langsung melihat gambar cover botol tanpa layar hitam. Begitu video siap, gambar botol memudar mulus masuk ke video. <strong className="font-semibold text-white">Ketika Anda mengganti video baru</strong>, sistem otomatis mengambil frame awal video baru tersebut sebagai cover! Anda juga tetap bisa mengunggah cover foto khusus jika diinginkan.
-                    </p>
-                  </div>
-                </div>
+                {/* Ringkasan singkat: cover foto otomatis diambil dari frame awal saat video diganti */}
 
                 {/* Grid 2 Kolom: Video Preview & Pengaturan */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -3286,7 +3100,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               )}
 
               {/* BARIS 1: FOTO HERO UTAMA & LOGO RESMI (DESKTOP: 2 KOLOM) */}
-              {(mediaSubTab === 'all' || mediaSubTab === 'identity') && (
+              {mediaSubTab === 'identity' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Kartu Foto Utama Beranda */}
                   <div className="p-5 rounded-[10px] sinki-arch-card border space-y-4">
@@ -3378,7 +3192,7 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
               )}
 
               {/* BARIS KHUSUS: PANGGUNG 3D BERANDA & 4 BOTOL PARFUM PNG TRANSPARAN */}
-              {(mediaSubTab === 'all' || mediaSubTab === 'stage') && (
+              {mediaSubTab === 'stage' && (
                 <>
                   <input
                     type="file"
@@ -4390,80 +4204,12 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                 </form>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-5 rounded-[10px] sinki-arch-card border space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-heading text-sm font-semibold text-white block">Status Keamanan:</span>
-                    <button
-                      onClick={() => setActiveMenu('security')}
-                      className="text-xs font-semibold text-[#E8C782] hover:underline flex items-center gap-1"
-                    >
-                      <span>Lihat Detail Guard</span>
-                      <ChevronRight size={12} />
-                    </button>
-                  </div>
-                  <div className="space-y-2 text-xs sm:text-sm">
-                    <div className="p-3 rounded-[8px] sinki-arch-subbox border flex items-center justify-between">
-                      <span className="text-slate-300">Autentikasi PIN Server:</span>
-                      <span className="text-emerald-400 font-semibold">Aktif & Terproteksi</span>
-                    </div>
-                    <div className="p-3 rounded-[8px] sinki-arch-subbox border flex items-center justify-between">
-                      <span className="text-slate-300">Proteksi Brute-Force:</span>
-                      <span className="text-emerald-400 font-semibold">Rate Limiter Aktif</span>
-                    </div>
-                    <div className="p-3 rounded-[8px] sinki-arch-subbox border flex items-center justify-between">
-                      <span className="text-slate-300">Token Sesi 24 Jam:</span>
-                      <span className="text-[#E8C782] font-semibold">Terverifikasi</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setActiveMenu('security')}
-                    className="w-full mt-2 py-2.5 px-3 rounded-[8px] bg-gradient-to-r from-emerald-600/25 via-[#D4AF6A]/15 to-[#A07C3A]/20 hover:from-emerald-600/35 hover:to-[#D4AF6A]/30 border border-[#D4AF6A]/35 text-emerald-300 hover:text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all active:scale-98"
-                  >
-                    <ShieldCheck size={14} />
-                    <span>Buka Pusat Keamanan & Kesehatan Lengkap →</span>
-                  </button>
-                </div>
-
-                <div className="p-5 rounded-[10px] sinki-arch-card border space-y-3">
-                  <span className="font-heading text-sm font-semibold text-white block">Hak Cipta & Brand:</span>
-                  <div className="p-3 rounded-[8px] sinki-arch-subbox border text-slate-300 text-xs sm:text-sm leading-[1.5]">
-                    © 2026 SINKI Parfums. All Rights Reserved. Define Your Presence.
-                  </div>
-                  <div className="pt-2">
-                    <span className="text-xs text-slate-400 block mb-1">Tautan Akses Rahasia:</span>
-                    <span className="text-[#E8C782] text-xs sm:text-sm font-medium block sinki-arch-subbox p-2.5 rounded-[8px] border">
-                      /dimensi-sinki
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 
         </div>
 
-        {/* BOTTOM NAVIGATION MOBILE ONLY (DESKTOP: HIDDEN) */}
-        <nav className="lg:hidden fixed bottom-0 inset-x-0 sinki-arch-header border-t backdrop-blur-md px-3 py-2 flex items-center justify-around z-30 shadow-2xl font-body">
-          {navItems.slice(0, 5).map((item) => {
-            const Icon = item.icon;
-            const isActive = activeMenu === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveMenu(item.id as MenuKey)}
-                className={`flex flex-col items-center gap-1 text-xs font-medium transition-colors ${
-                  isActive ? 'text-[#E8C782] font-semibold' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Icon size={16} />
-                <span>{item.label.split(' ')[0]}</span>
-                {isActive && <span className="w-1 h-1 rounded-full bg-[#E8C782] -mt-0.5" />}
-              </button>
-            );
-          })}
-        </nav>
+        {/* AREA MODAL FITTING */}
 
 
 

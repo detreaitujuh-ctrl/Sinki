@@ -395,11 +395,17 @@ export function resolveMinskiRecommendation(
   };
 }
 
-// Global reference untuk audio MinSKI yang sedang berputar
+// Global reference untuk audio MinSKI yang sedang berputar & penomoran antrean tunggal
 let activeMinskiAudio: HTMLAudioElement | null = null;
+let activeVoiceSeq = 0;
+
 export function stopMinskiVoice() {
+  activeVoiceSeq++;
   if (activeMinskiAudio) {
     try {
+      activeMinskiAudio.onplay = null;
+      activeMinskiAudio.onended = null;
+      activeMinskiAudio.onerror = null;
       activeMinskiAudio.pause();
       activeMinskiAudio.currentTime = 0;
       activeMinskiAudio.src = '';
@@ -408,8 +414,11 @@ export function stopMinskiVoice() {
   }
 }
 
+// Level volume nyaman & elegan (58%) agar suara Kore lembut dan tidak memicu gema speaker ke mikrofon
+export const MINSKI_VOICE_VOLUME = 0.58;
+
 // SUARA RESMI MINSKI:
-// Google Kore TTS (High-Fidelity Neural Audio 24kHz)
+// Google Kore TTS (High-Fidelity Neural Audio 24kHz) - 1 Suara Konsisten
 export function speakMinskiVoice(
   text: string,
   onStart?: () => void,
@@ -418,8 +427,9 @@ export function speakMinskiVoice(
 ): () => void {
   if (typeof window === 'undefined') return () => {};
 
-  // Hentikan audio sebelumnya
+  // Hentikan audio sebelumnya dan naikkan token giliran
   stopMinskiVoice();
+  const mySeq = activeVoiceSeq;
 
   const trimmedText = text.trim();
   if (!trimmedText) {
@@ -430,6 +440,7 @@ export function speakMinskiVoice(
   // Putar suara resmi Google Kore via endpoint server
   const audioSrc = `/api/minski/tts?text=${encodeURIComponent(trimmedText)}`;
   const audio = new Audio(audioSrc);
+  audio.volume = MINSKI_VOICE_VOLUME;
   activeMinskiAudio = audio;
 
   let hasEnded = false;
@@ -441,17 +452,25 @@ export function speakMinskiVoice(
   };
 
   audio.onplay = () => {
+    if (mySeq !== activeVoiceSeq) {
+      try {
+        audio.pause();
+        audio.src = '';
+      } catch {}
+      return;
+    }
     if (onStart) onStart();
   };
 
   audio.onended = () => {
-    activeMinskiAudio = null;
+    if (activeMinskiAudio === audio) activeMinskiAudio = null;
     safeEnd();
   };
 
   audio.onerror = (err) => {
+    if (mySeq !== activeVoiceSeq) return;
     console.warn('[Google Kore TTS Notice]: Suara Kore sedang standby', err);
-    activeMinskiAudio = null;
+    if (activeMinskiAudio === audio) activeMinskiAudio = null;
     safeEnd();
     if (onError) onError('Pita suara Kore sedang standby');
   };
@@ -459,15 +478,19 @@ export function speakMinskiVoice(
   const playPromise = audio.play();
   if (playPromise !== undefined) {
     playPromise.catch((err) => {
+      if (mySeq !== activeVoiceSeq) return;
       console.warn('[Google Kore Playback Notice]:', err);
-      activeMinskiAudio = null;
+      if (activeMinskiAudio === audio) activeMinskiAudio = null;
       safeEnd();
       if (onError) onError('Gagal memutar audio Kore');
     });
   }
 
   return () => {
-    stopMinskiVoice();
+    if (activeMinskiAudio === audio || mySeq === activeVoiceSeq) {
+      stopMinskiVoice();
+    }
     safeEnd();
   };
 }
+
