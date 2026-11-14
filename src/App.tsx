@@ -367,6 +367,7 @@ export default function App() {
                 onCartUpdated={() => setCartItems(getStoredCart())}
                 targetCategory={collectionTargetCategory}
                 onClearTargetCategory={() => setCollectionTargetCategory(null)}
+                themeId={luxuryTheme.id}
               />
             </div>
           )}
@@ -382,6 +383,7 @@ export default function App() {
                 perfumes={catalogPerfumes}
                 top11Photos={top11Photos}
                 masterFlaconPhoto={customMasterFlacon}
+                themeId={luxuryTheme.id}
               />
             </div>
           )}
@@ -462,6 +464,7 @@ export default function App() {
             setActiveTab(tab);
           }}
           orderCount={getCartTotalCount(cartItems)}
+          themeId={luxuryTheme.id}
         />
       </main>
     </DesktopDeviceFrame>

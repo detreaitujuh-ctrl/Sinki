@@ -16,8 +16,10 @@ import {
   RotateCcw,
   AlertCircle,
 } from 'lucide-react';
-import { PerfumeItem } from '../data/perfumes';
+import { PerfumeItem, CollectionCategoryKey } from '../data/perfumes';
 import masterBottleTransparent from '../assets/images/sinki_master_bottle_transparent.png';
+import { LuxuryThemeId } from '../utils/themeStorage';
+import { CATEGORY_ARTWORK, CATEGORY_VISUAL_STYLE, Category3DIcon } from './CollectionScreen';
 import {
   checkMinskiProfanity,
   checkMinskiOffTopic,
@@ -39,73 +41,131 @@ interface AromaMatchScreenProps {
   top11Photos?: Record<string, string>;
   masterFlaconPhoto?: string | null;
   isActiveTab?: boolean;
+  themeId?: LuxuryThemeId | string;
 }
 
 // 3 Pilihan Bersih & Lapang untuk Persona (Kuis Manual Langkah 1)
-const PERSONA_OPTIONS = [
+const PERSONA_OPTIONS: Array<{
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  categoryKey: CollectionCategoryKey;
+}> = [
   {
     id: 'pria',
     title: 'Pria (Gentleman)',
     subtitle: 'Karakter maskulin, berkarisma, dan tegas',
     icon: '👔',
+    categoryKey: 'professional',
   },
   {
     id: 'wanita',
     title: 'Wanita (Feminine)',
     subtitle: 'Karakter anggun, mempesona, dan manis',
     icon: '👗',
+    categoryKey: 'attraction',
   },
   {
     id: 'unisex',
     title: 'Netral (Unisex)',
     subtitle: 'Karakter segar, bersih, dan fleksibel',
     icon: '🧥',
+    categoryKey: 'daily_fresh',
   },
 ];
 
 // 3 Pilihan Bersih & Lapang untuk Suasana Penggunaan (Kuis Manual Langkah 2)
-const OCCASION_OPTIONS = [
+const OCCASION_OPTIONS: Array<{
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  categoryKey: CollectionCategoryKey;
+}> = [
   {
     id: 'harian',
     title: 'Harian & Kerja Kantor',
     subtitle: 'Ruangan ber-AC, rapi, dan tidak bikin pusing',
     icon: '💼',
+    categoryKey: 'professional',
   },
   {
     id: 'malam',
     title: 'Kencan & Acara Malam',
     subtitle: 'Makan malam romantis, hangat, dan intim',
     icon: '🌙',
+    categoryKey: 'attraction',
   },
   {
     id: 'siang',
     title: 'Santai & Hangout Siang',
     subtitle: 'Siang cerah, luar ruangan, dan udara segar',
     icon: '☀️',
+    categoryKey: 'new_trending',
   },
 ];
 
 // 3 Pilihan Bersih & Lapang untuk Kesan Wangi Utama (Kuis Manual Langkah 3)
-const SCENT_VIBE_OPTIONS = [
+const SCENT_VIBE_OPTIONS: Array<{
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  categoryKey: CollectionCategoryKey;
+}> = [
   {
     id: 'segar',
     title: 'Segar Dingin & Bersih',
     subtitle: 'Sensasi semilir laut, citrus segar, dan bersih',
     icon: '🌊',
+    categoryKey: 'daily_fresh',
   },
   {
     id: 'manis',
     title: 'Manis Mewah & Menggoda',
     subtitle: 'Sensasi vanila lembut, creamy, dan bikin rindu',
     icon: '🍦',
+    categoryKey: 'luxury',
   },
   {
     id: 'hangat',
     title: 'Hangat & Berkarisma',
     subtitle: 'Sensasi amber berkelas, rempah, dan kayu cedar',
     icon: '🪵',
+    categoryKey: 'viral_hits',
   },
 ];
+
+function resolveMatchCategoryKey(
+  match: MinskiRecommendationResult | null,
+  items: PerfumeItem[]
+): CollectionCategoryKey {
+  if (!match) return 'luxury';
+  const matchedItem = items.find(
+    (p) => p.name.trim().toLowerCase() === match.perfumeName.trim().toLowerCase()
+  );
+  if (matchedItem?.collectionCategories && matchedItem.collectionCategories.length > 0) {
+    return matchedItem.collectionCategories[0];
+  }
+  const combined = `${match.categoryLabel || ''} ${match.accords || ''}`.toLowerCase();
+  if (combined.includes('segar') || combined.includes('fresh') || combined.includes('citrus') || combined.includes('aquatic')) {
+    return 'daily_fresh';
+  }
+  if (combined.includes('kantor') || combined.includes('wood') || combined.includes('leather') || combined.includes('professional')) {
+    return 'professional';
+  }
+  if (combined.includes('kencan') || combined.includes('rose') || combined.includes('floral') || combined.includes('attraction')) {
+    return 'attraction';
+  }
+  if (combined.includes('viral') || combined.includes('rempah') || combined.includes('gourmand')) {
+    return 'viral_hits';
+  }
+  if (combined.includes('baru') || combined.includes('trending')) {
+    return 'new_trending';
+  }
+  return 'luxury';
+}
 
 const DEFAULT_MINSKI_GREETING =
   'Hai Kak! Kenalin, aku MinSKI. Mau aroma segar atau manis mewah yang bikin si dia nempel terus? Ceritain wangi impianmu yuk!';
@@ -176,7 +236,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   top11Photos = {},
   masterFlaconPhoto,
   isActiveTab = true,
+  themeId,
 }) => {
+  const isBotanical = themeId === 'botanical-crystal';
   // Screen mode: 'minski' (AI Voice) | 'manual' (3-step quiz) | 'result'
   const [screenMode, setScreenMode] = useState<'minski' | 'manual' | 'result'>('minski');
   const [manualStep, setManualStep] = useState<1 | 2 | 3 | 'calculating'>(1);
@@ -1340,26 +1402,34 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     return (
       <div
         key={`step-result-${viewTransitionKey}`}
-        className="relative w-full h-full flex flex-col overflow-y-auto no-scrollbar text-slate-100 sinki-screen-soft-fade select-none pb-24 sm:pb-28"
+        className={`relative w-full h-full flex flex-col overflow-y-auto no-scrollbar text-slate-100 sinki-screen-soft-fade select-none pb-24 sm:pb-28 ${
+          isBotanical ? 'sinki-botanical-collection' : ''
+        }`}
       >
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-[#08080b] sinki-match-result-base" />
-          <div
-            className="absolute -top-10 left-1/2 -translate-x-1/2 w-80 h-96 pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(ellipse at 50% 0%, var(--arch-glow-tl) 0%, var(--arch-glow-tl-mid) 45%, transparent 75%)',
-            }}
-          />
-        </div>
+        {!isBotanical && (
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <div className="absolute inset-0 bg-[#08080b] sinki-match-result-base" />
+            <div
+              className="absolute -top-10 left-1/2 -translate-x-1/2 w-80 h-96 pointer-events-none"
+              style={{
+                background:
+                  'radial-gradient(ellipse at 50% 0%, var(--arch-glow-tl) 0%, var(--arch-glow-tl-mid) 45%, transparent 75%)',
+              }}
+            />
+          </div>
+        )}
 
-        <div className="relative z-20 w-full max-w-md mx-auto px-4 pt-2.5 shrink-0 flex items-center justify-between">
+        <div className="relative z-20 w-full max-w-md mx-auto px-4 pt-3 sm:pt-4 shrink-0 flex items-center justify-between">
           <button
             type="button"
             onClick={handleReset}
-            className="py-1 px-2.5 rounded-[6px] sinki-arch-bar backdrop-blur-md border border-[#DFB76C]/35 text-[11px] font-semibold text-slate-200 hover:text-white flex items-center gap-1 active:scale-95 transition-all shadow-md cursor-pointer"
+            className={`py-1.5 px-3 text-[11px] font-semibold flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer ${
+              isBotanical
+                ? 'rounded-full sinki-botanical-pill text-white hover:border-[#F2E0A8]/80'
+                : 'rounded-[6px] sinki-arch-bar backdrop-blur-md border border-[#DFB76C]/35 text-slate-200 hover:text-white shadow-md'
+            }`}
           >
-            <ArrowLeft size={12} className="text-[#DFB76C]" />
+            <ArrowLeft size={12} className={isBotanical ? 'text-white' : 'text-[#DFB76C]'} />
             <span>Tanya MinSKI Lagi</span>
           </button>
 
@@ -1370,9 +1440,17 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               setIsMuted((prev) => !prev);
               onShowToastRef.current?.(!isMuted ? 'Suara dinonaktifkan' : 'Suara aktif 🔊');
             }}
-            className="p-1.5 rounded-[6px] sinki-arch-bar border border-[#DFB76C]/30 text-amber-200 hover:text-white transition-all cursor-pointer"
+            className={`p-2 transition-all cursor-pointer ${
+              isBotanical
+                ? 'rounded-full sinki-botanical-pill text-white hover:border-[#F2E0A8]/80'
+                : 'rounded-[6px] sinki-arch-bar border border-[#DFB76C]/30 text-amber-200 hover:text-white'
+            }`}
           >
-            {isMuted ? <VolumeX size={13} className="text-slate-400" /> : <Volume2 size={13} className="text-[#DFB76C]" />}
+            {isMuted ? (
+              <VolumeX size={13} className={isBotanical ? 'text-white/80' : 'text-slate-400'} />
+            ) : (
+              <Volume2 size={13} className={isBotanical ? 'text-white' : 'text-[#DFB76C]'} />
+            )}
           </button>
         </div>
 
@@ -1423,43 +1501,118 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
   // 2. TAMPILAN KUIS MANUAL 3 LANGKAH
   // ==========================================
   if (screenMode === 'manual') {
+    const renderQuizOptionCard = (
+      item: { id: string; title: string; subtitle: string; icon: string; categoryKey: CollectionCategoryKey },
+      onSelect: (id: string) => void
+    ) => {
+      const catImage = CATEGORY_ARTWORK[item.categoryKey];
+      const catVisual = CATEGORY_VISUAL_STYLE[item.categoryKey];
+      return (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onSelect(item.id)}
+          className={`group relative w-full text-left flex items-center justify-between gap-3.5 overflow-hidden transition-all cursor-pointer active:scale-[0.98] ${
+            isBotanical
+              ? 'p-4 rounded-[15px] sinki-botanical-card min-h-[82px]'
+              : 'p-4 rounded-[8px] border sinki-arch-card sinki-arch-card-interactive'
+          }`}
+        >
+          {isBotanical && catImage && (
+            <>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 opacity-40"
+                style={{ background: catVisual.glow }}
+              />
+              <img
+                src={catImage}
+                alt=""
+                aria-hidden="true"
+                decoding="async"
+                referrerPolicy="no-referrer"
+                className={`pointer-events-none absolute right-0 inset-y-0 w-[56%] sm:w-[50%] h-full object-cover ${catVisual.varPos} sinki-botanical-art-variant ${
+                  catVisual.isDarkSubject ? 'sinki-botanical-art-pro' : ''
+                }`}
+              />
+            </>
+          )}
+
+          <div className="relative z-10 flex items-center gap-3.5 min-w-0 flex-1 pr-3">
+            {isBotanical ? (
+              <Category3DIcon
+                id={item.categoryKey}
+                sizeClass="w-6 h-6"
+                idPrefix={`quiz-${item.id}`}
+              />
+            ) : (
+              <span className="text-2xl">{item.icon}</span>
+            )}
+            <div className="min-w-0">
+              <h4
+                className={`font-heading text-sm font-bold ${
+                  isBotanical
+                    ? 'text-white drop-shadow-[0_1px_5px_rgba(0,0,0,0.95)]'
+                    : 'text-white'
+                }`}
+              >
+                {item.title}
+              </h4>
+              <p
+                className={`font-body text-xs mt-0.5 leading-[1.38] ${
+                  isBotanical ? 'text-white font-medium' : 'text-slate-300'
+                }`}
+              >
+                {item.subtitle}
+              </p>
+            </div>
+          </div>
+
+          <ChevronRight
+            size={16}
+            className={`relative z-10 shrink-0 transition-transform group-hover:translate-x-0.5 ${
+              isBotanical
+                ? 'text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]'
+                : 'text-[#DFB76C]'
+            }`}
+          />
+        </button>
+      );
+    };
+
     return (
-      <div className="relative w-full h-full flex flex-col sinki-arch-canvas text-slate-100 overflow-hidden sinki-screen-soft-fade">
+      <div
+        className={`relative w-full h-full flex flex-col sinki-arch-canvas text-slate-100 overflow-hidden sinki-screen-soft-fade ${
+          isBotanical ? 'sinki-botanical-collection' : ''
+        }`}
+      >
         <div className="flex-1 overflow-y-auto no-scrollbar p-4 pb-28 flex flex-col justify-center max-w-md mx-auto w-full">
           {manualStep === 1 && (
             <div className="space-y-4">
               <div className="text-center space-y-1 pb-1">
-                <span className="font-body text-[11px] font-semibold tracking-[0.06em] text-[#DFB76C] uppercase block">
+                <span
+                  className={`font-body text-[11px] font-semibold tracking-[0.06em] uppercase block ${
+                    isBotanical ? 'sinki-botanical-variant-count' : 'text-[#DFB76C]'
+                  }`}
+                >
                   Langkah 1 dari 3
                 </span>
                 <h3 className="font-heading text-lg font-bold text-white">Racik Aroma Khas Diri Anda</h3>
-                <p className="font-body text-xs text-slate-400">Pilih karakter persona Anda:</p>
+                <p className={`font-body text-xs ${isBotanical ? 'text-white' : 'text-slate-400'}`}>
+                  Pilih karakter persona Anda:
+                </p>
               </div>
 
               <div className="space-y-3">
-                {PERSONA_OPTIONS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleSelectPersona(item.id)}
-                    className="w-full p-4 rounded-[8px] text-left border flex items-center justify-between gap-3.5 transition-all cursor-pointer sinki-arch-card sinki-arch-card-interactive"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <span className="text-2xl">{item.icon}</span>
-                      <div>
-                        <h4 className="font-heading text-sm font-bold text-white">{item.title}</h4>
-                        <p className="font-body text-xs text-slate-300 mt-0.5">{item.subtitle}</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="text-[#DFB76C]" />
-                  </button>
-                ))}
+                {PERSONA_OPTIONS.map((item) => renderQuizOptionCard(item, handleSelectPersona))}
               </div>
 
               <button
                 type="button"
                 onClick={() => setScreenMode('minski')}
-                className="font-body text-xs text-[#DFB76C] hover:underline block mx-auto pt-2 cursor-pointer"
+                className={`font-body text-xs hover:underline block mx-auto pt-2 cursor-pointer ${
+                  isBotanical ? 'text-white font-medium' : 'text-[#DFB76C]'
+                }`}
               >
                 ← Kembali ke Konsultasi Suara MinSKI
               </button>
@@ -1469,37 +1622,29 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           {manualStep === 2 && (
             <div className="space-y-4">
               <div className="text-center space-y-1 pb-1">
-                <span className="font-body text-[11px] font-semibold tracking-[0.06em] text-[#DFB76C] uppercase block">
+                <span
+                  className={`font-body text-[11px] font-semibold tracking-[0.06em] uppercase block ${
+                    isBotanical ? 'sinki-botanical-variant-count' : 'text-[#DFB76C]'
+                  }`}
+                >
                   Langkah 2 dari 3
                 </span>
                 <h3 className="font-heading text-lg font-bold text-white">Momen Penggunaan</h3>
-                <p className="font-body text-xs text-slate-400">Pilih suasana wangi yang diinginkan:</p>
+                <p className={`font-body text-xs ${isBotanical ? 'text-white' : 'text-slate-400'}`}>
+                  Pilih suasana wangi yang diinginkan:
+                </p>
               </div>
 
               <div className="space-y-3">
-                {OCCASION_OPTIONS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleSelectOccasion(item.id)}
-                    className="w-full p-4 rounded-[8px] text-left border flex items-center justify-between gap-3.5 transition-all cursor-pointer sinki-arch-card sinki-arch-card-interactive"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <span className="text-2xl">{item.icon}</span>
-                      <div>
-                        <h4 className="font-heading text-sm font-bold text-white">{item.title}</h4>
-                        <p className="font-body text-xs text-slate-300 mt-0.5">{item.subtitle}</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="text-[#DFB76C]" />
-                  </button>
-                ))}
+                {OCCASION_OPTIONS.map((item) => renderQuizOptionCard(item, handleSelectOccasion))}
               </div>
 
               <button
                 type="button"
                 onClick={() => setManualStep(1)}
-                className="font-body text-xs text-slate-400 hover:text-white block mx-auto pt-2 cursor-pointer"
+                className={`font-body text-xs block mx-auto pt-2 cursor-pointer ${
+                  isBotanical ? 'text-white/95 hover:underline' : 'text-slate-400 hover:text-white'
+                }`}
               >
                 ← Kembali ke Langkah 1
               </button>
@@ -1509,37 +1654,29 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
           {manualStep === 3 && (
             <div className="space-y-4">
               <div className="text-center space-y-1 pb-1">
-                <span className="font-body text-[11px] font-semibold tracking-[0.06em] text-[#DFB76C] uppercase block">
+                <span
+                  className={`font-body text-[11px] font-semibold tracking-[0.06em] uppercase block ${
+                    isBotanical ? 'sinki-botanical-variant-count' : 'text-[#DFB76C]'
+                  }`}
+                >
                   Langkah 3 dari 3
                 </span>
                 <h3 className="font-heading text-lg font-bold text-white">Kesan Aroma Utama</h3>
-                <p className="font-body text-xs text-slate-400">Pilih sensasi yang paling nyaman di hidung:</p>
+                <p className={`font-body text-xs ${isBotanical ? 'text-white' : 'text-slate-400'}`}>
+                  Pilih sensasi yang paling nyaman di hidung:
+                </p>
               </div>
 
               <div className="space-y-3">
-                {SCENT_VIBE_OPTIONS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleSelectVibe(item.id)}
-                    className="w-full p-4 rounded-[8px] text-left border flex items-center justify-between gap-3.5 transition-all cursor-pointer sinki-arch-card sinki-arch-card-interactive"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <span className="text-2xl">{item.icon}</span>
-                      <div>
-                        <h4 className="font-heading text-sm font-bold text-white">{item.title}</h4>
-                        <p className="font-body text-xs text-slate-300 mt-0.5">{item.subtitle}</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="text-[#DFB76C]" />
-                  </button>
-                ))}
+                {SCENT_VIBE_OPTIONS.map((item) => renderQuizOptionCard(item, handleSelectVibe))}
               </div>
 
               <button
                 type="button"
                 onClick={() => setManualStep(2)}
-                className="font-body text-xs text-slate-400 hover:text-white block mx-auto pt-2 cursor-pointer"
+                className={`font-body text-xs block mx-auto pt-2 cursor-pointer ${
+                  isBotanical ? 'text-white/95 hover:underline' : 'text-slate-400 hover:text-white'
+                }`}
               >
                 ← Kembali ke Langkah 2
               </button>
@@ -1550,7 +1687,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             <div className="py-10 flex flex-col items-center justify-center text-center space-y-4">
               <div className="w-12 h-12 rounded-full border-2 border-[#DFB76C] border-t-transparent animate-spin" />
               <h4 className="font-heading text-base font-semibold text-white">MinSKI Sedang Meracik Aroma...</h4>
-              <p className="font-body text-xs text-slate-300">Menyelaraskan bibit murni dengan karakter Kakak</p>
+              <p className={`font-body text-xs ${isBotanical ? 'text-white' : 'text-slate-300'}`}>
+                Menyelaraskan bibit murni dengan karakter Kakak
+              </p>
             </div>
           )}
         </div>
@@ -1558,19 +1697,33 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
     );
   }
 
+  const matchedCategoryKey = resolveMatchCategoryKey(matchResult, catalog);
+  const matchedCatImage = CATEGORY_ARTWORK[matchedCategoryKey];
+  const matchedCatVisual = CATEGORY_VISUAL_STYLE[matchedCategoryKey];
+
   // ==========================================
   // 3. TAMPILAN UTAMA: REAL-TIME VOICE DUA ARAH (CHATGPT VOICE EXPERIENCE)
   // ==========================================
   return (
-    <div className="relative w-full h-full flex flex-col sinki-arch-canvas text-slate-100 overflow-hidden sinki-screen-soft-fade">
-      {/* Halo Background */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-80 h-80 bg-[#C5A059]/10 rounded-full blur-[100px] pointer-events-none" />
+    <div
+      className={`relative w-full h-full flex flex-col sinki-arch-canvas text-slate-100 overflow-hidden sinki-screen-soft-fade ${
+        isBotanical ? 'sinki-botanical-collection' : ''
+      }`}
+    >
+      {/* Halo Background (Non-Botanical Only so Locked Reference Forest Stays Pure) */}
+      {!isBotanical && (
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-80 h-80 bg-[#C5A059]/10 rounded-full blur-[100px] pointer-events-none" />
+      )}
 
       {/* Header Bar */}
       <header className="relative z-20 w-full max-w-md mx-auto px-4 pt-3 pb-1 shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${isVoiceMode ? 'bg-emerald-400 animate-pulse' : 'bg-[#DFB76C]'}`} />
-          <span className="font-heading text-xs font-bold tracking-[0.08em] text-[#DFB76C] uppercase">
+          <span
+            className={`font-heading text-xs font-bold tracking-[0.08em] uppercase ${
+              isBotanical ? 'text-white' : 'text-[#DFB76C]'
+            }`}
+          >
             Racik Aroma · MinSKI
           </span>
         </div>
@@ -1580,10 +1733,14 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsHistoryOpen(true)}
-              className="py-1 px-2 rounded-[5px] sinki-arch-bar border border-[#DFB76C]/30 text-[10px] text-amber-200 hover:text-white flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+              className={`py-1 px-2.5 text-[10px] flex items-center gap-1 cursor-pointer transition-all active:scale-95 ${
+                isBotanical
+                  ? 'rounded-full sinki-botanical-pill text-white hover:border-[#F2E0A8]/80'
+                  : 'rounded-[5px] sinki-arch-bar border border-[#DFB76C]/30 text-amber-200 hover:text-white'
+              }`}
               title="Lihat Riwayat Konsultasi"
             >
-              <History size={12} className="text-[#DFB76C]" />
+              <History size={12} className={isBotanical ? 'text-white' : 'text-[#DFB76C]'} />
               <span>{chatHistory.length}</span>
             </button>
           )}
@@ -1595,10 +1752,18 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
               setIsMuted((prev) => !prev);
               onShowToastRef.current?.(!isMuted ? 'Suara dinonaktifkan' : 'Suara aktif 🔊');
             }}
-            className="p-1.5 rounded-[6px] sinki-arch-bar border border-[#DFB76C]/30 text-amber-200 hover:text-white transition-all cursor-pointer"
+            className={`p-1.5 transition-all cursor-pointer ${
+              isBotanical
+                ? 'rounded-full sinki-botanical-pill text-white hover:border-[#F2E0A8]/80'
+                : 'rounded-[6px] sinki-arch-bar border border-[#DFB76C]/30 text-amber-200 hover:text-white'
+            }`}
             title={isMuted ? 'Nyalakan Suara' : 'Matikan Suara'}
           >
-            {isMuted ? <VolumeX size={13} className="text-slate-400" /> : <Volume2 size={13} className="text-[#DFB76C]" />}
+            {isMuted ? (
+              <VolumeX size={13} className={isBotanical ? 'text-white/80' : 'text-slate-400'} />
+            ) : (
+              <Volume2 size={13} className={isBotanical ? 'text-white' : 'text-[#DFB76C]'} />
+            )}
           </button>
         </div>
       </header>
@@ -1686,9 +1851,17 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
           {/* Bubble Dialog / Transkripsi Penjelasan MinSKI (Tampil Elegan & Jelas) */}
           {minskiDialogue && (
-            <div className="relative mt-2.5 w-full max-w-sm px-3.5 py-2 rounded-[10px] sinki-arch-bar border border-[#DFB76C]/35 backdrop-blur-md shadow-md text-center animate-fadeIn">
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-[#141920] border-t border-l border-[#DFB76C]/40" />
-              <p className="font-body text-[11px] sm:text-xs leading-relaxed text-slate-200/95 italic">
+            <div
+              className={`relative mt-2.5 w-full max-w-sm px-3.5 py-2.5 text-center animate-fadeIn ${
+                isBotanical
+                  ? 'rounded-[15px] sinki-botanical-card'
+                  : 'rounded-[10px] sinki-arch-bar border border-[#DFB76C]/35 backdrop-blur-md shadow-md'
+              }`}
+            >
+              {!isBotanical && (
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-[#141920] border-t border-l border-[#DFB76C]/40" />
+              )}
+              <p className={`font-body text-[11px] sm:text-xs leading-relaxed italic ${isBotanical ? 'text-white' : 'text-slate-200/95'}`}>
                 "{minskiDialogue}"
               </p>
             </div>
@@ -1742,25 +1915,62 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
         {/* B. Area Rekomendasi (Muncul Elegan Saat Siap) & Kontrol Bawah */}
         <div className="w-full shrink-0 space-y-3 pt-2">
-          {/* Kartu Rekomendasi Parfum SINKI */}
+          {/* Kartu Rekomendasi Parfum SINKI (Selaras Gaya & Gambar Kategori Collection) */}
           {matchResult && (
-            <div className="p-2.5 sm:p-3 rounded-[10px] sinki-arch-bar border border-[#DFB76C]/60 flex items-center justify-between gap-3 shadow-[0_8px_24px_rgba(0,0,0,0.7)] animate-fadeIn">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-11 h-11 rounded-[8px] bg-black/60 border border-[#DFB76C]/40 flex items-center justify-center p-1 shrink-0">
+            <div
+              className={`group relative overflow-hidden flex items-center justify-between gap-3 animate-fadeIn ${
+                isBotanical
+                  ? 'p-3 sm:p-3.5 rounded-[15px] sinki-botanical-card'
+                  : 'p-2.5 sm:p-3 rounded-[10px] sinki-arch-bar border border-[#DFB76C]/60 shadow-[0_8px_24px_rgba(0,0,0,0.7)]'
+              }`}
+            >
+              {isBotanical && matchedCatImage && (
+                <>
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 opacity-40"
+                    style={{ background: matchedCatVisual.glow }}
+                  />
+                  <img
+                    src={matchedCatImage}
+                    alt=""
+                    aria-hidden="true"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    className={`pointer-events-none absolute right-0 inset-y-0 w-[56%] sm:w-[50%] h-full object-cover ${matchedCatVisual.varPos} sinki-botanical-art-variant ${
+                      matchedCatVisual.isDarkSubject ? 'sinki-botanical-art-pro' : ''
+                    }`}
+                  />
+                </>
+              )}
+
+              <div className="relative z-10 flex items-center gap-2.5 min-w-0">
+                <div
+                  className={`w-11 h-11 rounded-[8px] flex items-center justify-center p-1 shrink-0 ${
+                    isBotanical
+                      ? 'bg-black/45 border border-[#E5D29A]/45'
+                      : 'bg-black/60 border border-[#DFB76C]/40'
+                  }`}
+                >
                   <img
                     src={matchResult.photoUrl}
                     alt={matchResult.perfumeName}
+                    referrerPolicy="no-referrer"
                     className="max-h-full max-w-full object-contain drop-shadow"
                   />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-[9px] font-bold text-[#DFB76C] uppercase tracking-wider block">
+                  <span
+                    className={`text-[9.5px] font-bold uppercase tracking-wider block ${
+                      isBotanical ? 'sinki-botanical-variant-count' : 'text-[#DFB76C]'
+                    }`}
+                  >
                     ✨ Racikan Rekomendasi
                   </span>
                   <h4 className="font-heading text-xs sm:text-[13px] font-bold text-white truncate">
                     {matchResult.perfumeName}
                   </h4>
-                  <p className="text-[10px] text-slate-300 truncate">
+                  <p className={`text-[10px] truncate ${isBotanical ? 'text-white' : 'text-slate-300'}`}>
                     {matchResult.categoryLabel}
                   </p>
                 </div>
@@ -1772,7 +1982,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                   handleBargeIn();
                   setScreenMode('result');
                 }}
-                className="py-1.5 px-3.5 rounded-[8px] champagne-gold-btn text-slate-950 text-[11px] font-bold shrink-0 shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer hover:brightness-105"
+                className="relative z-10 py-1.5 px-3.5 rounded-[8px] champagne-gold-btn text-slate-950 text-[11px] font-bold shrink-0 shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer hover:brightness-105"
               >
                 <span>Lihat Botol</span>
                 <ChevronRight size={13} />
@@ -1782,18 +1992,32 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
 
           {/* OPSI 2: Kartu Sambutan & Permintaan Izin Mikrofon MinSKI */}
           {!isVoiceMode && showPermissionPrompt && (
-            <div className="w-full p-3 sm:p-3.5 rounded-[12px] sinki-arch-card border border-[#DFB76C]/50 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md relative overflow-hidden animate-fadeIn">
-              <div className="absolute -top-[1px] inset-x-4 h-[1px] bg-gradient-to-r from-transparent via-[#DFB76C] to-transparent opacity-80" />
+            <div
+              className={`w-full p-3 sm:p-3.5 relative overflow-hidden animate-fadeIn ${
+                isBotanical
+                  ? 'rounded-[15px] sinki-botanical-card'
+                  : 'rounded-[12px] sinki-arch-card border border-[#DFB76C]/50 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md'
+              }`}
+            >
+              {!isBotanical && (
+                <div className="absolute -top-[1px] inset-x-4 h-[1px] bg-gradient-to-r from-transparent via-[#DFB76C] to-transparent opacity-80" />
+              )}
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-[#DFB76C]/20 border border-[#DFB76C]/60 flex items-center justify-center shrink-0">
-                    <Mic size={14} className="text-[#DFB76C] animate-pulse" />
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                      isBotanical
+                        ? 'bg-[#1E5631]/75 border border-[#E5D29A]/55'
+                        : 'bg-[#DFB76C]/20 border border-[#DFB76C]/60'
+                    }`}
+                  >
+                    <Mic size={14} className={isBotanical ? 'text-white animate-pulse' : 'text-[#DFB76C] animate-pulse'} />
                   </div>
                   <div>
-                    <h4 className="font-heading text-xs font-bold text-amber-200">
+                    <h4 className={`font-heading text-xs font-bold ${isBotanical ? 'text-white' : 'text-amber-200'}`}>
                       Konsultasi Suara Bersama MinSKI
                     </h4>
-                    <p className="text-[10px] text-slate-300">
+                    <p className={`text-[10px] ${isBotanical ? 'sinki-botanical-variant-count' : 'text-slate-300'}`}>
                       Definisikan wangi impianmu lewat obrolan suara dua arah
                     </p>
                   </div>
@@ -1819,7 +2043,7 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                   </p>
                 </div>
               ) : (
-                <p className="font-body text-[11px] text-slate-300 leading-relaxed mb-3">
+                <p className={`font-body text-[11px] leading-relaxed mb-3 ${isBotanical ? 'text-white' : 'text-slate-300'}`}>
                   MinSKI siap menemani Kakak mencari racikan aroma yang paling pas secara interaktif. Aktifkan mikrofon untuk langsung berbicara.
                 </p>
               )}
@@ -1839,7 +2063,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowPermissionPrompt(false)}
-                  className="py-2 px-3 rounded-[8px] sinki-arch-bar border border-[#DFB76C]/30 text-slate-300 hover:text-white text-[11px] font-medium transition-all cursor-pointer"
+                  className={`py-2 px-3 text-[11px] font-medium transition-all cursor-pointer ${
+                    isBotanical
+                      ? 'rounded-full sinki-botanical-pill text-white hover:border-[#F2E0A8]/80'
+                      : 'rounded-[8px] sinki-arch-bar border border-[#DFB76C]/30 text-slate-300 hover:text-white'
+                  }`}
                 >
                   Ketik Teks
                 </button>
@@ -1872,15 +2100,19 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             </button>
           </div>
 
-          {/* Bar Teks Input (Dipertahankan & Ditata Rapi) */}
+          {/* Bar Teks Input (Selaras Gaya Kapsul Kaca Collection) */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSendTextMessage(typedMessage);
             }}
-            className={`w-full flex items-center gap-2 p-1.5 rounded-[10px] sinki-arch-input border ${
-              micDenied ? 'border-amber-400/80 shadow-[0_0_12px_rgba(223,183,108,0.25)]' : 'border-[#DFB76C]/30'
-            } backdrop-blur-md`}
+            className={`w-full flex items-center gap-2 p-1.5 transition-colors ${
+              isBotanical
+                ? `rounded-full sinki-botanical-pill ${micDenied ? 'border-amber-400/80' : ''}`
+                : `rounded-[10px] sinki-arch-input border backdrop-blur-md ${
+                    micDenied ? 'border-amber-400/80 shadow-[0_0_12px_rgba(223,183,108,0.25)]' : 'border-[#DFB76C]/30'
+                  }`
+            }`}
           >
             <input
               type="text"
@@ -1892,7 +2124,11 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
             <button
               type="submit"
               disabled={!typedMessage.trim() || isThinking}
-              className="p-2 rounded-[8px] bg-[#DFB76C] text-slate-950 hover:bg-[#F0DFB6] disabled:opacity-40 transition-all cursor-pointer shrink-0"
+              className={`p-2 transition-all cursor-pointer shrink-0 disabled:opacity-40 ${
+                isBotanical
+                  ? 'rounded-full champagne-gold-btn text-slate-950'
+                  : 'rounded-[8px] bg-[#DFB76C] text-slate-950 hover:bg-[#F0DFB6]'
+              }`}
               title="Kirim ke MinSKI"
             >
               <Send size={14} />
@@ -1908,7 +2144,9 @@ export const AromaMatchScreen: React.FC<AromaMatchScreenProps> = ({
                 setScreenMode('manual');
                 setManualStep(1);
               }}
-              className="font-body text-[11px] text-slate-400 hover:text-[#DFB76C] transition-colors cursor-pointer"
+              className={`font-body text-[11px] transition-colors cursor-pointer ${
+                isBotanical ? 'sinki-botanical-variant-count hover:underline' : 'text-slate-400 hover:text-[#DFB76C]'
+              }`}
             >
               Atau racik manual lewat kuis 3 langkah →
             </button>

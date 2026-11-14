@@ -274,13 +274,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
 
   const handleResetLuxuryTheme = async () => {
     if (isSavingTheme) return;
-    setSelectedThemeId('moonlight-silver');
-    applyThemeToDocument('moonlight-silver');
+    setSelectedThemeId('botanical-crystal');
+    applyThemeToDocument('botanical-crystal');
     setIsSavingTheme(true);
     try {
       const saved = await resetThemeToDefault();
       onThemeUpdated?.(saved);
-      onShowToast('Tema dikembalikan ke Moonlight Silver (Default Signature).');
+      onShowToast('Tema dikembalikan ke Botanical Emerald 2.5D (Default Signature).');
     } finally {
       setIsSavingTheme(false);
     }
@@ -3882,13 +3882,13 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                     </div>
                     <div>
                       <h3 className="font-heading text-base sm:text-lg font-semibold text-white tracking-[-0.015em] leading-[1.25] flex flex-wrap items-center gap-2">
-                        <span>5 Pilihan Warna Tema Forest Waterfall (Anti-Redup)</span>
+                        <span>6 Pilihan Warna Tema Forest Waterfall (Anti-Redup)</span>
                         <span className="font-body text-xs text-[#E8C782] bg-[#D4AF6A]/15 px-2.5 py-0.5 rounded-[5px] border border-[#D4AF6A]/35 font-semibold">
                           Aktif: {activeThemeMeta.name}
                         </span>
                       </h3>
                       <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-[1.45]">
-                        Seluruh 5 pilihan sudah berlatar Pohon, Hutan & Air Terjun (video Home tetap bersih) dengan garis kotak bercahaya terang di layar HP standar.
+                        Termasuk tema Signature 2.5D Botanical Emerald dengan kartu bergambar, ikon 3D emas, dan teks putih cerah (video Home tetap bersih).
                       </p>
                     </div>
                   </div>
@@ -3896,16 +3896,16 @@ export const DimensiSinkiScreen: React.FC<DimensiSinkiScreenProps> = ({
                   <button
                     type="button"
                     onClick={handleResetLuxuryTheme}
-                    disabled={isSavingTheme || selectedThemeId === 'moonlight-silver'}
+                    disabled={isSavingTheme || selectedThemeId === 'botanical-crystal'}
                     className="py-1.5 px-3 rounded-[8px] sinki-arch-subbox border hover:border-[#D4AF6A]/55 disabled:opacity-45 text-slate-300 hover:text-white text-xs sm:text-sm font-medium flex items-center gap-1.5 active:scale-95 transition-all self-start sm:self-auto shrink-0"
-                    title="Kembalikan ke tema bawaan Moonlight Silver"
+                    title="Kembalikan ke tema bawaan Botanical Emerald 2.5D"
                   >
                     <RotateCcw size={12} />
-                    <span>Default Moonlight Silver</span>
+                    <span>Default Botanical 2.5D</span>
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                   {LUXURY_THEMES.map((theme) => {
                     const isSelected = selectedThemeId === theme.id;
                     return (

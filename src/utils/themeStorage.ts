@@ -1,6 +1,7 @@
 import { SUPABASE_STORAGE_BASE, getOwnerToken } from './assetStorage';
 
 export type LuxuryThemeId =
+  | 'botanical-crystal'
   | 'moonlight-silver'
   | 'pearl-ivory'
   | 'dew-jade'
@@ -25,6 +26,17 @@ export interface LuxuryThemeOption {
 }
 
 export const LUXURY_THEMES: LuxuryThemeOption[] = [
+  {
+    id: 'botanical-crystal',
+    name: 'Botanical Emerald 2.5D',
+    subtitle: 'Hutan Air Terjun, Bunga Lili & Ilustrasi Kategori 2.5D · Teks Putih Cerah',
+    badge: 'Signature 2.5D',
+    canvasHex: '#06130b',
+    surfaceHex: '#0e2416',
+    accentHex: '#E5D29A',
+    brightHex: '#FFF3CE',
+    softHex: '#FFFFFF',
+  },
   {
     id: 'moonlight-silver',
     name: 'Moonlight Silver',
@@ -83,7 +95,7 @@ export const LUXURY_THEMES: LuxuryThemeOption[] = [
 ];
 
 export const DEFAULT_THEME: LuxuryThemeConfig = {
-  id: 'dew-jade',
+  id: 'botanical-crystal',
 };
 
 const THEME_LOCAL_KEY = 'sinki_luxury_theme_v1';
@@ -255,5 +267,5 @@ export const saveThemeToServer = async (
 };
 
 export const resetThemeToDefault = async (): Promise<LuxuryThemeConfig> => {
-  return await saveThemeToServer('dew-jade');
+  return await saveThemeToServer('botanical-crystal');
 };

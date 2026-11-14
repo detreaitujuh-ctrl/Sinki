@@ -69,6 +69,60 @@
   --arch-badge-bg-soft: rgba(134, 240, 200, 0.14);
 }
 
+/* 0. BOTANICAL EMERALD 2.5D (Hutan Air Terjun, Bunga Lili & Kartu Bergambar 2.5D) */
+html[data-sinki-theme="botanical-crystal"] {
+  --arch-canvas: #06130b;
+  --arch-canvas-top: #091a10;
+  --arch-canvas-mid: #06130b;
+  --arch-canvas-bot: #040d07;
+  --arch-header-top: rgba(8, 22, 13, 0.34);
+  --arch-header-bot: rgba(6, 17, 10, 0.48);
+  --arch-card-top: rgba(13, 30, 19, 0.72);
+  --arch-card-bot: rgba(7, 18, 11, 0.84);
+  --arch-card-hover-top: rgba(17, 39, 25, 0.78);
+  --arch-card-hover-bot: rgba(9, 23, 14, 0.88);
+  --arch-card-sel-top: rgba(20, 44, 29, 0.82);
+  --arch-card-sel-bot: rgba(11, 27, 17, 0.90);
+  --arch-bar-top: rgba(13, 31, 20, 0.74);
+  --arch-bar-bot: rgba(7, 18, 11, 0.86);
+  --arch-input-top: rgba(12, 28, 18, 0.72);
+  --arch-input-bot: rgba(7, 18, 11, 0.84);
+  --arch-subbox-top: rgba(16, 36, 23, 0.74);
+  --arch-subbox-bot: rgba(9, 22, 14, 0.84);
+  --arch-modal-top: rgba(10, 23, 15, 0.94);
+  --arch-modal-bot: rgba(5, 13, 8, 0.97);
+
+  --arch-gold: #E5D29A;
+  --arch-gold-bright: #FFF3CE;
+  --arch-gold-soft: #FFFFFF;
+  --arch-gold-deep: #A88D4C;
+  --arch-text-accent: #F4E7C1;
+  --arch-text-accent-bright: #FFF9E6;
+  --arch-text-accent-soft: #FFFFFF;
+  --arch-btn-gradient: linear-gradient(135deg, #FFF7DC 0%, #EAD69C 52%, #B69850 100%);
+  --arch-title-gradient: linear-gradient(115deg, #FFFFFF 0%, #F7ECC8 55%, #C9AE68 100%);
+
+  --arch-border-default: rgba(235, 217, 162, 0.82);
+  --arch-border-subtle: rgba(235, 217, 162, 0.54);
+  --arch-border-faint: rgba(235, 217, 162, 0.30);
+  --arch-border-hover: rgba(255, 246, 212, 0.98);
+  --arch-border-modal: rgba(235, 217, 162, 0.86);
+
+  --arch-glow-tl: rgba(248, 228, 166, 0.36);
+  --arch-glow-tl-mid: rgba(235, 214, 152, 0.14);
+  --arch-glow-br: rgba(120, 214, 152, 0.26);
+  --arch-glow-hover-tl: rgba(255, 238, 184, 0.48);
+  --arch-glow-hover-br: rgba(142, 228, 172, 0.34);
+  --arch-glow-sel-tl: rgba(255, 244, 204, 0.52);
+  --arch-glow-sel-br: rgba(154, 236, 182, 0.38);
+  --arch-specular-top: rgba(255, 249, 226, 0.62);
+  --arch-rim-glint: #FFFDF5;
+  --arch-smoke-canvas-opacity: 0.16;
+  --arch-smoke-card-opacity: 0.08;
+  --arch-badge-bg: rgba(235, 217, 162, 0.22);
+  --arch-badge-bg-soft: rgba(235, 217, 162, 0.14);
+}
+
 /* 1. MOONLIGHT SILVER (Perak Kristal Es - Signature Moonlight) */
 html[data-sinki-theme="moonlight-silver"] {
   --arch-gold: #D6E4F2;
@@ -1327,57 +1381,38 @@ html[data-sinki-theme="warm-gold"] {
 @keyframes sinkiCardCascade {
   0% {
     opacity: 0;
-    transform: translate3d(0, 9px, 0) scale(0.985);
-    filter: blur(2.5px);
-  }
-  65% {
-    filter: blur(0px);
+    transform: translate3d(0, 8px, 0) scale(0.985);
   }
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
-    filter: blur(0px);
   }
 }
 
 .sinki-cascade-row-0 {
-  animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both;
-  will-change: transform, opacity, filter;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  animation: sinkiCardCascade 340ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both;
 }
 
 .sinki-cascade-row-1 {
-  animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 75ms both;
-  will-change: transform, opacity, filter;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  animation: sinkiCardCascade 340ms cubic-bezier(0.22, 1, 0.36, 1) 50ms both;
 }
 
 .sinki-cascade-row-2 {
-  animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 150ms both;
-  will-change: transform, opacity, filter;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  animation: sinkiCardCascade 340ms cubic-bezier(0.22, 1, 0.36, 1) 100ms both;
 }
 
 .sinki-cascade-row-3 {
-  animation: sinkiCardCascade 520ms cubic-bezier(0.22, 1, 0.36, 1) 225ms both;
-  will-change: transform, opacity, filter;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  animation: sinkiCardCascade 340ms cubic-bezier(0.22, 1, 0.36, 1) 150ms both;
 }
 
 @keyframes sinkiHeadingFade {
   0% {
     opacity: 0;
-    transform: translate3d(0, -5px, 0);
-    filter: blur(2.5px);
+    transform: translate3d(0, -4px, 0);
   }
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0);
-    filter: blur(0px);
   }
 }
 
@@ -1768,6 +1803,278 @@ main[data-active-tab],
   & textarea::placeholder {
     color: rgba(226, 236, 247, 0.72);
   }
+}
+
+/* ============================================================================
+   BOTANICAL EMERALD 2.5D — VIVID FOREST BACKGROUND, LIGHTWEIGHT GPU-ONLY DEPTH
+   ============================================================================ */
+html[data-sinki-theme="botanical-crystal"] main[data-active-tab]:not([data-active-tab="home"])::before {
+  background-image: url("/assets/forest/botanical-reference-bg.png");
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  filter: none;
+}
+
+html[data-sinki-theme="botanical-crystal"] main[data-active-tab] .sinki-arch-card,
+html[data-sinki-theme="botanical-crystal"] main[data-active-tab] .sinki-arch-card-selected,
+html[data-sinki-theme="botanical-crystal"] main[data-active-tab] .sinki-arch-input,
+html[data-sinki-theme="botanical-crystal"] main[data-active-tab] .sinki-arch-subbox {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-sinki-theme="botanical-crystal"] main[data-active-tab] {
+  & .text-slate-200,
+  & .text-slate-300,
+  & .text-slate-300\/95,
+  & .text-slate-300\/90,
+  & .text-zinc-200,
+  & .text-zinc-300 {
+    color: #F4F8F3;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.72);
+  }
+
+  & .text-slate-400,
+  & .text-zinc-400 {
+    color: #E7EFE5;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.72);
+  }
+
+  & input::placeholder,
+  & textarea::placeholder {
+    color: rgba(244, 248, 243, 0.88);
+  }
+
+  & .sinki-collection-heading {
+    color: #FFFFFF;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.92), 0 1px 3px rgba(0, 0, 0, 0.88);
+  }
+}
+
+/* Typography & Glassmorphism Collection SINKI */
+.sinki-botanical-collection,
+.sinki-botanical-collection .font-heading,
+.sinki-botanical-collection .font-body {
+  font-family: "Lora", Georgia, "Times New Roman", serif;
+}
+
+.sinki-botanical-collection :is(h1, h2, h3, h4) {
+  color: #FFFFFF !important;
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.92), 0 2px 10px rgba(0, 0, 0, 0.72);
+}
+
+.sinki-botanical-collection :is(p, span, button, input):not(.sinki-botanical-variant-count):not(.champagne-gold-btn):not(.champagne-gold-btn *) {
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.92), 0 2px 8px rgba(0, 0, 0, 0.68);
+}
+
+.sinki-botanical-collection .champagne-gold-btn,
+.sinki-botanical-collection .champagne-gold-btn * {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+.sinki-botanical-collection input::placeholder {
+  color: #FFFFFF !important;
+  opacity: 0.92;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.sinki-botanical-collection .sinki-botanical-variant-count {
+  color: #B8F5D0 !important;
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.94), 0 2px 8px rgba(0, 0, 0, 0.75);
+}
+
+.sinki-botanical-card {
+  position: relative;
+  isolation: isolate;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: linear-gradient(155deg, rgba(6, 18, 11, 0.56) 0%, rgba(3, 11, 6, 0.72) 100%);
+  border: 1px solid rgba(229, 210, 154, 0.52);
+  box-shadow:
+    0 8px 20px -4px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 0 rgba(255, 248, 224, 0.24);
+  transform: translate3d(0, 0, 0);
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms ease;
+}
+
+.sinki-botanical-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    132deg,
+    rgba(255, 250, 232, 0.72) 0%,
+    rgba(232, 212, 156, 0.58) 18%,
+    rgba(232, 212, 156, 0.16) 46%,
+    rgba(232, 212, 156, 0.14) 70%,
+    rgba(232, 212, 156, 0.52) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0.72;
+}
+
+.sinki-botanical-card:hover {
+  border-color: rgba(242, 224, 168, 0.78);
+}
+
+.sinki-botanical-pill {
+  position: relative;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(8, 22, 13, 0.58) 0%, rgba(4, 13, 8, 0.74) 100%);
+  border: 1px solid rgba(229, 210, 154, 0.58);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 0 rgba(255, 248, 224, 0.28);
+}
+
+.sinki-botanical-back-btn {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: linear-gradient(160deg, rgba(10, 26, 16, 0.62) 0%, rgba(5, 15, 9, 0.76) 100%);
+  border: 1px solid rgba(229, 210, 154, 0.58);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 0 rgba(255, 248, 224, 0.28);
+}
+
+.sinki-botanical-popout-mask {
+  -webkit-mask-image: linear-gradient(180deg, #000000 0%, #000000 88%, rgba(0, 0, 0, 0.78) 96%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000000 0%, #000000 88%, rgba(0, 0, 0, 0.78) 96%, transparent 100%);
+  filter: brightness(1.06) contrast(1.06) saturate(1.1) drop-shadow(0 5px 12px rgba(0, 0, 0, 0.78));
+}
+
+/* Alpha-Masked 16:9 Card Artwork (Matched to Reference Emerald Lighting & Bottom-Right Composition, 60fps GPU-Only) */
+.sinki-botanical-art-cat {
+  -webkit-mask-image: linear-gradient(
+    102deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 24%,
+    rgba(0, 0, 0, 0.84) 44%,
+    #000000 60%
+  );
+  mask-image: linear-gradient(
+    102deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 24%,
+    rgba(0, 0, 0, 0.84) 44%,
+    #000000 60%
+  );
+  filter: brightness(1.06) contrast(1.05) saturate(1.12);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.group:hover .sinki-botanical-art-cat {
+  transform: scale(1.04);
+}
+
+.sinki-botanical-art-variant {
+  -webkit-mask-image: linear-gradient(
+    94deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.36) 24%,
+    rgba(0, 0, 0, 0.88) 48%,
+    #000000 68%
+  );
+  mask-image: linear-gradient(
+    94deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.36) 24%,
+    rgba(0, 0, 0, 0.88) 48%,
+    #000000 68%
+  );
+  filter: brightness(1.07) contrast(1.05) saturate(1.12);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.group:hover .sinki-botanical-art-variant {
+  transform: scale(1.04);
+}
+
+.sinki-botanical-art-pro {
+  filter: brightness(1.09) contrast(1.06) saturate(1.1);
+}
+
+.sinki-botanical-art-pill {
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.45) 28%,
+    #000000 65%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.45) 28%,
+    #000000 65%
+  );
+  filter: brightness(1.15) contrast(1.06) saturate(1.22);
+}
+
+.sinki-botanical-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(244, 226, 172, 0.52) 0%,
+    rgba(255, 246, 212, 0.72) 38%,
+    rgba(244, 226, 172, 0.14) 60%,
+    transparent 76%
+  );
+}
+
+.sinki-botanical-divider-wide {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(244, 226, 172, 0.52) 0%,
+    rgba(255, 246, 212, 0.72) 48%,
+    rgba(244, 226, 172, 0.14) 72%,
+    transparent 88%
+  );
+}
+
+@keyframes sinkiSunbeamPulse {
+  0%, 100% {
+    opacity: 0.45;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: translate3d(0, 4px, 0) scale(1.03);
+  }
+}
+
+.sinki-botanical-sunbeam {
+  animation: sinkiSunbeamPulse 7s ease-in-out infinite;
+  background: radial-gradient(62% 52% at 54% 0%, rgba(255, 236, 168, 0.32) 0%, rgba(212, 238, 164, 0.1) 48%, transparent 80%);
+}
+
+@keyframes sinkiDewFloat {
+  0%, 100% {
+    opacity: 0.35;
+    transform: translate3d(0, 0, 0) scale(0.85);
+  }
+  50% {
+    opacity: 0.92;
+    transform: translate3d(3px, -10px, 0) scale(1.15);
+  }
+}
+
+.sinki-dew-sparkle {
+  animation: sinkiDewFloat 4.6s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(255, 248, 214, 0.95) 0%, rgba(242, 214, 138, 0.45) 45%, transparent 72%);
 }
 
 /* Jaga kartu ulasan aktif ber-border-beam agar cahaya putar tidak bocor ke tengah kartu */

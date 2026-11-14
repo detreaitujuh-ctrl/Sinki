@@ -330,6 +330,7 @@ function getTickerConfig(): { text: string; font: string; updatedAt?: string } {
 
 let cachedThemeConfig: { id: string; updatedAt?: string } | null = null;
 const VALID_LUXURY_THEMES = [
+  'botanical-crystal',
   'moonlight-silver',
   'pearl-ivory',
   'dew-jade',
@@ -353,7 +354,7 @@ function getThemeConfig(): { id: string; updatedAt?: string } {
       }
     } catch {}
   }
-  return { id: 'moonlight-silver' };
+  return { id: 'botanical-crystal' };
 }
 
 const INITIAL_4_REVIEWS: any[] = [];
@@ -2955,21 +2956,23 @@ async function startServer() {
   // Serve static assets from public directory
   app.use(express.static(path.resolve(__dirname, 'public')));
 
+  let viteServer: Awaited<ReturnType<typeof createViteServer>> | null = null;
   if (process.env.NODE_ENV === 'production' && fs.existsSync(path.resolve(__dirname, 'dist'))) {
     app.use(express.static(path.resolve(__dirname, 'dist')));
     app.get('*', (_req, res) => {
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });
   } else {
-    const vite = await createViteServer({
+    viteServer = await createViteServer({
       server: {
         middlewareMode: true,
         allowedHosts: true,
-        hmr: process.env.DISABLE_HMR === 'true' ? false : undefined,
+        hmr: false,
+        ws: false,
       },
       appType: 'spa',
     });
-    app.use(vite.middlewares);
+    app.use(viteServer.middlewares);
   }
 
   const server = app.listen(PORT, '0.0.0.0', () => {
@@ -3254,8 +3257,17 @@ ATURAN PERCAKAPAN, REKOMENDASI & LOGIKA HARGA:
   });
 
   const shutdown = () => {
+    try {
+      wss.close();
+    } catch {}
+    if (viteServer) {
+      viteServer.close().catch(() => {});
+    }
+    try {
+      server.closeAllConnections?.();
+    } catch {}
     server.close(() => process.exit(0));
-    setTimeout(() => process.exit(0), 500).unref();
+    setTimeout(() => process.exit(0), 300);
   };
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
